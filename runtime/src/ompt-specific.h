@@ -100,7 +100,7 @@ ompt_get_thread()
 
 
 inline void
-ompt_set_thread_state(ompt_thread_t *thread, ompt_state_t state)
+ompt_set_thread_state(ompt_thread_t *thread, omp_state_t state)
 {
     thread->th.ompt_thread_info.state = state;
 }

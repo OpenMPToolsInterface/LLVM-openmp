@@ -250,7 +250,7 @@ __ompt_thread_assign_wait_id(void *variable)
     ti->th.ompt_thread_info.wait_id = (ompt_wait_id_t) variable;
 }
 
-ompt_state_t
+omp_state_t
 __ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
 {
     kmp_info_t *ti = ompt_get_thread();
@@ -260,7 +260,7 @@ __ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
             *ompt_wait_id = ti->th.ompt_thread_info.wait_id;
         return ti->th.ompt_thread_info.state;
     }
-    return ompt_state_undefined;
+    return omp_state_undefined;
 }
 
 //----------------------------------------------------------

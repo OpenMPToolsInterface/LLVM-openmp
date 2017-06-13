@@ -19,6 +19,7 @@
 
 #define FOREACH_OMPT_INQUIRY_FN(macro)      \
     macro (ompt_enumerate_states)           \
+    macro (ompt_enumerate_mutex_impls)      \
                                             \
     macro (ompt_set_callback)               \
     macro (ompt_get_callback)               \
@@ -34,7 +35,7 @@
     macro(ompt_get_place_proc_ids)          \
     macro(ompt_get_place_num)               \
     macro(ompt_get_partition_place_nums)    \
-    macro(ompt_get_proc_id)               
+    macro(ompt_get_proc_id)
 
 #define FOREACH_OMPT_PLACEHOLDER_FN(macro)  \
     macro (ompt_idle)                       \
@@ -43,42 +44,53 @@
     macro (ompt_task_wait)                  \
     macro (ompt_mutex_wait)
 
-#define FOREACH_OMPT_STATE(macro)                                                               \
+#define FOREACH_OMP_STATE(macro)                                                                \
                                                                                                 \
-    /* first */                                                                                 \
-    macro (ompt_state_first, 0x71)          /* initial enumeration state */                     \
+    /* first available state */                                                                 \
+    macro (omp_state_undefined, 0x102)      /* undefined thread state */                        \
                                                                                                 \
     /* work states (0..15) */                                                                   \
-    macro (ompt_state_work_serial, 0x00)    /* working outside parallel */                      \
-    macro (ompt_state_work_parallel, 0x01)  /* working within parallel */                       \
-    macro (ompt_state_work_reduction, 0x02) /* performing a reduction */                        \
+    macro (omp_state_work_serial, 0x000)    /* working outside parallel */                      \
+    macro (omp_state_work_parallel, 0x001)  /* working within parallel */                       \
+    macro (omp_state_work_reduction, 0x002) /* performing a reduction */                        \
                                                                                                 \
-    /* idle (16..31) */                                                                         \
-    macro (ompt_state_idle, 0x10)            /* waiting for work */                             \
+    /* barrier wait states (16..31) */                                                          \
+    macro (omp_state_wait_barrier, 0x010)   /* waiting at a barrier */                          \
+    macro (omp_state_wait_barrier_implicit_parallel, 0x011)                                     \
+                                            /* implicit barrier at the end of parallel region */\
+    macro (omp_state_wait_barrier_implicit_workshare, 0x012)                                    \
+                                            /* implicit barrier at the end of worksharing */    \
+    macro (omp_state_wait_barrier_implicit, 0x013)  /* implicit barrier */                      \
+    macro (omp_state_wait_barrier_explicit, 0x014)  /* explicit barrier */                      \
                                                                                                 \
-    /* overhead states (32..63) */                                                              \
-    macro (ompt_state_overhead, 0x20)        /* overhead excluding wait states */               \
+    /* task wait states (32..63) */                                                             \
+    macro (omp_state_wait_taskwait, 0x020)  /* waiting at a taskwait */                         \
+    macro (omp_state_wait_taskgroup, 0x021) /* waiting at a taskgroup */                        \
                                                                                                 \
-    /* barrier wait states (64..79) */                                                          \
-    macro (ompt_state_wait_barrier, 0x40)    /* waiting at a barrier */                         \
-    macro (ompt_state_wait_barrier_implicit, 0x41)    /* implicit barrier */                    \
-    macro (ompt_state_wait_barrier_explicit, 0x42)    /* explicit barrier */                    \
+    /* mutex wait states (64..127) */                                                           \
+    macro (omp_state_wait_mutex, 0x040)                                                         \
+    macro (omp_state_wait_lock, 0x041)      /* waiting for lock */                              \
+    macro (omp_state_wait_critical, 0x042)  /* waiting for critical */                          \
+    macro (omp_state_wait_atomic, 0x043)    /* waiting for atomic */                            \
+    macro (omp_state_wait_ordered, 0x044)   /* waiting for ordered */                           \
                                                                                                 \
-    /* task wait states (80..95) */                                                             \
-    macro (ompt_state_wait_taskwait, 0x50)   /* waiting at a taskwait */                        \
-    macro (ompt_state_wait_taskgroup, 0x51)  /* waiting at a taskgroup */                       \
+    /* target wait states (128..255) */                                                         \
+    macro (omp_state_wait_target, 0x080)        /* waiting for critical */                      \
+    macro (omp_state_wait_target_map, 0x081)    /* waiting for atomic */                        \
+    macro (omp_state_wait_target_update, 0x082) /* waiting for ordered */                       \
                                                                                                 \
-    /* mutex wait states (96..111) */                                                           \
-    macro (ompt_state_wait_lock, 0x60)       /* waiting for lock */                             \
-    macro (ompt_state_wait_nest_lock, 0x61)  /* waiting for nest lock */                        \
-    macro (ompt_state_wait_critical, 0x62)   /* waiting for critical */                         \
-    macro (ompt_state_wait_atomic, 0x63)     /* waiting for atomic */                           \
-    macro (ompt_state_wait_ordered, 0x64)    /* waiting for ordered */                          \
-    macro (ompt_state_wait_single, 0x6F)     /* waiting for single region (non-standard!) */    \
+    /* misc (256..511) */                                                                       \
+    macro (omp_state_idle, 0x100)           /* waiting for work */                              \
+    macro (omp_state_overhead, 0x101)       /* overhead excluding wait states */                \
                                                                                                 \
-    /* misc (112..127) */                                                                       \
-    macro (ompt_state_undefined, 0x70)       /* undefined thread state */
+    /* implementation-specific states (512..) */
 
+
+#define FOREACH_OMPT_MUTEX_IMPL(macro)                                                \
+    macro (ompt_mutex_impl_unknown, 0)      /* unknown implementatin */               \
+    macro (ompt_mutex_impl_spin, 1)         /* based on spin */                       \
+    macro (ompt_mutex_impl_queuing, 2)      /* based on some fair policy */           \
+    macro (ompt_mutex_impl_speculative, 3)  /* based on HW-supported speculation */
 
 #define FOREACH_OMPT_EVENT(macro)                                                                               \
                                                                                                                 \
@@ -116,7 +128,7 @@
     macro (ompt_callback_work,                  ompt_callback_work_t,          18) /* task at work begin or end*/\
                                                                                                                 \
     macro (ompt_callback_master,                ompt_callback_master_t,        19) /* task at master begin or end */\
-    														                                                    \
+                                                                                                                \
     /*macro (ompt_callback_target_map,            ompt_callback_target_map_t,    20)*/ /* target map */             \
                                                                                                                 \
     macro (ompt_callback_sync_region,           ompt_callback_sync_region_t,   21) /* sync region begin or end */ \
@@ -131,7 +143,9 @@
                                                                                                                 \
     macro (ompt_callback_flush,                 ompt_callback_flush_t,         27) /* after executing flush */  \
                                                                                                                 \
-    macro (ompt_callback_cancel, 		        ompt_callback_cancel_t,        28) /*cancel innermost binding region*/\
+    macro (ompt_callback_cancel,                ompt_callback_cancel_t,        28) /*cancel innermost binding region*/\
+
+
 
 /*****************************************************************************
  * data types
@@ -198,10 +212,10 @@ typedef struct ompt_task_dependence_s {
  *---------------------*/
 
 typedef enum {
-#define ompt_state_macro(state, code) state = code,
-    FOREACH_OMPT_STATE(ompt_state_macro)
-#undef ompt_state_macro
-} ompt_state_t;
+#define omp_state_macro(state, code) state = code,
+    FOREACH_OMP_STATE(omp_state_macro)
+#undef omp_state_macro
+} omp_state_t;
 
 
 /*---------------------
@@ -219,13 +233,22 @@ typedef enum ompt_callbacks_e{
  * set callback results
  *---------------------*/
 typedef enum ompt_set_result_e {
-	ompt_set_error = 0,
-	ompt_set_never = 1,
-	ompt_set_sometimes = 2,
-	ompt_set_sometimes_paired = 3,
-	ompt_set_always = 4
+    ompt_set_error = 0,
+    ompt_set_never = 1,
+    ompt_set_sometimes = 2,
+    ompt_set_sometimes_paired = 3,
+    ompt_set_always = 4
 } ompt_set_result_t;
 
+
+/*----------------------
+ * mutex implementations
+ *----------------------*/
+typedef enum ompt_mutex_impl_e {
+#define ompt_mutex_impl_macro(impl, code) impl = code,
+    FOREACH_OMPT_MUTEX_IMPL(ompt_mutex_impl_macro)
+#undef ompt_mutex_impl_macro
+} ompt_mutex_impl_t;
 
 
 /*****************************************************************************
@@ -459,7 +482,7 @@ typedef void (*ompt_callback_sync_region_t) (
 typedef enum ompt_cancel_flag_e {
     ompt_cancel_parallel       = 0x1,
     ompt_cancel_sections       = 0x2,
-    ompt_cancel_do	           = 0x4,
+    ompt_cancel_do             = 0x4,
     ompt_cancel_taskgroup      = 0x8,
     ompt_cancel_activated      = 0x10,
     ompt_cancel_detected       = 0x20,
@@ -497,7 +520,7 @@ extern "C" {
  ***************************************************************************/
 
 /* state */
-OMPT_API_FUNCTION(ompt_state_t, ompt_get_state, (
+OMPT_API_FUNCTION(omp_state_t, ompt_get_state, (
     ompt_wait_id_t *wait_id
 ));
 
@@ -648,6 +671,13 @@ OMPT_API_FUNCTION(int, ompt_enumerate_states, (
     int current_state,
     int *next_state,
     const char **next_state_name
+));
+
+/* mutex implementation enumeration */
+OMPT_API_FUNCTION(int, ompt_enumerate_mutex_impls, (
+    int current_impl,
+    int *next_impl,
+    const char **next_impl_name
 ));
 
 /* get_unique_id */

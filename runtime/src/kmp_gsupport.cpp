@@ -188,7 +188,7 @@ xexpand(KMP_API_NAME_GOMP_SINGLE_START)(void)
                     1,
                     OMPT_GET_RETURN_ADDRESS(0));
             }
-//            this_thr->th.ompt_thread_info.state = ompt_state_work_parallel;
+//            this_thr->th.ompt_thread_info.state = omp_state_work_parallel;
         }
     }
 #endif
@@ -344,7 +344,7 @@ __kmp_GOMP_microtask_wrapper(int *gtid, int *npr, void (*task)(void *),
 #if OMPT_SUPPORT
     kmp_info_t *thr;
     ompt_frame_t *ompt_frame;
-    ompt_state_t enclosing_state;
+    omp_state_t enclosing_state;
 
     if (ompt_enabled) {
         // get pointer to thread data structure
@@ -352,7 +352,7 @@ __kmp_GOMP_microtask_wrapper(int *gtid, int *npr, void (*task)(void *),
 
         // save enclosing task state; set current state for task
         enclosing_state = thr->th.ompt_thread_info.state;
-        thr->th.ompt_thread_info.state = ompt_state_work_parallel;
+        thr->th.ompt_thread_info.state = omp_state_work_parallel;
 
         // set task frame
         __ompt_get_task_info_internal(0, NULL, NULL, &ompt_frame, NULL, NULL);
@@ -396,13 +396,13 @@ __kmp_GOMP_parallel_microtask_wrapper(int *gtid, int *npr,
 #if OMPT_SUPPORT
     kmp_info_t *thr;
     ompt_frame_t *ompt_frame;
-    ompt_state_t enclosing_state;
+    omp_state_t enclosing_state;
 
     if (ompt_enabled) {
         thr = __kmp_threads[*gtid];
         // save enclosing task state; set current state for task
         enclosing_state = thr->th.ompt_thread_info.state;
-        thr->th.ompt_thread_info.state = ompt_state_work_parallel;
+        thr->th.ompt_thread_info.state = omp_state_work_parallel;
 
         // set task frame
         __ompt_get_task_info_internal(0, NULL, NULL, &ompt_frame, NULL, NULL);
@@ -475,7 +475,7 @@ __kmp_GOMP_fork_call(ident_t *loc, int gtid, void (*unwrapped_task)(void *), mic
                 ompt_team_size,
                 __kmp_tid_from_gtid(gtid));
         }
-        thr->th.ompt_thread_info.state = ompt_state_work_parallel;
+        thr->th.ompt_thread_info.state = omp_state_work_parallel;
     }
 #endif
 }
@@ -600,7 +600,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void)
                 OMPT_CUR_TASK_DATA(thr),
                 ompt_team_size,
                 __kmp_tid_from_gtid(gtid));
-            thr->th.ompt_thread_info.state = ompt_state_overhead;
+            thr->th.ompt_thread_info.state = omp_state_overhead;
         }
 #endif
 
@@ -625,7 +625,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void)
 
             thr->th.ompt_thread_info.state =
                 (((thr->th.th_team)->t.t_serialized) ?
-                ompt_state_work_serial : ompt_state_work_parallel);
+                omp_state_work_serial : omp_state_work_parallel);
         }
 #endif
     }
@@ -1071,7 +1071,7 @@ xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data, void (*copy_fu
             taskdata = KMP_TASK_TO_TASKDATA(task);
             oldInfo = thread->th.ompt_thread_info;
             thread->th.ompt_thread_info.wait_id = 0;
-            thread->th.ompt_thread_info.state = ompt_state_work_parallel;
+            thread->th.ompt_thread_info.state = omp_state_work_parallel;
             taskdata->ompt_task_info.frame.exit_runtime_frame =
                 OMPT_GET_FRAME_ADDRESS(0);
         }

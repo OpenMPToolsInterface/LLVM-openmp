@@ -52,6 +52,8 @@ static ompt_get_place_proc_ids_t ompt_get_place_proc_ids;
 static ompt_get_place_num_t ompt_get_place_num;
 static ompt_get_partition_place_nums_t ompt_get_partition_place_nums;
 static ompt_get_proc_id_t ompt_get_proc_id;
+static ompt_enumerate_states_t ompt_enumerate_states;
+static ompt_enumerate_mutex_impls_t ompt_enumerate_mutex_impls;
 
 static void print_ids(int level)
 {
@@ -626,6 +628,8 @@ int ompt_initialize(
   ompt_get_place_num = (ompt_get_place_num_t) lookup("ompt_get_place_num");
   ompt_get_partition_place_nums = (ompt_get_partition_place_nums_t) lookup("ompt_get_partition_place_nums");
   ompt_get_proc_id = (ompt_get_proc_id_t) lookup("ompt_get_proc_id");
+  ompt_enumerate_states = (ompt_enumerate_states_t) lookup("ompt_enumerate_states");
+  ompt_enumerate_mutex_impls = (ompt_enumerate_mutex_impls_t) lookup("ompt_enumerate_mutex_impls");
 
   register_callback(ompt_callback_mutex_acquire);
   register_callback_t(ompt_callback_mutex_acquired, ompt_callback_mutex_t);
