@@ -2949,7 +2949,6 @@ static void __kmp_stg_parse_topology_method(char const *name, char const *value,
 
 static void __kmp_stg_print_topology_method(kmp_str_buf_t *buffer,
                                             char const *name, void *data) {
-#if KMP_DEBUG
   char const *value = NULL;
 
   switch (__kmp_affinity_top_method) {
@@ -2995,7 +2994,6 @@ static void __kmp_stg_print_topology_method(kmp_str_buf_t *buffer,
   if (value != NULL) {
     __kmp_stg_print_str(buffer, name, value);
   }
-#endif /* KMP_DEBUG */
 } // __kmp_stg_print_topology_method
 
 #endif /* KMP_AFFINITY_SUPPORTED */
