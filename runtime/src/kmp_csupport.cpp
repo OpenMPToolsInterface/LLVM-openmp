@@ -617,7 +617,7 @@ void __kmpc_flush(ident_t *loc) {
   // mfence is a SSE2 instruction. Do not execute it if CPU is not SSE2.
   if (!__kmp_cpuinfo.initialized) {
     __kmp_query_cpuid(&__kmp_cpuinfo);
-  }; // if
+  }
   if (!__kmp_cpuinfo.sse2) {
     // CPU cannot execute SSE2 instructions.
   } else {
@@ -628,7 +628,7 @@ void __kmpc_flush(ident_t *loc) {
 #else
     __sync_synchronize();
 #endif // KMP_COMPILER_ICC
-  }; // if
+  }
 #endif // KMP_MIC
 #elif (KMP_ARCH_ARM || KMP_ARCH_AARCH64 || KMP_ARCH_MIPS || KMP_ARCH_MIPS64)
 // Nothing to see here move along
@@ -676,7 +676,7 @@ void __kmpc_barrier(ident_t *loc, kmp_int32 global_tid) {
   if (__kmp_env_consistency_check) {
     if (loc == 0) {
       KMP_WARNING(ConstructIdentInvalid); // ??? What does it mean for the user?
-    }; // if
+    }
 
     __kmp_check_barrier(global_tid, ct_barrier, loc);
   }
@@ -3693,7 +3693,7 @@ kmp_uint64 __kmpc_get_taskid() {
   gtid = __kmp_get_gtid();
   if (gtid < 0) {
     return 0;
-  }; // if
+  }
   thread = __kmp_thread_from_gtid(gtid);
   return thread->th.th_current_task->td_task_id;
 
@@ -3708,7 +3708,7 @@ kmp_uint64 __kmpc_get_parent_taskid() {
   gtid = __kmp_get_gtid();
   if (gtid < 0) {
     return 0;
-  }; // if
+  }
   thread = __kmp_thread_from_gtid(gtid);
   parent_task = thread->th.th_current_task->td_parent;
   return (parent_task == NULL ? 0 : parent_task->td_task_id);
