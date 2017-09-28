@@ -25,6 +25,7 @@ int main()
         print_ids(1);
         print_ids(2);
       }
+      print_fuzzy_address(1);
       print_ids(0);
     }
     print_ids(0);
@@ -57,7 +58,7 @@ int main()
   // CHECK: {{^}}[[MASTER_ID]]: task level 0: parallel_id=[[PARALLEL_ID]], task_id=[[IMPLICIT_TASK_ID]], exit_frame=[[EXIT]], reenter_frame=[[NULL]]
   // CHECK: {{^}}[[MASTER_ID]]: task level 1: parallel_id=[[IMPLICIT_PARALLEL_ID:[0-9]+]], task_id=[[PARENT_TASK_ID]], exit_frame=[[NULL]], reenter_frame=[[MAIN_REENTER]]
   // CHECK: {{^}}[[MASTER_ID]]: __builtin_frame_address(0)=[[REENTER:0x[0-f]+]]
-  // CHECK: {{^}}[[MASTER_ID]]: ompt_event_task_create: parent_task_id=[[IMPLICIT_TASK_ID]], parent_task_frame.exit=[[EXIT]], parent_task_frame.reenter=[[REENTER]], new_task_id=[[TASK_ID:[0-9]+]], codeptr_ra=[[TASK_FUNCTION:0x[0-f]+]]
+  // CHECK: {{^}}[[MASTER_ID]]: ompt_event_task_create: parent_task_id=[[IMPLICIT_TASK_ID]], parent_task_frame.exit=[[EXIT]], parent_task_frame.reenter=[[REENTER]], new_task_id=[[TASK_ID:[0-9]+]], codeptr_ra=[[RETURN_ADDRESS:0x[0-f]+]]{{[0-f][0-f]}}
   // <- ompt_event_task_schedule ([[IMPLICIT_TASK_ID]], [[TASK_ID]]) would be expected here
   // CHECK: {{^}}[[MASTER_ID]]: ompt_event_task_schedule: first_task_id=[[IMPLICIT_TASK_ID]], second_task_id=[[TASK_ID]]
   // CHECK: {{^}}[[MASTER_ID]]: __builtin_frame_address(1)=[[TASK_EXIT:0x[0-f]+]]
@@ -67,6 +68,7 @@ int main()
   // <- ompt_event_task_schedule ([[TASK_ID]], [[IMPLICIT_TASK_ID]]) would be expected here
   // CHECK: {{^}}[[MASTER_ID]]: ompt_event_task_schedule: first_task_id=[[TASK_ID]], second_task_id=[[IMPLICIT_TASK_ID]]
   // CHECK: {{^}}[[MASTER_ID]]: ompt_event_task_end: task_id=[[TASK_ID]]
+  // CHECK: {{^}}[[MASTER_ID]]: fuzzy_address={{.*}}[[RETURN_ADDRESS]]
   // CHECK: {{^}}[[MASTER_ID]]: task level 0: parallel_id=[[PARALLEL_ID]], task_id=[[IMPLICIT_TASK_ID]], exit_frame=[[EXIT]], reen
 
   // implicit barrier parallel
