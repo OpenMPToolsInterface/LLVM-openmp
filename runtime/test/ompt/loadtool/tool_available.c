@@ -1,5 +1,5 @@
-// RUN: %libomp-tool %s.tool.c && %libomp-compile && env OMP_TOOL_LIBRARIES=%t.tool.so %libomp-run | %filecheck %s
-// REQUIRES: ompt, cancel
+// RUN: %libomp-tool %S/tool.c && %libomp-compile && echo %T/tool.so && env OMP_TOOL_LIBRARIES=%T/tool.so %libomp-run | %filecheck %s
+// REQUIRES: ompt
 
 #include "omp.h"
 
