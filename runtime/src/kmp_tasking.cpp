@@ -575,9 +575,10 @@ static void __ompt_enabled_task_begin_if0(ident_t *loc_ref, kmp_int32 gtid,
 void __kmpc_omp_task_begin_if0(ident_t *loc_ref, kmp_int32 gtid,
                                kmp_task_t *task) {
 #if OMPT_SUPPORT
+  OMPT_STORE_RETURN_ADDRESS(gtid);
   if (UNLIKELY(ompt_enabled.enabled)) {
     __ompt_enabled_task_begin_if0(loc_ref, gtid, task,
-      OMPT_GET_FRAME_ADDRESS(1), OMPT_GET_RETURN_ADDRESS(0));
+      OMPT_GET_FRAME_ADDRESS(1), OMPT_LOAD_RETURN_ADDRESS(gtid));
     return;
   }
 #endif
@@ -1559,6 +1560,7 @@ kmp_int32 __kmpc_omp_task(ident_t *loc_ref, kmp_int32 gtid,
                 new_taskdata));
 
 #if OMPT_SUPPORT
+  OMPT_STORE_RETURN_ADDRESS(gtid);
   kmp_taskdata_t *parent = NULL;
   if (__builtin_expect(ompt_enabled.enabled && !new_taskdata->td_flags.started,0)) {
     parent = new_taskdata->td_parent;
@@ -1572,7 +1574,7 @@ kmp_int32 __kmpc_omp_task(ident_t *loc_ref, kmp_int32 gtid,
           parent ? &(parent->ompt_task_info.frame) : NULL,
           &(new_taskdata->ompt_task_info.task_data),
           ompt_task_explicit | TASK_TYPE_DETAILS_FORMAT(new_taskdata), 0,
-          OMPT_GET_RETURN_ADDRESS(0));
+          OMPT_LOAD_RETURN_ADDRESS(gtid));
     }
   }
 #endif
