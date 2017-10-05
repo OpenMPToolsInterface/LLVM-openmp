@@ -357,8 +357,7 @@ int FTN_STDCALL xexpand(FTN_CONTROL_TOOL)(uint64_t command, uint64_t modifier,
     return -2;
   }
   kmp_info_t *this_thr = __kmp_threads[__kmp_entry_gtid()];
-  ompt_task_info_t *parent_task_info =
-      &(this_thr->th.th_current_task->ompt_task_info);
+  ompt_task_info_t *parent_task_info = OMPT_CUR_TASK_INFO(this_thr);
   parent_task_info->frame.reenter_runtime_frame = OMPT_GET_FRAME_ADDRESS(1);
   int ret = __kmp_control_tool(command, modifier, arg);
   parent_task_info->frame.reenter_runtime_frame = 0;
