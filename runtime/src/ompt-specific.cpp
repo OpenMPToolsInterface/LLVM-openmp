@@ -173,33 +173,6 @@ ompt_task_info_t *__ompt_get_scheduling_taskinfo(int depth) {
   return info;
 }
 
-/*ompt_task_info_t *
-__ompt_get_scheduling_taskinfo(int depth)
-{
-    ompt_task_info_t *info = NULL;
-    kmp_info_t *thr = ompt_get_thread();
-
-    if (thr) {
-        kmp_taskdata_t  *taskdata = thr->th.th_current_task;
-//        ompt_lw_taskteam_t *lwt = LWT_FROM_TEAM(taskdata->td_team);
-
-        while (depth > 0) {
-
-            if (taskdata) {
-                taskdata = taskdata->ompt_task_info.scheduling_parent;
-            }else{
-                return NULL;
-            }
-            depth--;
-        }
-        if (taskdata) {
-            info = &taskdata->ompt_task_info;
-        }
-    }
-
-    return info;
-}*/
-
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -292,12 +265,12 @@ void __ompt_lw_taskteam_link(ompt_lw_taskteam_t *lwt, kmp_info_t *thr,
 
     // would be swap in the (on_stack) case.
     ompt_team_info_t tmp_team = lwt->ompt_team_info;
-    link_lwt->ompt_team_info = thr->th.th_team->t.ompt_team_info;
-    thr->th.th_team->t.ompt_team_info = tmp_team;
+    link_lwt->ompt_team_info = *OMPT_CUR_TEAM_INFO(thr);
+    *OMPT_CUR_TEAM_INFO(thr) = tmp_team;
 
     ompt_task_info_t tmp_task = lwt->ompt_task_info;
-    link_lwt->ompt_task_info = thr->th.th_current_task->ompt_task_info;
-    thr->th.th_current_task->ompt_task_info = tmp_task;
+    link_lwt->ompt_task_info = *OMPT_CUR_TASK_INFO(thr);
+    *OMPT_CUR_TASK_INFO(thr) = tmp_task;
 
     // link the taskteam into the list of taskteams:
     ompt_lw_taskteam_t *my_parent =
@@ -307,8 +280,8 @@ void __ompt_lw_taskteam_link(ompt_lw_taskteam_t *lwt, kmp_info_t *thr,
   } else {
     // this is the first serialized team, so we just store the values in the
     // team and drop the taskteam-object
-    thr->th.th_team->t.ompt_team_info = lwt->ompt_team_info;
-    thr->th.th_current_task->ompt_task_info = lwt->ompt_task_info;
+    *OMPT_CUR_TEAM_INFO(thr) = lwt->ompt_team_info;
+    *OMPT_CUR_TASK_INFO(thr) = lwt->ompt_task_info;
   }
 }
 
@@ -317,15 +290,13 @@ void __ompt_lw_taskteam_unlink(kmp_info_t *thr) {
   if (lwtask) {
     thr->th.th_team->t.ompt_serialized_team_info = lwtask->parent;
 
-    //        std::swap(lwtask->ompt_team_info,thr->th.th_team->t.ompt_team_info);
     ompt_team_info_t tmp_team = lwtask->ompt_team_info;
-    lwtask->ompt_team_info = thr->th.th_team->t.ompt_team_info;
-    thr->th.th_team->t.ompt_team_info = tmp_team;
+    lwtask->ompt_team_info = *OMPT_CUR_TEAM_INFO(thr);
+    *OMPT_CUR_TEAM_INFO(thr) = tmp_team;
 
-    //        std::swap(lwtask->ompt_task_info,thr->th.th_current_task->ompt_task_info);
     ompt_task_info_t tmp_task = lwtask->ompt_task_info;
-    lwtask->ompt_task_info = thr->th.th_current_task->ompt_task_info;
-    thr->th.th_current_task->ompt_task_info = tmp_task;
+    lwtask->ompt_task_info = *OMPT_CUR_TASK_INFO(thr);
+    *OMPT_CUR_TASK_INFO(thr) = tmp_task;
 
     if (lwtask->heap) {
       __kmp_free(lwtask);
@@ -344,7 +315,7 @@ int __ompt_get_task_info_internal(int ancestor_level, int *type,
                                   ompt_frame_t **task_frame,
                                   ompt_data_t **parallel_data,
                                   int *thread_num) {
-  if (ancestor_level < 0) 
+  if (ancestor_level < 0)
     return 0;
 
   // copied from __ompt_get_scheduling_taskinfo
