@@ -4357,7 +4357,7 @@ static void __kmp_stg_print_omp_cancellation(kmp_str_buf_t *buffer,
 
 #endif
 
-#if OMP_50_ENABLED && LIBOMP_OMPT_SUPPORT
+#if OMP_50_ENABLED && OMPT_SUPPORT
 
 static void __kmp_stg_parse_omp_tool_libraries(char const *name,
                                                char const *value, void *data) {
@@ -4624,7 +4624,7 @@ static kmp_setting_t __kmp_stg_table[] = {
      __kmp_stg_print_omp_cancellation, NULL, 0, 0},
 #endif
 
-#if OMP_50_ENABLED && LIBOMP_OMPT_SUPPORT
+#if OMP_50_ENABLED && OMPT_SUPPORT
     {"OMP_TOOL_LIBRARIES", __kmp_stg_parse_omp_tool_libraries,
      __kmp_stg_print_omp_tool_libraries, NULL, 0, 0},
 #endif

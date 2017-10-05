@@ -139,8 +139,6 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
 #endif
     KE_TRACE(10, ("__kmpc_for_static_init: T#%d return\n", global_tid));
 
-// TODO for intel: need to be able to distinguish between sections and loops for
-// ompt callback
 #if OMPT_SUPPORT && OMPT_OPTIONAL
     if (ompt_enabled.ompt_callback_work) {
       ompt_callbacks.ompt_callback(ompt_callback_work)(
@@ -195,7 +193,6 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
 #endif
     KE_TRACE(10, ("__kmpc_for_static_init: T#%d return\n", global_tid));
 
-// TODO for intel: (see first ompt callback in this function)
 #if OMPT_SUPPORT && OMPT_OPTIONAL
     if (ompt_enabled.ompt_callback_work) {
       ompt_callbacks.ompt_callback(ompt_callback_work)(
@@ -228,7 +225,6 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
 #endif
     KE_TRACE(10, ("__kmpc_for_static_init: T#%d return\n", global_tid));
 
-// TODO for intel: (see first ompt callback in this function)
 #if OMPT_SUPPORT && OMPT_OPTIONAL
     if (ompt_enabled.ompt_callback_work) {
       ompt_callbacks.ompt_callback(ompt_callback_work)(
