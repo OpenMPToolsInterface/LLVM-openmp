@@ -1232,8 +1232,6 @@ __kmp_dispatch_init(ident_t *loc, int gtid, enum sched_type schedule, T lb,
   }
 #endif // ( KMP_STATIC_STEAL_ENABLED )
 
-// TODO for intel: need to be able to distinguish between sections and loops for
-// ompt callback
 #if OMPT_SUPPORT && OMPT_OPTIONAL
   if (ompt_enabled.ompt_callback_work) {
     ompt_team_info_t *team_info = __ompt_get_teaminfo(0, NULL);
@@ -2541,7 +2539,7 @@ void __kmpc_dispatch_init_4(ident_t *loc, kmp_int32 gtid,
                             enum sched_type schedule, kmp_int32 lb,
                             kmp_int32 ub, kmp_int32 st, kmp_int32 chunk) {
   KMP_DEBUG_ASSERT(__kmp_init_serial);
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
   __kmp_dispatch_init<kmp_int32>(loc, gtid, schedule, lb, ub, st, chunk, true);
@@ -2553,7 +2551,7 @@ void __kmpc_dispatch_init_4u(ident_t *loc, kmp_int32 gtid,
                              enum sched_type schedule, kmp_uint32 lb,
                              kmp_uint32 ub, kmp_int32 st, kmp_int32 chunk) {
   KMP_DEBUG_ASSERT(__kmp_init_serial);
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
   __kmp_dispatch_init<kmp_uint32>(loc, gtid, schedule, lb, ub, st, chunk, true);
@@ -2566,7 +2564,7 @@ void __kmpc_dispatch_init_8(ident_t *loc, kmp_int32 gtid,
                             enum sched_type schedule, kmp_int64 lb,
                             kmp_int64 ub, kmp_int64 st, kmp_int64 chunk) {
   KMP_DEBUG_ASSERT(__kmp_init_serial);
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
   __kmp_dispatch_init<kmp_int64>(loc, gtid, schedule, lb, ub, st, chunk, true);
@@ -2579,7 +2577,7 @@ void __kmpc_dispatch_init_8u(ident_t *loc, kmp_int32 gtid,
                              enum sched_type schedule, kmp_uint64 lb,
                              kmp_uint64 ub, kmp_int64 st, kmp_int64 chunk) {
   KMP_DEBUG_ASSERT(__kmp_init_serial);
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
   __kmp_dispatch_init<kmp_uint64>(loc, gtid, schedule, lb, ub, st, chunk, true);
@@ -2599,7 +2597,7 @@ void __kmpc_dist_dispatch_init_4(ident_t *loc, kmp_int32 gtid,
                                  kmp_int32 lb, kmp_int32 ub, kmp_int32 st,
                                  kmp_int32 chunk) {
   KMP_DEBUG_ASSERT(__kmp_init_serial);
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
   __kmp_dist_get_bounds<kmp_int32>(loc, gtid, p_last, &lb, &ub, st);
@@ -2611,7 +2609,7 @@ void __kmpc_dist_dispatch_init_4u(ident_t *loc, kmp_int32 gtid,
                                   kmp_uint32 lb, kmp_uint32 ub, kmp_int32 st,
                                   kmp_int32 chunk) {
   KMP_DEBUG_ASSERT(__kmp_init_serial);
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
   __kmp_dist_get_bounds<kmp_uint32>(loc, gtid, p_last, &lb, &ub, st);
@@ -2623,7 +2621,7 @@ void __kmpc_dist_dispatch_init_8(ident_t *loc, kmp_int32 gtid,
                                  kmp_int64 lb, kmp_int64 ub, kmp_int64 st,
                                  kmp_int64 chunk) {
   KMP_DEBUG_ASSERT(__kmp_init_serial);
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
   __kmp_dist_get_bounds<kmp_int64>(loc, gtid, p_last, &lb, &ub, st);
@@ -2635,7 +2633,7 @@ void __kmpc_dist_dispatch_init_8u(ident_t *loc, kmp_int32 gtid,
                                   kmp_uint64 lb, kmp_uint64 ub, kmp_int64 st,
                                   kmp_int64 chunk) {
   KMP_DEBUG_ASSERT(__kmp_init_serial);
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
   __kmp_dist_get_bounds<kmp_uint64>(loc, gtid, p_last, &lb, &ub, st);
