@@ -1206,7 +1206,7 @@ void __kmp_serialized_parallel(ident_t *loc, kmp_int32 global_tid) {
 
     ompt_task_info_t *parent_task_info;
     //        if (serial_team->t.t_level > 1)
-    parent_task_info = &(this_thr->th.th_current_task->ompt_task_info);
+    parent_task_info = OMPT_CUR_TASK_INFO(this_thr);
     //        else
     //            parent_task_info =
     //            &(this_thr->th.th_current_task->td_parent->ompt_task_info);
@@ -1384,22 +1384,16 @@ void __kmp_serialized_parallel(ident_t *loc, kmp_int32 global_tid) {
       this_thr->th.ompt_thread_info.state != omp_state_overhead) {
     OMPT_CUR_TASK_INFO(this_thr)
         ->frame.exit_runtime_frame = OMPT_GET_FRAME_ADDRESS(1);
-    void *dummy;
-    void **exit_runtime_p;
 
     ompt_lw_taskteam_t lw_taskteam;
-
-    __ompt_lw_taskteam_init(&lw_taskteam, this_thr, global_tid, 
+    __ompt_lw_taskteam_init(&lw_taskteam, this_thr, global_tid,
                             &ompt_parallel_data, codeptr);
-    // exit_runtime_p =
-    //     &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
 
     __ompt_lw_taskteam_link(&lw_taskteam, this_thr, 1);
     // don't use lw_taskteam after linking. content was swaped
 
     /* OMPT implicit task begin */
-    implicit_task_data =
-        &(this_thr->th.th_current_task->ompt_task_info.task_data);
+    implicit_task_data = OMPT_CUR_TASK_DATA(this_thr);
     if (ompt_enabled.ompt_callback_implicit_task) {
       ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
           ompt_scope_begin, OMPT_CUR_TEAM_DATA(this_thr),
@@ -7221,16 +7215,15 @@ void __kmp_internal_join(ident_t *id, int gtid, kmp_team_t *team) {
 #if OMPT_SUPPORT
   int ds_tid = this_thr->th.th_info.ds.ds_tid;
   if (this_thr->th.ompt_thread_info.state == omp_state_wait_barrier_implicit) {
-    ompt_data_t *tId =
-        &(this_thr->th.th_current_task->ompt_task_info.task_data);
-    ompt_data_t *pId = &(this_thr->th.th_team->t.ompt_team_info.parallel_data);
+    ompt_data_t *tId = OMPT_CUR_TASK_DATA(this_thr);
+    ompt_data_t *pId = OMPT_CUR_TEAM_DATA(this_thr);
     this_thr->th.ompt_thread_info.state = omp_state_overhead;
 #if OMPT_OPTIONAL
     void * codeptr = NULL;
     if (KMP_MASTER_TID(ds_tid) &&
         (ompt_callbacks.ompt_callback(ompt_callback_sync_region_wait) ||
         ompt_callbacks.ompt_callback(ompt_callback_sync_region)))
-        codeptr = this_thr->th.th_team->t.ompt_team_info.master_return_address;
+        codeptr = OMPT_CUR_TEAM_INFO(this_thr)->master_return_address;
 
     if (ompt_enabled.ompt_callback_sync_region_wait) {
       ompt_callbacks.ompt_callback(ompt_callback_sync_region_wait)(
