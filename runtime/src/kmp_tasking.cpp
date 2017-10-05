@@ -455,11 +455,10 @@ static void __kmp_task_start(kmp_int32 gtid, kmp_task_t *task,
 //------------------------------------------------------------------------------
 // __ompt_task_init:
 //   Initialize OMPT fields maintained by a task. This will only be called after
-//   ompt_tool, so we already know whether ompt is enabled or not.
+//   ompt_start_tool, so we already know whether ompt is enabled or not.
 
 static inline void __ompt_task_init(kmp_taskdata_t *task, int tid) {
 // The calls to __ompt_task_init already have the ompt_enabled condition.
-//  if (__builtin_expect(ompt_enabled.enabled,0)) {
   task->ompt_task_info.task_data.value = 0;
   task->ompt_task_info.frame.exit_runtime_frame = NULL;
   task->ompt_task_info.frame.reenter_runtime_frame = NULL;
@@ -467,7 +466,6 @@ static inline void __ompt_task_init(kmp_taskdata_t *task, int tid) {
   task->ompt_task_info.ndeps = 0;
   task->ompt_task_info.deps = NULL;
 #endif /* OMP_40_ENABLED */
-//  }
 }
 
 // __ompt_task_start:
@@ -552,7 +550,6 @@ static void __ompt_enabled_task_begin_if0(ident_t *loc_ref, kmp_int32 gtid,
   }
   if (ompt_enabled.ompt_callback_task_create) {
     ompt_task_info_t *parent_info = &(current_task->ompt_task_info);
-    ompt_data_t task_data = ompt_data_none;
     ompt_callbacks.ompt_callback(ompt_callback_task_create)(
         &(parent_info->task_data), &(parent_info->frame),
         &(taskdata->ompt_task_info.task_data),
@@ -600,7 +597,6 @@ void __kmpc_omp_task_begin_if0(ident_t *loc_ref, kmp_int32 gtid,
 
   taskdata->td_flags.task_serial =
       1; // Execute this task immediately, not deferred.
-
   __kmp_task_start(gtid, task, current_task);
 
   KA_TRACE(10, ("__kmpc_omp_task_begin_if0(exit): T#%d loc=%p task=%p,\n", gtid,
@@ -892,13 +888,11 @@ void __kmpc_omp_task_complete_if0(ident_t *loc_ref, kmp_int32 gtid,
 #endif
   KA_TRACE(10, ("__kmpc_omp_task_complete_if0(enter): T#%d loc=%p task=%p\n",
                 gtid, loc_ref, KMP_TASK_TO_TASKDATA(task)));
-
   // this routine will provide task to resume
   __kmp_task_finish(gtid, task, NULL);
 
   KA_TRACE(10, ("__kmpc_omp_task_complete_if0(exit): T#%d loc=%p task=%p\n",
                 gtid, loc_ref, KMP_TASK_TO_TASKDATA(task)));
-
   return;
 }
 
@@ -1592,7 +1586,7 @@ kmp_int32 __kmpc_omp_task(ident_t *loc_ref, kmp_int32 gtid,
   return res;
 }
 
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_OPTIONAL
 OMPT_NOINLINE
 static kmp_int32 __ompt_enabled_taskwait(ident_t *loc_ref, kmp_int32 gtid,
     void *frame_address, void *return_address) {
@@ -1611,7 +1605,7 @@ static kmp_int32 __ompt_enabled_taskwait(ident_t *loc_ref, kmp_int32 gtid,
     ompt_data_t *my_parallel_data;
 
     my_task_data = &(taskdata->ompt_task_info.task_data);
-    my_parallel_data = &(thread->th.th_team->t.ompt_team_info.parallel_data);
+    my_parallel_data = OMPT_CUR_TEAM_DATA(thread);
 
     taskdata->ompt_task_info.frame.reenter_runtime_frame = frame_address;
 
