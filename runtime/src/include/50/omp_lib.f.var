@@ -572,6 +572,7 @@
 !dec$ attributes alias:'OMP_GET_CANCELLATION' :: omp_get_cancellation
 !dec$ attributes alias:'OMP_IS_INITIAL_DEVICE' :: omp_is_initial_device
 !dec$ attributes alias:'OMP_GET_MAX_TASK_PRIORITY' :: omp_get_max_task_priority
+!dec$ attributes alias:'OMP_CONTROL_TOOL' :: omp_control_tool
 
 !dec$ attributes alias:'omp_init_lock' :: omp_init_lock
 !dec$ attributes alias:'omp_init_lock_with_hint' :: omp_init_lock_with_hint
@@ -616,8 +617,6 @@
 
 !dec$ attributes alias:'KMP_GET_CANCELLATION_STATUS' :: kmp_get_cancellation_status
 
-!dec$ attributes alias:'OMP_CONTROL_TOOL' :: omp_control_tool
-
 !dec$   else
 
 !***
@@ -654,6 +653,7 @@
 !dec$ attributes alias:'_OMP_GET_CANCELLATION' :: omp_get_cancellation
 !dec$ attributes alias:'_OMP_IS_INITIAL_DEVICE' :: omp_is_initial_device
 !dec$ attributes alias:'_OMP_GET_MAX_TASK_PRIORTY' :: omp_get_max_task_priority
+!dec$ attributes alias:'_OMP_CONTROL_TOOL' :: omp_control_tool
 
 !dec$ attributes alias:'_omp_init_lock' :: omp_init_lock
 !dec$ attributes alias:'_omp_init_lock_with_hint' :: omp_init_lock_with_hint
@@ -697,8 +697,6 @@
 !dec$ attributes alias:'_KMP_SET_WARNINGS_OFF'::kmp_set_warnings_off
 
 !dec$ attributes alias:'_KMP_GET_CANCELLATION_STATUS' :: kmp_get_cancellation_status
-
-!dec$ attributes alias:'_OMP_CONTROL_TOOL' :: omp_control_tool
 
 !dec$   endif
 !dec$ endif
@@ -752,6 +750,7 @@
 !dec$ attributes alias:'omp_set_nest_lock_'::omp_set_nest_lock
 !dec$ attributes alias:'omp_unset_nest_lock_'::omp_unset_nest_lock
 !dec$ attributes alias:'omp_test_nest_lock_'::omp_test_nest_lock
+!dec$ attributes alias:'omp_control_tool_'::omp_control_tool
 
 !dec$ attributes alias:'kmp_set_stacksize_'::kmp_set_stacksize
 !dec$ attributes alias:'kmp_set_stacksize_s_'::kmp_set_stacksize_s
@@ -781,8 +780,6 @@
 !dec$ attributes alias:'kmp_set_warnings_on_'::kmp_set_warnings_on
 !dec$ attributes alias:'kmp_set_warnings_off_'::kmp_set_warnings_off
 !dec$ attributes alias:'kmp_get_cancellation_status_'::kmp_get_cancellation_status
-
-!dec$ attributes alias:'omp_control_tool_'::omp_control_tool
 
 !dec$ endif
 
