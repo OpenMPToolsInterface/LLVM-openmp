@@ -312,7 +312,6 @@ void __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...) {
 #if INCLUDE_SSC_MARKS
     SSC_MARK_JOINING();
 #endif
-
     __kmp_join_call(loc, gtid
 #if OMPT_SUPPORT
                     ,
@@ -486,13 +485,11 @@ void __kmpc_end_serialized_parallel(ident_t *loc, kmp_int32 global_tid) {
 #if OMPT_SUPPORT
   if (ompt_enabled.enabled &&
       this_thr->th.ompt_thread_info.state != omp_state_overhead) {
-    this_thr->th.th_current_task->ompt_task_info.frame.exit_runtime_frame =
-        NULL;
+    OMPT_CUR_TASK_INFO(this_thr)->frame.exit_runtime_frame = NULL;
     if (ompt_enabled.ompt_callback_implicit_task) {
       ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
           ompt_scope_end, NULL,
-          &(this_thr->th.th_current_task->ompt_task_info.task_data), 1,
-          __kmp_tid_from_gtid(global_tid));
+          OMPT_CUR_TASK_DATA(this_thr), 1, __kmp_tid_from_gtid(global_tid));
     }
 
     // reset clear the task id only after unlinking the task
@@ -653,7 +650,6 @@ void __kmpc_flush(ident_t *loc) {
 #endif
 
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-  kmp_int32 global_tid = __kmp_entry_gtid();
   if (ompt_enabled.ompt_callback_flush) {
     ompt_callbacks.ompt_callback(ompt_callback_flush)(
         __ompt_get_thread_data_internal(),
@@ -2991,7 +2987,7 @@ int __kmpc_test_nest_lock(ident_t *loc, kmp_int32 gtid, void **user_lock) {
   if (ompt_enabled.ompt_callback_mutex_acquire) {
     ompt_callbacks.ompt_callback(ompt_callback_mutex_acquire)(
         ompt_mutex_nest_lock, omp_lock_hint_none,
-        0, // TODO for intel: specify impl
+        __ompt_get_mutex_impl_type(user_lock),
         (ompt_wait_id_t)user_lock, codeptr);
   }
 #endif
