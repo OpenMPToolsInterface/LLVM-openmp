@@ -1,4 +1,4 @@
-// RUN: %libomp-compile-and-run | %sort-threads | %filecheck %s
+// RUN: %libomp-compile-and-run | %sort-threads | FileCheck %s
 // REQUIRES: ompt, flush
 #include "callback.h"
 #include <omp.h>

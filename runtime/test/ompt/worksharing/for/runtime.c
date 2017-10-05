@@ -1,4 +1,4 @@
-// RUN: %libomp-compile-and-run | %sort-threads | %filecheck %S/base.h
+// RUN: %libomp-compile-and-run | %sort-threads | FileCheck %S/base.h
 // REQUIRES: ompt
 
 #define SCHEDULE runtime

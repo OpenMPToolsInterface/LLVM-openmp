@@ -1,4 +1,4 @@
-// RUN:  %libomp-compile && env OMP_CANCELLATION=true %libomp-run | %sort-threads | %filecheck %s
+// RUN:  %libomp-compile && env OMP_CANCELLATION=true %libomp-run | %sort-threads | FileCheck %s
 // REQUIRES: ompt, cancel, taskgroup
 
 #include "callback.h"

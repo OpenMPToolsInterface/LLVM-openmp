@@ -1,5 +1,5 @@
-// RUN: %libomp-compile && env OMP_THREAD_LIMIT=2 %libomp-run | %filecheck %s
-// RUN: %libomp-compile && env OMP_THREAD_LIMIT=2 %libomp-run | %sort-threads | %filecheck-threads %s
+// RUN: %libomp-compile && env OMP_THREAD_LIMIT=2 %libomp-run | FileCheck %s
+// RUN: %libomp-compile && env OMP_THREAD_LIMIT=2 %libomp-run | %sort-threads | FileCheck --check-prefix=THREADS %s
 // REQUIRES: ompt
 #include "callback.h"
 

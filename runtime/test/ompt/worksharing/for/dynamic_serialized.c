@@ -1,4 +1,4 @@
-// RUN: %libomp-compile-and-run | %sort-threads | %filecheck %S/base_serialized.h
+// RUN: %libomp-compile-and-run | %sort-threads | FileCheck %S/base_serialized.h
 // REQUIRES: ompt
 
 #define SCHEDULE dynamic

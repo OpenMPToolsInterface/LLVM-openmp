@@ -1,4 +1,4 @@
-// RUN: %libomp-compile-and-run | %sort-threads | %filecheck %s
+// RUN: %libomp-compile-and-run | %sort-threads | FileCheck %s
 // REQUIRES: ompt, master_callback
 #include "callback.h"
 #include <omp.h>
@@ -26,14 +26,14 @@ int main()
   // CHECK: 0: NULL_POINTER=[[NULL:.*$]]
 
   // CHECK: {{^}}[[MASTER_ID:[0-9]+]]: ompt_event_taskwait_begin: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=[[RETURN_ADDRESS:0x[0-f]+]]
-  // CHECK-WAIT: {{^}}[[MASTER_ID]]: ompt_event_wait_taskwait_begin: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=[[RETURN_ADDRESS]]
-  // CHECK-WAIT: {{^}}[[MASTER_ID]]: ompt_event_wait_taskwait_end: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=[[RETURN_ADDRESS]]
+  // CHECK: {{^}}[[MASTER_ID]]: ompt_event_wait_taskwait_begin: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=[[RETURN_ADDRESS]]
+  // CHECK: {{^}}[[MASTER_ID]]: ompt_event_wait_taskwait_end: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=[[RETURN_ADDRESS]]
   // CHECK-NEXT: {{^}}[[MASTER_ID]]: ompt_event_taskwait_end: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=[[RETURN_ADDRESS]]
   // CHECK-NEXT: {{^}}[[MASTER_ID]]: current_address={{.*}}[[RETURN_ADDRESS]]
 
   // -CHECK: {{^}}[[THREAD_ID:[0-9]+]]: ompt_event_taskwait_begin: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=
-  // -CHECK-WAIT: {{^}}[[THREAD_ID]]: ompt_event_wait_taskwait_begin: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=
-  // -CHECK-WAIT: {{^}}[[THREAD_ID]]: ompt_event_wait_taskwait_end: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=
+  // -CHECK: {{^}}[[THREAD_ID]]: ompt_event_wait_taskwait_begin: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=
+  // -CHECK: {{^}}[[THREAD_ID]]: ompt_event_wait_taskwait_end: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=
   // -CHECK: {{^}}[[THREAD_ID]]: ompt_event_taskwait_end: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=
 
   return 0;
