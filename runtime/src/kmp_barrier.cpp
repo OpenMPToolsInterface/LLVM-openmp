@@ -1889,7 +1889,7 @@ void __kmp_fork_barrier(int gtid, int tid) {
         omp_state_wait_barrier_implicit) {
       int ds_tid = this_thr->th.th_info.ds.ds_tid;
       ompt_data_t *tId =
-          (team) ? &(this_thr->th.th_current_task->ompt_task_info.task_data)
+          (team) ? OMPT_CUR_TASK_DATA(this_thr)
                  : &(this_thr->th.ompt_thread_info.task_data);
       this_thr->th.ompt_thread_info.state = omp_state_overhead;
 #if OMPT_OPTIONAL
@@ -1909,8 +1909,6 @@ void __kmp_fork_barrier(int gtid, int tid) {
 #endif
       if (!KMP_MASTER_TID(ds_tid) &&
           ompt_enabled.ompt_callback_implicit_task) {
-        // don't access *pteam here: it may have already been freed
-        // by the master thread behind the barrier (possible race)
         ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
             ompt_scope_end, NULL, tId, 0, ds_tid);
       }
