@@ -19,6 +19,9 @@
 #include "kmp.h"
 #include "kmp_itt.h"
 #include "kmp_stats.h"
+#if OMPT_SUPPORT
+#include "ompt-specific.h"
+#endif
 
 /*!
 @defgroup WAIT_RELEASE Wait/Release operations
@@ -108,8 +111,6 @@ static inline void __ompt_implicit_task_end(kmp_info_t *this_thr,
 #endif
     if (!KMP_MASTER_TID(ds_tid)) {
       if (ompt_enabled.ompt_callback_implicit_task) {
-        // don't access *pteam here: it may have already been freed
-        // by the master thread behind the barrier (possible race)
         ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
             ompt_scope_end, NULL, tId, 0, ds_tid);
       }
@@ -222,11 +223,10 @@ final_spin=FALSE)
         pId = &(team->ompt_team_info.parallel_data);
         tId = &(team->ompt_task_info.task_data);
       } else {
-        pId = &(this_thr->th.th_team->t.ompt_team_info.parallel_data);
-        tId = &(this_thr->th.th_current_task->ompt_task_info.task_data);
+        pId = OMPT_CUR_TEAM_DATA(this_thr);
+        tId = OMPT_CUR_TASK_DATA(this_thr);
       }
     } else {
-      //                pId = &(this_thr->th.ompt_thread_info.parallel_data);
       pId = NULL;
       tId = &(this_thr->th.ompt_thread_info.task_data);
     }
