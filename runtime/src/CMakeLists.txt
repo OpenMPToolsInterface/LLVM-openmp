@@ -13,9 +13,6 @@
 configure_file(${LIBOMP_INC_DIR}/omp.h.var omp.h @ONLY)
 configure_file(kmp_config.h.cmake kmp_config.h @ONLY)
 if(${LIBOMP_OMPT_SUPPORT})
-  if(${LIBOMP_OMP_VERSION} LESS 50)
-    message( FATAL_ERROR "OMPT is only available with OpenMP 5.0, LIBOMP_OMP_VERSION is ${LIBOMP_OMP_VERSION}" )
-  endif()
   configure_file(${LIBOMP_INC_DIR}/ompt.h.var ompt.h @ONLY)
 endif()
 
