@@ -2,10 +2,6 @@
 BasedOnStyle:  LLVM
 AlignTrailingComments: false
 SortIncludes:    false
-AlignOperands: false
-DisableFormat:   true
-KeepEmptyLinesAtTheStartOfBlocks: false
-MaxEmptyLinesToKeep: 2
 ---
 # Language: Cpp
 # AccessModifierOffset: -2

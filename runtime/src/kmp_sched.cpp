@@ -144,7 +144,7 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
       ompt_callbacks.ompt_callback(ompt_callback_work)(
           ompt_work_type, ompt_scope_begin, &(team_info->parallel_data),
           &(task_info->task_data),
-          0, // TODO: OMPT: verify loop count value (OpenMP-spec 4.6.2.18)
+          0, 
           codeptr);
     }
 #endif
@@ -198,8 +198,7 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
       ompt_callbacks.ompt_callback(ompt_callback_work)(
           ompt_work_type, ompt_scope_begin, &(team_info->parallel_data),
           &(task_info->task_data),
-          *pstride, // TODO: OMPT: verify loop count value (OpenMP-spec
-                    // 4.6.2.18) ??? Should be trip_count value below?
+          *pstride, 
           codeptr);
     }
 #endif
@@ -230,8 +229,7 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
       ompt_callbacks.ompt_callback(ompt_callback_work)(
           ompt_work_type, ompt_scope_begin, &(team_info->parallel_data),
           &(task_info->task_data),
-          *pstride, // TODO: OMPT: verify loop count value (OpenMP-spec
-                    // 4.6.2.18) ??? Should be trip_count value below?
+          *pstride, 
           codeptr);
     }
 #endif
@@ -390,8 +388,7 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
     ompt_callbacks.ompt_callback(ompt_callback_work)(
         ompt_work_type, ompt_scope_begin, &(team_info->parallel_data),
         &(task_info->task_data),
-        trip_count, // TODO: OMPT: verify loop count value (OpenMP-spec
-                    // 4.6.2.18; email discussion on count value semantics)
+        trip_count, 
         codeptr);
   }
 #endif

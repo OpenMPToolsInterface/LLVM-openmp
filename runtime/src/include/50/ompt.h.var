@@ -650,13 +650,6 @@ ompt_fns_t * ompt_start_tool(
     const char * runtime_version
 );
 
-typedef enum ompt_init_mode_e {
-    ompt_init_mode_never  = 0,
-    ompt_init_mode_false  = 1,
-    ompt_init_mode_true   = 2,
-    ompt_init_mode_always = 3
-} ompt_init_mode_t;
-
 typedef void (*ompt_callback_t)(void);
 
 OMPT_API_FUNCTION(int, ompt_set_callback, (
