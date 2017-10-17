@@ -345,7 +345,7 @@ int FTN_STDCALL xexpand(FTN_GET_MAX_THREADS)(void) {
 }
 
 #if OMP_50_ENABLED
-int FTN_STDCALL xexpand(FTN_CONTROL_TOOL)(uint64_t command, uint64_t modifier,
+int FTN_STDCALL FTN_CONTROL_TOOL(uint64_t command, uint64_t modifier,
                                           void *arg) {
 #if defined(KMP_STUB) || !OMPT_SUPPORT
   return -2;
@@ -1284,7 +1284,6 @@ xaliasify(FTN_IS_INITIAL_DEVICE, 40);
 
 #if OMP_50_ENABLED
 // OMP_5.0 aliases
-xaliasify(FTN_CONTROL_TOOL, 50);
 #endif
 
 // OMP_1.0 versioned symbols
@@ -1356,7 +1355,6 @@ xversionify(FTN_IS_INITIAL_DEVICE, 40, "OMP_4.0");
 
 #if OMP_50_ENABLED
 // OMP_5.0 versioned symbols
-xversionify(FTN_CONTROL_TOOL, 50, "OMP_5.0");
 #endif
 
 #endif // KMP_USE_VERSION_SYMBOLS
