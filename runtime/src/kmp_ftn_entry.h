@@ -2,7 +2,6 @@
  * kmp_ftn_entry.h -- Fortran entry linkage support for OpenMP.
  */
 
-
 //===----------------------------------------------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -11,7 +10,6 @@
 // Source Licenses. See LICENSE.txt for details.
 //
 //===----------------------------------------------------------------------===//
-
 
 #ifndef FTN_STDCALL
 #error The support file kmp_ftn_entry.h should not be compiled by itself.
@@ -591,7 +589,6 @@ int FTN_STDCALL xexpand(FTN_IN_FINAL)(void) {
 
 #if OMP_40_ENABLED
 
-
 kmp_proc_bind_t FTN_STDCALL xexpand(FTN_GET_PROC_BIND)(void) {
 #ifdef KMP_STUB
   return __kmps_get_proc_bind();
@@ -904,8 +901,7 @@ void FTN_STDCALL FTN_INIT_LOCK_WITH_HINT(void **user_lock,
 #if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
-  __kmpc_init_lock_with_hint(NULL, gtid, user_lock,
-                             KMP_DEREF hint);
+  __kmpc_init_lock_with_hint(NULL, gtid, user_lock, KMP_DEREF hint);
 #endif
 }
 
@@ -918,8 +914,7 @@ void FTN_STDCALL FTN_INIT_NEST_LOCK_WITH_HINT(void **user_lock,
 #if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
-  __kmpc_init_nest_lock_with_hint(NULL, gtid, user_lock,
-                                  KMP_DEREF hint);
+  __kmpc_init_nest_lock_with_hint(NULL, gtid, user_lock, KMP_DEREF hint);
 #endif
 }
 #endif
@@ -1058,8 +1053,7 @@ int FTN_STDCALL xexpand(FTN_TEST_LOCK)(void **user_lock) {
 #if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
-  return __kmpc_test_lock(NULL, gtid, user_lock
-  );
+  return __kmpc_test_lock(NULL, gtid, user_lock);
 #endif
 }
 
@@ -1163,7 +1157,6 @@ void FTN_STDCALL FTN_SET_DEFAULTS(char const *str
 }
 
 /* ------------------------------------------------------------------------ */
-
 
 #if OMP_40_ENABLED
 /* returns the status of cancellation */

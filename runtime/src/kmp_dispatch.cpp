@@ -2,7 +2,6 @@
  * kmp_dispatch.cpp: dynamic scheduling - iteration initialization and dispatch.
  */
 
-
 //===----------------------------------------------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -11,7 +10,6 @@
 // Source Licenses. See LICENSE.txt for details.
 //
 //===----------------------------------------------------------------------===//
-
 
 /* Dynamic scheduling initialization and dispatch.
  *
@@ -1399,12 +1397,12 @@ static void __kmp_dispatch_finish_chunk(int gtid, ident_t *loc) {
 #if OMPT_SUPPORT && OMPT_OPTIONAL
 #define OMPT_LOOP_END                                                          \
   if (status == 0) {                                                           \
-    if (ompt_enabled.ompt_callback_work) {    \
+    if (ompt_enabled.ompt_callback_work) {                                     \
       ompt_team_info_t *team_info = __ompt_get_teaminfo(0, NULL);              \
       ompt_task_info_t *task_info = __ompt_get_task_info_object(0);            \
       ompt_callbacks.ompt_callback(ompt_callback_work)(                        \
           ompt_work_loop, ompt_scope_end, &(team_info->parallel_data),         \
-          &(task_info->task_data), 0, codeptr);             \
+          &(task_info->task_data), 0, codeptr);                                \
     }                                                                          \
   }
 // TODO: implement count
@@ -1417,7 +1415,8 @@ static int __kmp_dispatch_next(ident_t *loc, int gtid, kmp_int32 *p_last,
                                T *p_lb, T *p_ub,
                                typename traits_t<T>::signed_t *p_st
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-                               , void * codeptr
+                               ,
+                               void *codeptr
 #endif
                                ) {
 
@@ -1988,8 +1987,8 @@ static int __kmp_dispatch_next(ident_t *loc, int gtid, kmp_int32 *p_last,
               pr->u.p.parm2) { // compare with K*nproc*(chunk+1), K=2 by default
             // use dynamic-style shcedule
             // atomically inrement iterations, get old value
-            init = test_then_add<ST>(
-                RCAST(volatile ST *, &sh->u.s.iteration), (ST)chunkspec);
+            init = test_then_add<ST>(RCAST(volatile ST *, &sh->u.s.iteration),
+                                     (ST)chunkspec);
             remaining = trip - init;
             if (remaining <= 0) {
               status = 0; // all iterations got by other threads
@@ -2067,8 +2066,8 @@ static int __kmp_dispatch_next(ident_t *loc, int gtid, kmp_int32 *p_last,
           if ((T)remaining < pr->u.p.parm2) {
             // use dynamic-style shcedule
             // atomically inrement iterations, get old value
-            init = test_then_add<ST>(
-                RCAST(volatile ST *, &sh->u.s.iteration), (ST)chunk);
+            init = test_then_add<ST>(RCAST(volatile ST *, &sh->u.s.iteration),
+                                     (ST)chunk);
             remaining = trip - init;
             if (remaining <= 0) {
               status = 0; // all iterations got by other threads
@@ -2660,9 +2659,10 @@ int __kmpc_dispatch_next_4(ident_t *loc, kmp_int32 gtid, kmp_int32 *p_last,
 #endif
   return __kmp_dispatch_next<kmp_int32>(loc, gtid, p_last, p_lb, p_ub, p_st
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-                                       , OMPT_LOAD_RETURN_ADDRESS(gtid)
+                                        ,
+                                        OMPT_LOAD_RETURN_ADDRESS(gtid)
 #endif
-                                       );
+                                            );
 }
 
 /*!
@@ -2676,9 +2676,10 @@ int __kmpc_dispatch_next_4u(ident_t *loc, kmp_int32 gtid, kmp_int32 *p_last,
 #endif
   return __kmp_dispatch_next<kmp_uint32>(loc, gtid, p_last, p_lb, p_ub, p_st
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-                                        , OMPT_LOAD_RETURN_ADDRESS(gtid)
+                                         ,
+                                         OMPT_LOAD_RETURN_ADDRESS(gtid)
 #endif
-                                        );
+                                             );
 }
 
 /*!
@@ -2691,9 +2692,10 @@ int __kmpc_dispatch_next_8(ident_t *loc, kmp_int32 gtid, kmp_int32 *p_last,
 #endif
   return __kmp_dispatch_next<kmp_int64>(loc, gtid, p_last, p_lb, p_ub, p_st
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-                                       , OMPT_LOAD_RETURN_ADDRESS(gtid)
+                                        ,
+                                        OMPT_LOAD_RETURN_ADDRESS(gtid)
 #endif
-                                       );
+                                            );
 }
 
 /*!
@@ -2707,9 +2709,10 @@ int __kmpc_dispatch_next_8u(ident_t *loc, kmp_int32 gtid, kmp_int32 *p_last,
 #endif
   return __kmp_dispatch_next<kmp_uint64>(loc, gtid, p_last, p_lb, p_ub, p_st
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-                                        , OMPT_LOAD_RETURN_ADDRESS(gtid)
+                                         ,
+                                         OMPT_LOAD_RETURN_ADDRESS(gtid)
 #endif
-                                        );
+                                             );
 }
 
 /*!

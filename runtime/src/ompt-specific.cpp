@@ -182,10 +182,10 @@ ompt_task_info_t *__ompt_get_scheduling_taskinfo(int depth) {
 //----------------------------------------------------------
 
 ompt_data_t *__ompt_get_thread_data_internal() {
-  if(__kmp_get_gtid() >= 0)
-  {
+  if (__kmp_get_gtid() >= 0) {
     kmp_info_t *thread = ompt_get_thread();
-    if(thread==NULL) return NULL;
+    if (thread == NULL)
+      return NULL;
     return &(thread->th.ompt_thread_info.thread_data);
   }
   return NULL;
@@ -236,8 +236,7 @@ int __ompt_get_parallel_info_internal(int ancestor_level,
 //----------------------------------------------------------
 
 void __ompt_lw_taskteam_init(ompt_lw_taskteam_t *lwt, kmp_info_t *thr, int gtid,
-                             ompt_data_t* ompt_pid,
-                             void* codeptr) {
+                             ompt_data_t *ompt_pid, void *codeptr) {
   // initialize parallel_data with input, return address to parallel_data on
   // exit
   lwt->ompt_team_info.parallel_data = *ompt_pid;
@@ -325,9 +324,11 @@ int __ompt_get_task_info_internal(int ancestor_level, int *type,
 
   if (thr) {
     kmp_taskdata_t *taskdata = thr->th.th_current_task;
-    if (taskdata==NULL) return 0;
+    if (taskdata == NULL)
+      return 0;
     kmp_team *team = thr->th.th_team;
-    if (team==NULL) return 0;
+    if (team == NULL)
+      return 0;
     ompt_lw_taskteam_t *lwt = NULL,
                        *next_lwt = LWT_FROM_TEAM(taskdata->td_team);
 
@@ -348,7 +349,8 @@ int __ompt_get_task_info_internal(int ancestor_level, int *type,
         } else {
           // then go for implicit tasks
           taskdata = taskdata->td_parent;
-          if (team==NULL) return 0;
+          if (team == NULL)
+            return 0;
           team = team->t.t_parent;
           if (taskdata) {
             next_lwt = LWT_FROM_TEAM(taskdata->td_team);

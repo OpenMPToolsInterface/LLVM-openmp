@@ -103,7 +103,7 @@ OMPT_API_ROUTINE ompt_data_t *ompt_get_thread_data(void);
  * found, ompt_tool's return value is used to initialize the tool. Otherwise,
  * NULL is returned and OMPT won't be enabled */
 
-typedef ompt_fns_t *(*ompt_start_tool_t)(unsigned int, const char*);
+typedef ompt_fns_t *(*ompt_start_tool_t)(unsigned int, const char *);
 
 #if KMP_OS_UNIX
 
@@ -115,8 +115,8 @@ _OMP_EXTERN
 #else
 #error Activation of OMPT is not supported on this platform.
 #endif
-ompt_fns_t *ompt_start_tool(unsigned int omp_version,
-                            const char *runtime_version) {
+ompt_fns_t *
+ompt_start_tool(unsigned int omp_version, const char *runtime_version) {
 #ifdef KMP_DYNAMIC_LIB
   ompt_fns_t *ret = NULL;
   // Try next symbol in the address space
@@ -328,8 +328,7 @@ void ompt_post_init() {
     __ompt_get_task_info_internal(0, NULL, &task_data, NULL, NULL, NULL);
     if (ompt_enabled.ompt_callback_task_create) {
       ompt_callbacks.ompt_callback(ompt_callback_task_create)(
-          NULL, NULL, task_data, ompt_task_initial, 0,
-          NULL);
+          NULL, NULL, task_data, ompt_task_initial, 0, NULL);
     }
 
     ompt_set_thread_state(root_thread, omp_state_work_serial);
@@ -499,7 +498,8 @@ OMPT_API_ROUTINE int ompt_get_place_proc_ids(int place_num, int ids_size,
     return 0;
   if (place_num < 0 || place_num >= (int)__kmp_affinity_num_masks)
     return 0;
-  /* TODO: Is this safe for asynchronous call from signal handler during runtime shutdown? */
+  /* TODO: Is this safe for asynchronous call from signal handler during runtime
+   * shutdown? */
   kmp_affin_mask_t *mask = KMP_CPU_INDEX(__kmp_affinity_masks, place_num);
   count = 0;
   KMP_CPU_SET_ITERATE(i, mask) {
@@ -531,7 +531,7 @@ OMPT_API_ROUTINE int ompt_get_place_num(void) {
     return -1;
   gtid = __kmp_entry_gtid();
   thread = __kmp_thread_from_gtid(gtid);
-  if(thread == NULL || thread->th.th_current_place < 0)
+  if (thread == NULL || thread->th.th_current_place < 0)
     return -1;
   return thread->th.th_current_place;
 #endif
@@ -549,7 +549,7 @@ OMPT_API_ROUTINE int ompt_get_partition_place_nums(int place_nums_size,
     return 0;
   gtid = __kmp_entry_gtid();
   thread = __kmp_thread_from_gtid(gtid);
-  if(thread==NULL)
+  if (thread == NULL)
     return 0;
   first_place = thread->th.th_first_place;
   last_place = thread->th.th_last_place;
@@ -672,17 +672,14 @@ OMPT_API_ROUTINE uint64_t ompt_get_unique_id(void) {
  * Target
  ****************************************************************************/
 
-OMPT_API_ROUTINE int ompt_get_target_info(
-    uint64_t *device_num,
-    ompt_id_t *target_id,
-    ompt_id_t *host_op_id)
-{
-  return 0; //thread is not in a target region
+OMPT_API_ROUTINE int ompt_get_target_info(uint64_t *device_num,
+                                          ompt_id_t *target_id,
+                                          ompt_id_t *host_op_id) {
+  return 0; // thread is not in a target region
 }
 
-OMPT_API_ROUTINE int ompt_get_num_devices(void)
-{
-  return 1; //only one device (the current device) is available
+OMPT_API_ROUTINE int ompt_get_num_devices(void) {
+  return 1; // only one device (the current device) is available
 }
 
 /*****************************************************************************

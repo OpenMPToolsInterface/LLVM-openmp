@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-
 #include "kmp.h"
 #include "kmp_i18n.h"
 #include "kmp_io.h"
@@ -55,11 +54,11 @@ kmp_int32 __kmpc_cancel(ident_t *loc_ref, kmp_int32 gtid, kmp_int32 cncl_kind) {
         kmp_int32 old = KMP_COMPARE_AND_STORE_RET32(
             &(this_team->t.t_cancel_request), cancel_noreq, cncl_kind);
         if (old == cancel_noreq || old == cncl_kind) {
-          // printf("__kmpc_cancel: this_team->t.t_cancel_request=%d @ %p\n",
-          //       this_team->t.t_cancel_request,
-          //       &(this_team->t.t_cancel_request));
-          // we do not have a cancellation request in this team or we do have
-          // one that matches the current request -> cancel
+// printf("__kmpc_cancel: this_team->t.t_cancel_request=%d @ %p\n",
+//       this_team->t.t_cancel_request,
+//       &(this_team->t.t_cancel_request));
+// we do not have a cancellation request in this team or we do have
+// one that matches the current request -> cancel
 #if OMPT_SUPPORT && OMPT_OPTIONAL
           if (ompt_enabled.ompt_callback_cancel) {
             ompt_data_t *task_data;
@@ -96,8 +95,8 @@ kmp_int32 __kmpc_cancel(ident_t *loc_ref, kmp_int32 gtid, kmp_int32 cncl_kind) {
           kmp_int32 old = KMP_COMPARE_AND_STORE_RET32(
               &(taskgroup->cancel_request), cancel_noreq, cncl_kind);
           if (old == cancel_noreq || old == cncl_kind) {
-            // we do not have a cancellation request in this taskgroup or we do
-            // have one that matches the current request -> cancel
+// we do not have a cancellation request in this taskgroup or we do
+// have one that matches the current request -> cancel
 #if OMPT_SUPPORT && OMPT_OPTIONAL
             if (ompt_enabled.ompt_callback_cancel) {
               ompt_data_t *task_data;
@@ -165,8 +164,8 @@ kmp_int32 __kmpc_cancellationpoint(ident_t *loc_ref, kmp_int32 gtid,
         KMP_DEBUG_ASSERT(this_team);
         if (this_team->t.t_cancel_request) {
           if (cncl_kind == this_team->t.t_cancel_request) {
-            // the request in the team structure matches the type of
-            // cancellation point so we can cancel
+// the request in the team structure matches the type of
+// cancellation point so we can cancel
 #if OMPT_SUPPORT && OMPT_OPTIONAL
             if (ompt_enabled.ompt_callback_cancel) {
               ompt_data_t *task_data;
@@ -206,9 +205,10 @@ kmp_int32 __kmpc_cancellationpoint(ident_t *loc_ref, kmp_int32 gtid,
 
         taskgroup = task->td_taskgroup;
         if (taskgroup) {
-          // return the current status of cancellation for the taskgroup
+// return the current status of cancellation for the taskgroup
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-          if (ompt_enabled.ompt_callback_cancel && !!taskgroup->cancel_request) {
+          if (ompt_enabled.ompt_callback_cancel &&
+              !!taskgroup->cancel_request) {
             ompt_data_t *task_data;
             __ompt_get_task_info_internal(0, NULL, &task_data, NULL, NULL,
                                           NULL);
