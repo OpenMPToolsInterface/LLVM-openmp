@@ -1,6 +1,16 @@
-// RUN: %libomp-tool %S/tool.c && %libomp-compile && env OMP_TOOL_LIBRARIES=%T/tool.so %libomp-run | FileCheck %s
+// RUN: %libomp-compile -DCODE && %libomp-compile -DTOOL -o%T/tool.so -shared -fPIC && env OMP_TOOL_LIBRARIES=%T/tool.so %libomp-run | FileCheck %s
 // REQUIRES: ompt
 
+/*
+ *  This file contains code for an OMPT shared library tool to be 
+ *  loaded and the code for the OpenMP executable. 
+ *  -DTOOL enables the code for the tool during compilation
+ *  -DCODE enables the code for the executable during compilation
+ *  The RUN line compiles the two binaries and then tries to load
+ *  the tool using the OMP_TOOL_LIBRARIES environmental variable.
+ */
+
+#ifdef CODE
 #include "omp.h"
 
 int main()
@@ -18,3 +28,35 @@ int main()
 
   return 0;
 }
+
+#endif /* CODE */
+
+#ifdef TOOL
+
+#include <stdio.h>
+#include <inttypes.h>
+#include <omp.h>
+#include <ompt.h>
+#include <execinfo.h>
+
+int ompt_initialize(
+  ompt_function_lookup_t lookup,
+  ompt_fns_t* fns)
+{
+  printf("0: NULL_POINTER=%p\n", (void*)NULL);
+  return 1; //success
+}
+
+void ompt_finalize(ompt_fns_t* fns)
+{
+  printf("%d: ompt_event_runtime_shutdown\n", omp_get_thread_num());
+}
+
+ompt_fns_t* ompt_start_tool(
+  unsigned int omp_version,
+  const char *runtime_version)
+{
+  static ompt_fns_t ompt_fns = {&ompt_initialize,&ompt_finalize};
+  return &ompt_fns;
+}
+#endif /* TOOL */
