@@ -34,10 +34,7 @@ int main()
 #ifdef TOOL
 
 #include <stdio.h>
-#include <inttypes.h>
-#include <omp.h>
 #include <ompt.h>
-#include <execinfo.h>
 
 int ompt_initialize(
   ompt_function_lookup_t lookup,
