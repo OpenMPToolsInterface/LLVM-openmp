@@ -2,7 +2,6 @@
  * kmp_wait_release.h -- Wait/Release implementation
  */
 
-
 //===----------------------------------------------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -11,7 +10,6 @@
 // Source Licenses. See LICENSE.txt for details.
 //
 //===----------------------------------------------------------------------===//
-
 
 #ifndef KMP_WAIT_RELEASE_H
 #define KMP_WAIT_RELEASE_H
@@ -237,8 +235,8 @@ final_spin=FALSE)
       }
     } else
 #endif
-    if (final_spin && (__kmp_tasking_mode == tskm_immediate_exec ||
-                       this_thr->th.th_task_team == NULL)) {
+        if (final_spin && (__kmp_tasking_mode == tskm_immediate_exec ||
+                           this_thr->th.th_task_team == NULL)) {
       // implicit task is done. Either no taskqueue, or task-team finished
       __ompt_implicit_task_end(this_thr, ompt_entry_state, tId, pId);
     }

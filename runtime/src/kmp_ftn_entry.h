@@ -2,7 +2,6 @@
  * kmp_ftn_entry.h -- Fortran entry linkage support for OpenMP.
  */
 
-
 //===----------------------------------------------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -11,7 +10,6 @@
 // Source Licenses. See LICENSE.txt for details.
 //
 //===----------------------------------------------------------------------===//
-
 
 #ifndef FTN_STDCALL
 #error The support file kmp_ftn_entry.h should not be compiled by itself.
@@ -81,7 +79,7 @@ int FTN_STDCALL FTN_GET_STACKSIZE(void) {
 #else
   if (!__kmp_init_serial) {
     __kmp_serial_initialize();
-  };
+  }
   return (int)__kmp_stksize;
 #endif
 }
@@ -92,7 +90,7 @@ size_t FTN_STDCALL FTN_GET_STACKSIZE_S(void) {
 #else
   if (!__kmp_init_serial) {
     __kmp_serial_initialize();
-  };
+  }
   return __kmp_stksize;
 #endif
 }
@@ -142,7 +140,7 @@ int FTN_STDCALL FTN_GET_BLOCKTIME(void) {
     KF_TRACE(10, ("kmp_get_blocktime: T#%d(%d:%d), blocktime=%d\n", gtid,
                   team->t.t_id, tid, get__blocktime(team, tid)));
     return get__blocktime(team, tid);
-  };
+  }
 #endif
 }
 
@@ -347,7 +345,7 @@ int FTN_STDCALL xexpand(FTN_GET_MAX_THREADS)(void) {
 }
 
 #if OMP_50_ENABLED
-int FTN_STDCALL xexpand(FTN_CONTROL_TOOL)(uint64_t command, uint64_t modifier,
+int FTN_STDCALL FTN_CONTROL_TOOL(uint64_t command, uint64_t modifier,
                                           void *arg) {
 #if defined(KMP_STUB) || !OMPT_SUPPORT
   return -2;
@@ -572,7 +570,7 @@ int FTN_STDCALL xexpand(FTN_GET_THREAD_LIMIT)(void) {
 #else
   if (!__kmp_init_serial) {
     __kmp_serial_initialize();
-  };
+  }
   /* global ICV */
   return __kmp_cg_max_nth;
 #endif
@@ -590,7 +588,6 @@ int FTN_STDCALL xexpand(FTN_IN_FINAL)(void) {
 }
 
 #if OMP_40_ENABLED
-
 
 kmp_proc_bind_t FTN_STDCALL xexpand(FTN_GET_PROC_BIND)(void) {
 #ifdef KMP_STUB
@@ -904,8 +901,7 @@ void FTN_STDCALL FTN_INIT_LOCK_WITH_HINT(void **user_lock,
 #if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
-  __kmpc_init_lock_with_hint(NULL, gtid, user_lock,
-                             KMP_DEREF hint);
+  __kmpc_init_lock_with_hint(NULL, gtid, user_lock, KMP_DEREF hint);
 #endif
 }
 
@@ -918,8 +914,7 @@ void FTN_STDCALL FTN_INIT_NEST_LOCK_WITH_HINT(void **user_lock,
 #if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
-  __kmpc_init_nest_lock_with_hint(NULL, gtid, user_lock,
-                                  KMP_DEREF hint);
+  __kmpc_init_nest_lock_with_hint(NULL, gtid, user_lock, KMP_DEREF hint);
 #endif
 }
 #endif
@@ -978,10 +973,10 @@ void FTN_STDCALL xexpand(FTN_SET_LOCK)(void **user_lock) {
 #ifdef KMP_STUB
   if (*((kmp_stub_lock_t *)user_lock) == UNINIT) {
     // TODO: Issue an error.
-  }; // if
+  }
   if (*((kmp_stub_lock_t *)user_lock) != UNLOCKED) {
     // TODO: Issue an error.
-  }; // if
+  }
   *((kmp_stub_lock_t *)user_lock) = LOCKED;
 #else
   int gtid = __kmp_entry_gtid();
@@ -996,7 +991,7 @@ void FTN_STDCALL xexpand(FTN_SET_NEST_LOCK)(void **user_lock) {
 #ifdef KMP_STUB
   if (*((kmp_stub_lock_t *)user_lock) == UNINIT) {
     // TODO: Issue an error.
-  }; // if
+  }
   (*((int *)user_lock))++;
 #else
   int gtid = __kmp_entry_gtid();
@@ -1011,10 +1006,10 @@ void FTN_STDCALL xexpand(FTN_UNSET_LOCK)(void **user_lock) {
 #ifdef KMP_STUB
   if (*((kmp_stub_lock_t *)user_lock) == UNINIT) {
     // TODO: Issue an error.
-  }; // if
+  }
   if (*((kmp_stub_lock_t *)user_lock) == UNLOCKED) {
     // TODO: Issue an error.
-  }; // if
+  }
   *((kmp_stub_lock_t *)user_lock) = UNLOCKED;
 #else
   int gtid = __kmp_entry_gtid();
@@ -1029,10 +1024,10 @@ void FTN_STDCALL xexpand(FTN_UNSET_NEST_LOCK)(void **user_lock) {
 #ifdef KMP_STUB
   if (*((kmp_stub_lock_t *)user_lock) == UNINIT) {
     // TODO: Issue an error.
-  }; // if
+  }
   if (*((kmp_stub_lock_t *)user_lock) == UNLOCKED) {
     // TODO: Issue an error.
-  }; // if
+  }
   (*((int *)user_lock))--;
 #else
   int gtid = __kmp_entry_gtid();
@@ -1047,10 +1042,10 @@ int FTN_STDCALL xexpand(FTN_TEST_LOCK)(void **user_lock) {
 #ifdef KMP_STUB
   if (*((kmp_stub_lock_t *)user_lock) == UNINIT) {
     // TODO: Issue an error.
-  }; // if
+  }
   if (*((kmp_stub_lock_t *)user_lock) == LOCKED) {
     return 0;
-  }; // if
+  }
   *((kmp_stub_lock_t *)user_lock) = LOCKED;
   return 1;
 #else
@@ -1058,8 +1053,7 @@ int FTN_STDCALL xexpand(FTN_TEST_LOCK)(void **user_lock) {
 #if OMPT_SUPPORT && OMPT_OPTIONAL
   OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
-  return __kmpc_test_lock(NULL, gtid, user_lock
-  );
+  return __kmpc_test_lock(NULL, gtid, user_lock);
 #endif
 }
 
@@ -1067,7 +1061,7 @@ int FTN_STDCALL xexpand(FTN_TEST_NEST_LOCK)(void **user_lock) {
 #ifdef KMP_STUB
   if (*((kmp_stub_lock_t *)user_lock) == UNINIT) {
     // TODO: Issue an error.
-  }; // if
+  }
   return ++(*((int *)user_lock));
 #else
   int gtid = __kmp_entry_gtid();
@@ -1088,7 +1082,7 @@ double FTN_STDCALL xexpand(FTN_GET_WTIME)(void) {
   // routine can be used to measure library initialization time on Linux* OS now
   if (!__kmp_init_serial) {
     __kmp_serial_initialize();
-  };
+  }
 #endif
   __kmp_elapsed(&data);
   return data;
@@ -1102,7 +1096,7 @@ double FTN_STDCALL xexpand(FTN_GET_WTICK)(void) {
   double data;
   if (!__kmp_init_serial) {
     __kmp_serial_initialize();
-  };
+  }
   __kmp_elapsed_tick(&data);
   return data;
 #endif
@@ -1163,7 +1157,6 @@ void FTN_STDCALL FTN_SET_DEFAULTS(char const *str
 }
 
 /* ------------------------------------------------------------------------ */
-
 
 #if OMP_40_ENABLED
 /* returns the status of cancellation */
@@ -1291,7 +1284,6 @@ xaliasify(FTN_IS_INITIAL_DEVICE, 40);
 
 #if OMP_50_ENABLED
 // OMP_5.0 aliases
-xaliasify(FTN_CONTROL_TOOL, 50);
 #endif
 
 // OMP_1.0 versioned symbols
@@ -1363,7 +1355,6 @@ xversionify(FTN_IS_INITIAL_DEVICE, 40, "OMP_4.0");
 
 #if OMP_50_ENABLED
 // OMP_5.0 versioned symbols
-xversionify(FTN_CONTROL_TOOL, 50, "OMP_5.0");
 #endif
 
 #endif // KMP_USE_VERSION_SYMBOLS

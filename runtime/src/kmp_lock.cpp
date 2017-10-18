@@ -2,7 +2,6 @@
  * kmp_lock.cpp -- lock-related functions
  */
 
-
 //===----------------------------------------------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -11,7 +10,6 @@
 // Source Licenses. See LICENSE.txt for details.
 //
 //===----------------------------------------------------------------------===//
-
 
 #include <stddef.h>
 #include <atomic>
@@ -2945,8 +2943,7 @@ static int (*direct_set[])(kmp_dyna_lock_t *, kmp_int32) = {
     __kmp_set_indirect_lock, 0, KMP_FOREACH_D_LOCK(expand, acquire)};
 #undef expand
 #define expand(l, op)                                                          \
-  0, (int (*)(kmp_dyna_lock_t *,                                               \
-              kmp_int32))__kmp_##op##_##l##_lock_with_checks,
+  0, (int (*)(kmp_dyna_lock_t *, kmp_int32))__kmp_##op##_##l##_lock_with_checks,
 static int (*direct_set_check[])(kmp_dyna_lock_t *, kmp_int32) = {
     __kmp_set_indirect_lock_with_checks, 0,
     KMP_FOREACH_D_LOCK(expand, acquire)};
@@ -2985,8 +2982,8 @@ void (*__kmp_indirect_destroy[])(kmp_user_lock_p) = {
 // set/acquire functions
 #define expand(l, op)                                                          \
   (int (*)(kmp_user_lock_p, kmp_int32)) __kmp_##op##_##l##_##lock,
-static int (*indirect_set[])(kmp_user_lock_p, kmp_int32) = {
-    KMP_FOREACH_I_LOCK(expand, acquire)};
+static int (*indirect_set[])(kmp_user_lock_p,
+                             kmp_int32) = {KMP_FOREACH_I_LOCK(expand, acquire)};
 #undef expand
 #define expand(l, op)                                                          \
   (int (*)(kmp_user_lock_p, kmp_int32)) __kmp_##op##_##l##_##lock_with_checks,

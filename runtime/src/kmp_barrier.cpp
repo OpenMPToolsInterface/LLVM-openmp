@@ -2,7 +2,6 @@
  * kmp_barrier.cpp
  */
 
-
 //===----------------------------------------------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -11,7 +10,6 @@
 // Source Licenses. See LICENSE.txt for details.
 //
 //===----------------------------------------------------------------------===//
-
 
 #include "kmp.h"
 #include "kmp_wait_release.h"
@@ -89,8 +87,7 @@ static void __kmp_linear_barrier_gather(
     int nproc = this_thr->th.th_team_nproc;
     int i;
     // Don't have to worry about sleep bit here or atomic since team setting
-    kmp_uint64 new_state =
-        team_bar->b_arrived + KMP_BARRIER_STATE_BUMP;
+    kmp_uint64 new_state = team_bar->b_arrived + KMP_BARRIER_STATE_BUMP;
 
     // Collect all the worker team member threads.
     for (i = 1; i < nproc; ++i) {
@@ -1612,8 +1609,8 @@ void __kmp_join_barrier(int gtid) {
     int ds_tid = this_thr->th.th_info.ds.ds_tid;
     if (KMP_MASTER_TID(ds_tid) &&
         (ompt_callbacks.ompt_callback(ompt_callback_sync_region_wait) ||
-        ompt_callbacks.ompt_callback(ompt_callback_sync_region)))
-        codeptr = team->t.ompt_team_info.master_return_address;
+         ompt_callbacks.ompt_callback(ompt_callback_sync_region)))
+      codeptr = team->t.ompt_team_info.master_return_address;
     my_task_data = OMPT_CUR_TASK_DATA(this_thr);
     my_parallel_data = OMPT_CUR_TEAM_DATA(this_thr);
     if (ompt_enabled.ompt_callback_sync_region) {
@@ -1888,9 +1885,8 @@ void __kmp_fork_barrier(int gtid, int tid) {
     if (this_thr->th.ompt_thread_info.state ==
         omp_state_wait_barrier_implicit) {
       int ds_tid = this_thr->th.th_info.ds.ds_tid;
-      ompt_data_t *tId =
-          (team) ? OMPT_CUR_TASK_DATA(this_thr)
-                 : &(this_thr->th.ompt_thread_info.task_data);
+      ompt_data_t *tId = (team) ? OMPT_CUR_TASK_DATA(this_thr)
+                                : &(this_thr->th.ompt_thread_info.task_data);
       this_thr->th.ompt_thread_info.state = omp_state_overhead;
 #if OMPT_OPTIONAL
       void *codeptr = NULL;
@@ -1907,8 +1903,7 @@ void __kmp_fork_barrier(int gtid, int tid) {
             ompt_sync_region_barrier, ompt_scope_end, NULL, tId, codeptr);
       }
 #endif
-      if (!KMP_MASTER_TID(ds_tid) &&
-          ompt_enabled.ompt_callback_implicit_task) {
+      if (!KMP_MASTER_TID(ds_tid) && ompt_enabled.ompt_callback_implicit_task) {
         ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
             ompt_scope_end, NULL, tId, 0, ds_tid);
       }

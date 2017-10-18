@@ -2,7 +2,6 @@
  * kmp_sched.cpp -- static scheduling -- iteration initialization
  */
 
-
 //===----------------------------------------------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -11,7 +10,6 @@
 // Source Licenses. See LICENSE.txt for details.
 //
 //===----------------------------------------------------------------------===//
-
 
 /* Static scheduling initialization.
 
@@ -48,7 +46,8 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
                                   typename traits_t<T>::signed_t incr,
                                   typename traits_t<T>::signed_t chunk
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-                                  , void * codeptr
+                                  ,
+                                  void *codeptr
 #endif
                                   ) {
   KMP_COUNT_BLOCK(OMP_FOR_static);
@@ -74,15 +73,16 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
     team_info = __ompt_get_teaminfo(0, NULL);
     task_info = __ompt_get_task_info_object(0);
     // Determine workshare type
-    if(loc != NULL) {
-      if((loc->flags & KMP_IDENT_WORK_LOOP) !=0) {
-          ompt_work_type = ompt_work_loop;
-      } else if((loc->flags & KMP_IDENT_WORK_SECTIONS)!=0) {
-          ompt_work_type = ompt_work_sections;
-      } else if((loc->flags & KMP_IDENT_WORK_DISTRIBUTE)!=0) {
-          ompt_work_type = ompt_work_distribute;
+    if (loc != NULL) {
+      if ((loc->flags & KMP_IDENT_WORK_LOOP) != 0) {
+        ompt_work_type = ompt_work_loop;
+      } else if ((loc->flags & KMP_IDENT_WORK_SECTIONS) != 0) {
+        ompt_work_type = ompt_work_sections;
+      } else if ((loc->flags & KMP_IDENT_WORK_DISTRIBUTE) != 0) {
+        ompt_work_type = ompt_work_distribute;
       } else {
-          KMP_ASSERT2(0, "__kmpc_for_static_init: can't determine workshare type");
+        KMP_ASSERT2(0,
+                    "__kmpc_for_static_init: can't determine workshare type");
       }
       KMP_DEBUG_ASSERT(ompt_work_type);
     }
@@ -143,9 +143,7 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
     if (ompt_enabled.ompt_callback_work) {
       ompt_callbacks.ompt_callback(ompt_callback_work)(
           ompt_work_type, ompt_scope_begin, &(team_info->parallel_data),
-          &(task_info->task_data),
-          0, // TODO: OMPT: verify loop count value (OpenMP-spec 4.6.2.18)
-          codeptr);
+          &(task_info->task_data), 0, codeptr);
     }
 #endif
     KMP_COUNT_VALUE(FOR_static_iterations, 0);
@@ -197,10 +195,7 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
     if (ompt_enabled.ompt_callback_work) {
       ompt_callbacks.ompt_callback(ompt_callback_work)(
           ompt_work_type, ompt_scope_begin, &(team_info->parallel_data),
-          &(task_info->task_data),
-          *pstride, // TODO: OMPT: verify loop count value (OpenMP-spec
-                    // 4.6.2.18) ??? Should be trip_count value below?
-          codeptr);
+          &(task_info->task_data), *pstride, codeptr);
     }
 #endif
     return;
@@ -229,10 +224,7 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
     if (ompt_enabled.ompt_callback_work) {
       ompt_callbacks.ompt_callback(ompt_callback_work)(
           ompt_work_type, ompt_scope_begin, &(team_info->parallel_data),
-          &(task_info->task_data),
-          *pstride, // TODO: OMPT: verify loop count value (OpenMP-spec
-                    // 4.6.2.18) ??? Should be trip_count value below?
-          codeptr);
+          &(task_info->task_data), *pstride, codeptr);
     }
 #endif
     return;
@@ -389,10 +381,7 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
   if (ompt_enabled.ompt_callback_work) {
     ompt_callbacks.ompt_callback(ompt_callback_work)(
         ompt_work_type, ompt_scope_begin, &(team_info->parallel_data),
-        &(task_info->task_data),
-        trip_count, // TODO: OMPT: verify loop count value (OpenMP-spec
-                    // 4.6.2.18; email discussion on count value semantics)
-        codeptr);
+        &(task_info->task_data), trip_count, codeptr);
   }
 #endif
 
@@ -782,9 +771,10 @@ void __kmpc_for_static_init_4(ident_t *loc, kmp_int32 gtid, kmp_int32 schedtype,
   __kmp_for_static_init<kmp_int32>(loc, gtid, schedtype, plastiter, plower,
                                    pupper, pstride, incr, chunk
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-                                   , OMPT_GET_RETURN_ADDRESS(0)
+                                   ,
+                                   OMPT_GET_RETURN_ADDRESS(0)
 #endif
-                                   );
+                                       );
 }
 
 /*!
@@ -798,9 +788,10 @@ void __kmpc_for_static_init_4u(ident_t *loc, kmp_int32 gtid,
   __kmp_for_static_init<kmp_uint32>(loc, gtid, schedtype, plastiter, plower,
                                     pupper, pstride, incr, chunk
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-                                    , OMPT_GET_RETURN_ADDRESS(0)
+                                    ,
+                                    OMPT_GET_RETURN_ADDRESS(0)
 #endif
-                                    );
+                                        );
 }
 
 /*!
@@ -813,9 +804,10 @@ void __kmpc_for_static_init_8(ident_t *loc, kmp_int32 gtid, kmp_int32 schedtype,
   __kmp_for_static_init<kmp_int64>(loc, gtid, schedtype, plastiter, plower,
                                    pupper, pstride, incr, chunk
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-                                   , OMPT_GET_RETURN_ADDRESS(0)
+                                   ,
+                                   OMPT_GET_RETURN_ADDRESS(0)
 #endif
-                                   );
+                                       );
 }
 
 /*!
@@ -829,9 +821,10 @@ void __kmpc_for_static_init_8u(ident_t *loc, kmp_int32 gtid,
   __kmp_for_static_init<kmp_uint64>(loc, gtid, schedtype, plastiter, plower,
                                     pupper, pstride, incr, chunk
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-                                    , OMPT_GET_RETURN_ADDRESS(0)
+                                    ,
+                                    OMPT_GET_RETURN_ADDRESS(0)
 #endif
-                                    );
+                                        );
 }
 /*!
 @}

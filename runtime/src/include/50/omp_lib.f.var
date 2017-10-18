@@ -830,6 +830,7 @@
 !dec$ attributes alias:'_omp_set_nest_lock_'::omp_set_nest_lock
 !dec$ attributes alias:'_omp_unset_nest_lock_'::omp_unset_nest_lock
 !dec$ attributes alias:'_omp_test_nest_lock_'::omp_test_nest_lock
+!dec$ attributes alias:'_omp_control_tool_'::omp_control_tool
 
 !dec$ attributes alias:'_kmp_set_stacksize_'::kmp_set_stacksize
 !dec$ attributes alias:'_kmp_set_stacksize_s_'::kmp_set_stacksize_s
@@ -860,8 +861,6 @@
 !dec$ attributes alias:'_kmp_set_warnings_off_'::kmp_set_warnings_off
 
 !dec$ attributes alias:'_kmp_get_cancellation_status_'::kmp_get_cancellation_status
-
-!dec$ attributes alias:'_omp_control_tool_'::omp_control_tool
 
 !dec$ endif
 

@@ -3,7 +3,6 @@
  * kmp.h -- KPTS runtime header file.
  */
 
-
 //===----------------------------------------------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -12,7 +11,6 @@
 // Source Licenses. See LICENSE.txt for details.
 //
 //===----------------------------------------------------------------------===//
-
 
 #ifndef KMP_H
 #define KMP_H
@@ -203,8 +201,8 @@ Values for bit flags used in the ident_t to describe the fields.
 #define KMP_IDENT_BARRIER_IMPL_WORKSHARE 0x01C0
 
 #define KMP_IDENT_WORK_LOOP 0x200 // static loop
-#define KMP_IDENT_WORK_SECTIONS 0x400 //sections
-#define KMP_IDENT_WORK_DISTRIBUTE 0x800 //distribute
+#define KMP_IDENT_WORK_SECTIONS 0x400 // sections
+#define KMP_IDENT_WORK_DISTRIBUTE 0x800 // distribute
 
 /*!
  * The ident structure that describes a source location.
@@ -672,7 +670,7 @@ public:
   virtual api_type get_api_type() const {
     KMP_ASSERT(0);
     return NATIVE_OS;
-  };
+  }
 
 private:
   static bool picked_api;
@@ -2544,7 +2542,7 @@ typedef struct KMP_ALIGN_CACHE kmp_base_team {
   KMP_ALIGN_CACHE kmp_ordered_team_t t_ordered;
   kmp_balign_team_t t_bar[bs_last_barrier];
   volatile int t_construct; // count of single directive encountered by team
-  kmp_lock_t t_single_lock; // team specific lock
+  char pad[sizeof(kmp_lock_t)]; // padding to maintain performance on big iron
 
   // Master only
   // ---------------------------------------------------------------------------

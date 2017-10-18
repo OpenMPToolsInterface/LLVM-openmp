@@ -17,8 +17,7 @@ void __ompt_team_assign_id(kmp_team_t *team, ompt_data_t ompt_pid);
 void __ompt_thread_assign_wait_id(void *variable);
 
 void __ompt_lw_taskteam_init(ompt_lw_taskteam_t *lwt, ompt_thread_t *thr,
-                             int gtid,
-                             ompt_data_t* ompt_pid, void* codeptr);
+                             int gtid, ompt_data_t *ompt_pid, void *codeptr);
 
 void __ompt_lw_taskteam_link(ompt_lw_taskteam_t *lwt, ompt_thread_t *thr,
                              int on_heap);
@@ -65,9 +64,10 @@ inline void *__ompt_load_return_address(int gtid) {
   return return_address;
 }
 
-#define OMPT_STORE_RETURN_ADDRESS(gtid)                                    \
-  if (ompt_enabled.enabled && gtid>=0 && __kmp_threads[gtid] && !__kmp_threads[gtid]->th.ompt_thread_info.return_address)            \
-  __kmp_threads[gtid]->th.ompt_thread_info.return_address =                \
+#define OMPT_STORE_RETURN_ADDRESS(gtid)                                        \
+  if (ompt_enabled.enabled && gtid >= 0 && __kmp_threads[gtid] &&              \
+      !__kmp_threads[gtid]->th.ompt_thread_info.return_address)                \
+  __kmp_threads[gtid]->th.ompt_thread_info.return_address =                    \
       __builtin_return_address(0)
 #define OMPT_LOAD_RETURN_ADDRESS(gtid) __ompt_load_return_address(gtid)
 

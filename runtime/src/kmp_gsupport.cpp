@@ -2,7 +2,6 @@
  * kmp_gsupport.cpp
  */
 
-
 //===----------------------------------------------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -11,7 +10,6 @@
 // Source Licenses. See LICENSE.txt for details.
 //
 //===----------------------------------------------------------------------===//
-
 
 #include "kmp.h"
 #include "kmp_atomic.h"
@@ -178,8 +176,8 @@ void *xexpand(KMP_API_NAME_GOMP_SINGLE_COPY_START)(void) {
   if (__kmp_enter_single(gtid, &loc, FALSE))
     return NULL;
 
-  // Wait for the first thread to set the copyprivate data pointer,
-  // and for all other threads to reach this point.
+// Wait for the first thread to set the copyprivate data pointer,
+// and for all other threads to reach this point.
 
 #if OMPT_SUPPORT && OMPT_OPTIONAL
   ompt_frame_t *ompt_frame;
@@ -328,7 +326,7 @@ static
                                           enum sched_type schedule, long start,
                                           long end, long incr,
                                           long chunk_size) {
-  // Intialize the loop worksharing construct.
+// Intialize the loop worksharing construct.
 
 #if OMPT_SUPPORT
   if (ompt_enabled.enabled)
@@ -382,8 +380,8 @@ static
   va_list ap;
   va_start(ap, argc);
 
-  rc = __kmp_fork_call(loc, gtid, fork_context_gnu, argc,
-                       wrapper, __kmp_invoke_task_func,
+  rc = __kmp_fork_call(loc, gtid, fork_context_gnu, argc, wrapper,
+                       __kmp_invoke_task_func,
 #if (KMP_ARCH_X86_64 || KMP_ARCH_ARM || KMP_ARCH_AARCH64) && KMP_OS_LINUX
                        &ap
 #else
@@ -523,7 +521,6 @@ void xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void) {
 #define IF_OMPT_SUPPORT(code)
 #endif
 
-
 #define LOOP_START(func, schedule)                                             \
   int func(long lb, long ub, long str, long chunk_sz, long *p_lb,              \
            long *p_ub) {                                                       \
@@ -536,11 +533,11 @@ void xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void) {
               gtid, lb, ub, str, chunk_sz));                                   \
                                                                                \
     if ((str > 0) ? (lb < ub) : (lb > ub)) {                                   \
-      IF_OMPT_SUPPORT(OMPT_STORE_RETURN_ADDRESS(gtid);)                   \
+      IF_OMPT_SUPPORT(OMPT_STORE_RETURN_ADDRESS(gtid);)                        \
       KMP_DISPATCH_INIT(&loc, gtid, (schedule), lb,                            \
                         (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz,        \
                         (schedule) != kmp_sch_static);                         \
-      IF_OMPT_SUPPORT(OMPT_STORE_RETURN_ADDRESS(gtid);)                   \
+      IF_OMPT_SUPPORT(OMPT_STORE_RETURN_ADDRESS(gtid);)                        \
       status = KMP_DISPATCH_NEXT(&loc, gtid, NULL, (kmp_int *)p_lb,            \
                                  (kmp_int *)p_ub, (kmp_int *)&stride);         \
       if (status) {                                                            \
@@ -569,10 +566,10 @@ void xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void) {
               gtid, lb, ub, str, chunk_sz));                                   \
                                                                                \
     if ((str > 0) ? (lb < ub) : (lb > ub)) {                                   \
-      IF_OMPT_SUPPORT(OMPT_STORE_RETURN_ADDRESS(gtid);)                   \
+      IF_OMPT_SUPPORT(OMPT_STORE_RETURN_ADDRESS(gtid);)                        \
       KMP_DISPATCH_INIT(&loc, gtid, (schedule), lb,                            \
                         (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz, TRUE); \
-      IF_OMPT_SUPPORT(OMPT_STORE_RETURN_ADDRESS(gtid);)                   \
+      IF_OMPT_SUPPORT(OMPT_STORE_RETURN_ADDRESS(gtid);)                        \
       status = KMP_DISPATCH_NEXT(&loc, gtid, NULL, (kmp_int *)p_lb,            \
                                  (kmp_int *)p_ub, (kmp_int *)&stride);         \
       if (status) {                                                            \
@@ -597,7 +594,7 @@ void xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void) {
     MKLOC(loc, #func);                                                         \
     KA_TRACE(20, (#func ": T#%d\n", gtid));                                    \
                                                                                \
-    IF_OMPT_SUPPORT(OMPT_STORE_RETURN_ADDRESS(gtid);)                     \
+    IF_OMPT_SUPPORT(OMPT_STORE_RETURN_ADDRESS(gtid);)                          \
     fini_code status = KMP_DISPATCH_NEXT(&loc, gtid, NULL, (kmp_int *)p_lb,    \
                                          (kmp_int *)p_ub, (kmp_int *)&stride); \
     if (status) {                                                              \
@@ -834,14 +831,14 @@ LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_RUNTIME_NEXT),
 
 #define OMPT_LOOP_PRE()                                                        \
   ompt_frame_t *parent_frame;                                                  \
-  if (ompt_enabled.enabled) {                                                          \
+  if (ompt_enabled.enabled) {                                                  \
     __ompt_get_task_info_internal(0, NULL, NULL, &parent_frame, NULL, NULL);   \
     parent_frame->reenter_runtime_frame = OMPT_GET_FRAME_ADDRESS(1);           \
   }                                                                            \
   OMPT_STORE_RETURN_ADDRESS(gtid);
 
 #define OMPT_LOOP_POST()                                                       \
-  if (ompt_enabled.enabled) {                                                          \
+  if (ompt_enabled.enabled) {                                                  \
     parent_frame->reenter_runtime_frame = NULL;                                \
   }
 
@@ -1238,7 +1235,7 @@ void xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS)(void (*task)(void *),
     }                                                                          \
                                                                                \
     INCLUDE_IF_OMPT_SUPPORT(if (ompt_enabled.enabled)                          \
-                                OMPT_STORE_RETURN_ADDRESS(gtid);)         \
+                                OMPT_STORE_RETURN_ADDRESS(gtid);)              \
     KMP_DISPATCH_INIT(&loc, gtid, (schedule), lb,                              \
                       (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz,          \
                       (schedule) != kmp_sch_static);                           \

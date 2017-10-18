@@ -24,8 +24,7 @@ typedef struct ompt_callbacks_internal_s {
 
 typedef struct ompt_callbacks_active_s {
   unsigned int enabled : 1;
-#define ompt_event_macro(event, callback, eventid)                             \
-  unsigned int event : 1;
+#define ompt_event_macro(event, callback, eventid) unsigned int event : 1;
 
   FOREACH_OMPT_EVENT(ompt_event_macro)
 
