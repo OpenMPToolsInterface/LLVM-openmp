@@ -909,9 +909,9 @@ void xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data,
   }
 
 #if OMPT_SUPPORT
-  OMPT_STORE_RETURN_ADDRESS(gtid);
   kmp_taskdata_t *current_task;
   if (ompt_enabled.enabled) {
+    OMPT_STORE_RETURN_ADDRESS(gtid);
     current_task = __kmp_threads[gtid]->th.th_current_task;
     current_task->ompt_task_info.frame.reenter_runtime_frame =
         OMPT_GET_FRAME_ADDRESS(1);
@@ -952,8 +952,8 @@ void xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data,
       thread->th.ompt_thread_info.state = omp_state_work_parallel;
       taskdata->ompt_task_info.frame.exit_runtime_frame =
           OMPT_GET_FRAME_ADDRESS(0);
+      OMPT_STORE_RETURN_ADDRESS(gtid);
     }
-    OMPT_STORE_RETURN_ADDRESS(gtid);
 #endif
 
     __kmpc_omp_task_begin_if0(&loc, gtid, task);

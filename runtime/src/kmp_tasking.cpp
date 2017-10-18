@@ -571,8 +571,8 @@ static void __ompt_enabled_task_begin_if0(ident_t *loc_ref, kmp_int32 gtid,
 void __kmpc_omp_task_begin_if0(ident_t *loc_ref, kmp_int32 gtid,
                                kmp_task_t *task) {
 #if OMPT_SUPPORT
-  OMPT_STORE_RETURN_ADDRESS(gtid);
   if (UNLIKELY(ompt_enabled.enabled)) {
+    OMPT_STORE_RETURN_ADDRESS(gtid);
     __ompt_enabled_task_begin_if0(loc_ref, gtid, task,
                                   OMPT_GET_FRAME_ADDRESS(1),
                                   OMPT_LOAD_RETURN_ADDRESS(gtid));
@@ -1558,10 +1558,10 @@ kmp_int32 __kmpc_omp_task(ident_t *loc_ref, kmp_int32 gtid,
                 new_taskdata));
 
 #if OMPT_SUPPORT
-  OMPT_STORE_RETURN_ADDRESS(gtid);
   kmp_taskdata_t *parent = NULL;
   if (__builtin_expect(ompt_enabled.enabled && !new_taskdata->td_flags.started,
                        0)) {
+    OMPT_STORE_RETURN_ADDRESS(gtid);
     parent = new_taskdata->td_parent;
     if (!parent->ompt_task_info.frame.reenter_runtime_frame)
       parent->ompt_task_info.frame.reenter_runtime_frame =
