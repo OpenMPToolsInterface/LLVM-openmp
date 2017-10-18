@@ -67,7 +67,7 @@ int main()
       }
     }
 
-    //TODO:not working
+    //Mergeable task test deactivated for now
     //explicit task with mergeable
     /*
     #pragma omp task mergeable if((int)sin(0))
@@ -108,6 +108,7 @@ int main()
   // CHECK-DAG: {{^[0-9]+}}: ompt_event_task_create: parent_task_id={{[0-9]+}}, parent_task_frame.exit={{0x[0-f]+}}, parent_task_frame.reenter={{0x[0-f]+}}, new_task_id={{[0-9]+}}, codeptr_ra={{0x[0-f]+}}, task_type=ompt_task_explicit|ompt_task_undeferred|ompt_task_final=671088644, has_dependences=no
   // CHECK-DAG: {{^[0-9]+}}: id=6 task_type=ompt_task_explicit|ompt_task_undeferred|ompt_task_final=671088644
 
+  // Mergeable task test deactivated for now
   // ___CHECK-DAG: {{^[0-9]+}}: ompt_event_task_create: parent_task_id={{[0-9]+}}, parent_task_frame.exit={{0x[0-f]+}}, parent_task_frame.reenter={{0x[0-f]+}}, new_task_id={{[0-9]+}}, codeptr_ra={{0x[0-f]+}}, task_type=ompt_task_explicit=4, has_dependences=no
   // ___CHECK-DAG: {{^[0-9]+}}: id=7 task_type=ompt_task_explicit=4
 

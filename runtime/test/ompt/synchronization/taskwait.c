@@ -31,10 +31,5 @@ int main()
   // CHECK-NEXT: {{^}}[[MASTER_ID]]: ompt_event_taskwait_end: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=[[RETURN_ADDRESS]]
   // CHECK-NEXT: {{^}}[[MASTER_ID]]: current_address={{.*}}[[RETURN_ADDRESS]]
 
-  // -CHECK: {{^}}[[THREAD_ID:[0-9]+]]: ompt_event_taskwait_begin: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=
-  // -CHECK: {{^}}[[THREAD_ID]]: ompt_event_wait_taskwait_begin: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=
-  // -CHECK: {{^}}[[THREAD_ID]]: ompt_event_wait_taskwait_end: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=
-  // -CHECK: {{^}}[[THREAD_ID]]: ompt_event_taskwait_end: parallel_id={{[0-9]+}}, task_id={{[0-9]+}}, codeptr_ra=
-
   return 0;
 }

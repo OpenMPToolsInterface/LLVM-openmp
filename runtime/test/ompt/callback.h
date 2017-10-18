@@ -3,12 +3,6 @@
 #include <inttypes.h>
 #include <omp.h>
 #include <ompt.h>
-//#include "kmp.h"
-#include <execinfo.h>
-#ifdef OMPT_USE_LIBUNWIND
-#define UNW_LOCAL_ONLY
-#include <libunwind.h>
-#endif
 #include "ompt-signal.h"
 
 static const char* ompt_thread_type_t_values[] = {
@@ -53,43 +47,14 @@ static void print_ids(int level)
   ompt_frame_t* frame ;
   ompt_data_t* parallel_data;
   ompt_data_t* task_data;
-//  int exists_parallel = ompt_get_parallel_info(level, &parallel_data, NULL);
   int exists_task = ompt_get_task_info(level, NULL, &task_data, &frame, &parallel_data, NULL);
   if (frame)
   {
     printf("%" PRIu64 ": task level %d: parallel_id=%" PRIu64 ", task_id=%" PRIu64 ", exit_frame=%p, reenter_frame=%p\n", ompt_get_thread_data()->value, level, exists_task ? parallel_data->value : 0, exists_task ? task_data->value : 0, frame->exit_runtime_frame, frame->reenter_runtime_frame);
-//    printf("%" PRIu64 ": parallel level %d: parallel_id=%" PRIu64 ", task_id=%" PRIu64 ", exit_frame=%p, reenter_frame=%p\n", ompt_get_thread_data()->value, level, exists_parallel ? parallel_data->value : 0, exists_task ? task_data->value : 0, frame->exit_runtime_frame, frame->reenter_runtime_frame);
   }
   else
     printf("%" PRIu64 ": task level %d: parallel_id=%" PRIu64 ", task_id=%" PRIu64 ", frame=%p\n", ompt_get_thread_data()->value, level, exists_task ? parallel_data->value : 0, exists_task ? task_data->value : 0, frame);
-  //if (__kmp_threads[__kmp_gtid].th.ompt_thread_info.kmp_return_address != NULL)
-  //  printf( "1: return address not reset\n");
-
 }
-
-/*
-#define print_frame(level)\
-do {\
-  unw_cursor_t cursor;\
-  unw_context_t uc;\
-  unw_word_t fp;\
-  unw_getcontext(&uc);\
-  unw_init_local(&cursor, &uc);\
-  int tmp_level = level;\
-  unw_get_reg(&cursor, UNW_REG_SP, &fp);\
-  printf("callback %p\n", (void*)fp);\
-  while (tmp_level > 0 && unw_step(&cursor) > 0)\
-  {\
-    unw_get_reg(&cursor, UNW_REG_SP, &fp);\
-    printf("callback %p\n", (void*)fp);\
-    tmp_level--;\
-  }\
-  if(tmp_level == 0)\
-    printf("%" PRIu64 ": __builtin_frame_address(%d)=%p\n", ompt_get_thread_data()->value, level, (void*)fp);\
-  else\
-    printf("%" PRIu64 ": __builtin_frame_address(%d)=%p\n", ompt_get_thread_data()->value, level, NULL);\
-} while(0)
-*/
 
 #define print_frame(level)\
 do {\
@@ -97,7 +62,7 @@ do {\
 } while(0)
 
 #define print_current_address(id)\
-{} /* Empty block between "#pragma omp ..." and __asm__ statement as a workaround for icc bug */ \
+{}              /* Empty block between "#pragma omp ..." and __asm__ statement as a workaround for icc bug */ \
 __asm__("nop"); /* provide an instruction as jump target (compiler would insert an instruction if label is target of a jmp ) */ \
 ompt_label_##id:\
     printf("%" PRIu64 ": current_address=%p or %p\n", ompt_get_thread_data()->value, (char*)(&& ompt_label_##id)-1, (char*)(&& ompt_label_##id)-4) 
@@ -105,29 +70,12 @@ ompt_label_##id:\
     /* for void-type runtime function, the label is after the nop (-1), for functions with return value, there is a mov instruction before the label (-4) */
 
 #define print_fuzzy_address(id)\
-{} /* Empty block between "#pragma omp ..." and __asm__ statement as a workaround for icc bug */ \
+{}              /* Empty block between "#pragma omp ..." and __asm__ statement as a workaround for icc bug */ \
 __asm__("nop"); /* provide an instruction as jump target (compiler would insert an instruction if label is target of a jmp ) */ \
 ompt_label_##id:\
     printf("%" PRIu64 ": fuzzy_address=0x%lx or 0x%lx\n", ompt_get_thread_data()->value, ((uint64_t)(char*)(&& ompt_label_##id))/256-1, ((uint64_t)(char*)(&& ompt_label_##id))/256) 
     /* "&& label" returns the address of the label (GNU extension); works with gcc, clang, icc */
     /* for void-type runtime function, the label is after the nop (-1), for functions with return value, there is a mov instruction before the label (-4) */
-
-/*
-static void print_current_address()
-{
-    int real_level = 2;
-    void *array[real_level];
-    size_t size;
-    void *address;
-  
-    size = backtrace (array, real_level);
-    if(size == real_level)
-      address = ((char*)array[real_level-1])-5;
-    else
-      address = NULL;
-  printf("%" PRIu64 ": current_address=%p\n", ompt_get_thread_data()->value, address);
-}
-*/
 
 static void format_task_type(int type, char* buffer)
 {
