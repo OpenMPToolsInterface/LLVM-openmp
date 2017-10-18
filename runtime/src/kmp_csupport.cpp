@@ -1712,8 +1712,6 @@ kmp_int32 __kmpc_single(ident_t *loc, kmp_int32 global_tid) {
             &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_data),
             1, OMPT_GET_RETURN_ADDRESS(0));
       }
-      //            this_thr->th.ompt_thread_info.state =
-      //            omp_state_work_parallel;
     }
   }
 #endif

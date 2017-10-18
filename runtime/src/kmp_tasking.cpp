@@ -471,8 +471,6 @@ static inline void __ompt_task_init(kmp_taskdata_t *task, int tid) {
 static inline void __ompt_task_start(kmp_task_t *task,
                                      kmp_taskdata_t *current_task,
                                      kmp_int32 gtid) {
-  // The calls to __ompt_task_start already have the ompt_enabled condition.
-  //  if (__builtin_expect(ompt_enabled.enabled,0)){
   kmp_taskdata_t *taskdata = KMP_TASK_TO_TASKDATA(task);
   ompt_task_status_t status = ompt_task_others;
   if (__kmp_threads[gtid]->th.ompt_thread_info.ompt_task_yielded) {
@@ -486,7 +484,6 @@ static inline void __ompt_task_start(kmp_task_t *task,
         &(taskdata->ompt_task_info.task_data));
   }
   taskdata->ompt_task_info.scheduling_parent = current_task;
-  //  }
 }
 
 // __ompt_task_finish:
@@ -513,7 +510,6 @@ static inline void __ompt_task_finish(kmp_task_t *task,
                                : taskdata->td_parent))
               ->ompt_task_info.task_data));
   }
-  //  }
 }
 #endif
 
@@ -3832,7 +3828,6 @@ void __kmpc_taskloop(ident_t *loc, int gtid, kmp_task_t *task, int if_val,
         ompt_work_taskloop, ompt_scope_begin, &(team_info->parallel_data),
         &(task_info->task_data),
         0, // TODO: OMPT: verify loop count value (OpenMP-spec 4.6.2.18). ??
-           // Should ve 'tc' value below?
         OMPT_GET_RETURN_ADDRESS(0));
   }
 #endif
@@ -3954,7 +3949,6 @@ void __kmpc_taskloop(ident_t *loc, int gtid, kmp_task_t *task, int if_val,
         ompt_work_taskloop, ompt_scope_end, &(team_info->parallel_data),
         &(task_info->task_data),
         0, // TODO: OMPT: verify loop count value (OpenMP-spec 4.6.2.18). ??
-           // Should ve 'tc' value below?
         OMPT_GET_RETURN_ADDRESS(0));
   }
 #endif
