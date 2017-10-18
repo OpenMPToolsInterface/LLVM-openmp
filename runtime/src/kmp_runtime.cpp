@@ -1097,11 +1097,10 @@ inline static void propagateFPControl(kmp_team_t *team) {
 
     // There is no point looking at t_fp_control_saved here.
     // If it is TRUE, we still have to update the values if they are different
-    // from
-    // those we now have.
+    // from those we now have.
     // If it is FALSE we didn't save anything yet, but our objective is the
-    // same. We
-    // have to ensure that the values in the team are the same as those we have.
+    // same. We have to ensure that the values in the team are the same as
+    // those we have.
     // So, this code achieves what we need whether or not t_fp_control_saved is
     // true. By checking whether the value needs updating we avoid unnecessary
     // writes that would put the cache-line into a written state, causing all
@@ -5935,8 +5934,7 @@ static void __kmp_internal_end(void) {
     // Need to check that monitor was initialized before reaping it. If we are
     // called form __kmp_atfork_child (which sets __kmp_init_parallel = 0), then
     // __kmp_monitor will appear to contain valid data, but it is only valid in
-    // the
-    // parent process, not the child.
+    // the parent process, not the child.
     // New behavior (201008): instead of keying off of the flag
     // __kmp_init_parallel, the monitor thread creation is keyed off
     // of the new flag __kmp_init_monitor.
