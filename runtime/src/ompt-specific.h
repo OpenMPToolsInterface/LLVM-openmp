@@ -22,7 +22,6 @@ void __ompt_lw_taskteam_init(ompt_lw_taskteam_t *lwt, ompt_thread_t *thr,
 void __ompt_lw_taskteam_link(ompt_lw_taskteam_t *lwt, ompt_thread_t *thr,
                              int on_heap);
 
-// ompt_lw_taskteam_t *
 void __ompt_lw_taskteam_unlink(ompt_thread_t *thr);
 
 ompt_team_info_t *__ompt_get_teaminfo(int depth, int *size);

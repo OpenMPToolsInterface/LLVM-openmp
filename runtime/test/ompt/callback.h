@@ -320,11 +320,9 @@ on_ompt_callback_idle(
   {
     case ompt_scope_begin:
       printf("%" PRIu64 ": ompt_event_idle_begin:\n", ompt_get_thread_data()->value);
-      //printf("%" PRIu64 ": ompt_event_idle_begin: thread_id=%" PRIu64 "\n", ompt_get_thread_data()->value, thread_data.value);
       break;
     case ompt_scope_end:
       printf("%" PRIu64 ": ompt_event_idle_end:\n", ompt_get_thread_data()->value);
-      //printf("%" PRIu64 ": ompt_event_idle_end: thread_id=%" PRIu64 "\n", ompt_get_thread_data()->value, thread_data.value);
       break;
   }
 }
@@ -578,7 +576,6 @@ on_ompt_callback_thread_end(
   ompt_data_t *thread_data)
 {
   printf("%" PRIu64 ": ompt_event_thread_end: thread_id=%" PRIu64 "\n", ompt_get_thread_data()->value, thread_data->value);
-  //printf("%" PRIu64 ": ompt_event_thread_end: thread_type=%s=%d, thread_id=%" PRIu64 "\n", ompt_get_thread_data()->value, ompt_thread_type_t_values[thread_type], thread_type, thread_data->value);
 }
 
 static int

@@ -54,9 +54,6 @@ kmp_int32 __kmpc_cancel(ident_t *loc_ref, kmp_int32 gtid, kmp_int32 cncl_kind) {
         kmp_int32 old = KMP_COMPARE_AND_STORE_RET32(
             &(this_team->t.t_cancel_request), cancel_noreq, cncl_kind);
         if (old == cancel_noreq || old == cncl_kind) {
-// printf("__kmpc_cancel: this_team->t.t_cancel_request=%d @ %p\n",
-//       this_team->t.t_cancel_request,
-//       &(this_team->t.t_cancel_request));
 // we do not have a cancellation request in this team or we do have
 // one that matches the current request -> cancel
 #if OMPT_SUPPORT && OMPT_OPTIONAL
