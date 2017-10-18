@@ -489,12 +489,10 @@ static inline void __ompt_task_start(kmp_task_t *task,
   //  }
 }
 
-// __ompt_task_start:
-//   Build and trigger task-end event
+// __ompt_task_finish:
+//   Build and trigger final task-schedule event
 static inline void __ompt_task_finish(kmp_task_t *task,
                                       kmp_taskdata_t *resumed_task) {
-  // The calls to __ompt_task_finish already have the ompt_enabled condition.
-  //  if (__builtin_expect(ompt_enabled.enabled,0)){
   kmp_taskdata_t *taskdata = KMP_TASK_TO_TASKDATA(task);
   ompt_task_status_t status = ompt_task_complete;
   if (taskdata->td_flags.tiedness == TASK_UNTIED &&
@@ -1466,8 +1464,6 @@ kmp_int32 __kmpc_omp_task_parts(ident_t *loc_ref, kmp_int32 gtid,
   kmp_taskdata_t *parent;
   if (__builtin_expect(ompt_enabled.enabled, 0)) {
     parent = new_taskdata->td_parent;
-    //        parent->ompt_task_info.frame.reenter_runtime_frame =
-    //            OMPT_GET_FRAME_ADDRESS(1);
     if (ompt_enabled.ompt_callback_task_create) {
       ompt_data_t task_data = ompt_data_none;
       ompt_callbacks.ompt_callback(ompt_callback_task_create)(

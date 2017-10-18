@@ -152,8 +152,6 @@ int xexpand(KMP_API_NAME_GOMP_SINGLE_START)(void) {
             &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_data),
             1, OMPT_GET_RETURN_ADDRESS(0));
       }
-      //            this_thr->th.ompt_thread_info.state =
-      //            omp_state_work_parallel;
     }
   }
 #endif
@@ -937,7 +935,6 @@ void xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data,
       __kmpc_omp_task_with_deps(&loc, gtid, task, ndeps, dep_list, 0, NULL);
     } else {
 #endif
-      // TODO: Intel, why call kmpc and not kmp here?
       __kmpc_omp_task(&loc, gtid, task);
     }
   } else {
@@ -1203,12 +1200,6 @@ void xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS)(void (*task)(void *),
   KA_TRACE(20, ("GOMP_parallel_sections exit: T#%d\n", gtid));
 }
 
-#if OMPT_SUPPORT
-#define INCLUDE_IF_OMPT_SUPPORT(code) code
-#else
-#define INCLUDE_IF_OMPT_SUPPORT(code)
-#endif
-
 #define PARALLEL_LOOP(func, schedule, ompt_pre, ompt_post)                     \
   void func(void (*task)(void *), void *data, unsigned num_threads, long lb,   \
             long ub, long str, long chunk_sz, unsigned flags) {                \
@@ -1234,7 +1225,7 @@ void xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS)(void (*task)(void *),
       __kmp_GOMP_serialized_parallel(&loc, gtid, task);                        \
     }                                                                          \
                                                                                \
-    INCLUDE_IF_OMPT_SUPPORT(if (ompt_enabled.enabled)                          \
+    IF_OMPT_SUPPORT(if (ompt_enabled.enabled)                          \
                                 OMPT_STORE_RETURN_ADDRESS(gtid);)              \
     KMP_DISPATCH_INIT(&loc, gtid, (schedule), lb,                              \
                       (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz,          \

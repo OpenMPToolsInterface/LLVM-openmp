@@ -1205,23 +1205,15 @@ void __kmp_serialized_parallel(ident_t *loc, kmp_int32 global_tid) {
       this_thr->th.ompt_thread_info.state != omp_state_overhead) {
 
     ompt_task_info_t *parent_task_info;
-    //        if (serial_team->t.t_level > 1)
     parent_task_info = OMPT_CUR_TASK_INFO(this_thr);
-    //        else
-    //            parent_task_info =
-    //            &(this_thr->th.th_current_task->td_parent->ompt_task_info);
 
     parent_task_info->frame.reenter_runtime_frame = OMPT_GET_FRAME_ADDRESS(1);
-    // printf("281474976710657: %p frame\n",
-    // OMPT_CUR_TASK_INFO(this_thr)->frame.exit_runtime_frame);
     if (ompt_enabled.ompt_callback_parallel_begin) {
       int team_size = 1;
 
       ompt_callbacks.ompt_callback(ompt_callback_parallel_begin)(
           &(parent_task_info->task_data), &(parent_task_info->frame),
           &ompt_parallel_data, team_size,
-          // master_set_numthreads ? master_set_numthreads : get__nproc_2(
-          // parent_team, master_tid ),
           ompt_invoker_program, codeptr);
     }
   }

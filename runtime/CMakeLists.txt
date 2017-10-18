@@ -321,7 +321,7 @@ endif()
 # OMPT-support
 set(LIBOMP_OMPT_DEBUG FALSE CACHE BOOL
   "Trace OMPT initialization?")
-#after testing: turn on ompt support for OpenMP 5.0 and higher (see commit 5e848176)
+#after testing: turn on ompt support by default for OpenMP 5.0 and higher
 set(LIBOMP_OMPT_SUPPORT FALSE CACHE BOOL
   "OMPT-support?")
 set(LIBOMP_OMPT_OPTIONAL TRUE CACHE BOOL
