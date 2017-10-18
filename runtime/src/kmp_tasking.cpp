@@ -3827,7 +3827,7 @@ void __kmpc_taskloop(ident_t *loc, int gtid, kmp_task_t *task, int if_val,
     ompt_callbacks.ompt_callback(ompt_callback_work)(
         ompt_work_taskloop, ompt_scope_begin, &(team_info->parallel_data),
         &(task_info->task_data),
-        0, // TODO: OMPT: verify loop count value (OpenMP-spec 4.6.2.18). ??
+        0,
         OMPT_GET_RETURN_ADDRESS(0));
   }
 #endif
@@ -3948,7 +3948,7 @@ void __kmpc_taskloop(ident_t *loc, int gtid, kmp_task_t *task, int if_val,
     ompt_callbacks.ompt_callback(ompt_callback_work)(
         ompt_work_taskloop, ompt_scope_end, &(team_info->parallel_data),
         &(task_info->task_data),
-        0, // TODO: OMPT: verify loop count value (OpenMP-spec 4.6.2.18). ??
+        0,
         OMPT_GET_RETURN_ADDRESS(0));
   }
 #endif
