@@ -11,8 +11,6 @@ int main()
   {
     #pragma omp master
     {
-//      #pragma omp task shared(condition)
-//      {
         #pragma omp task shared(condition)
         {
           OMPT_SIGNAL(condition);
@@ -27,7 +25,6 @@ int main()
         #pragma omp taskyield
         printf("%" PRIu64 ": after yield\n", ompt_get_thread_data()->value);
         OMPT_SIGNAL(condition);
-//      }
     }
   }
 
