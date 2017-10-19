@@ -513,9 +513,8 @@ static inline void __ompt_task_finish(kmp_task_t *task,
 }
 #endif
 
-#if OMPT_SUPPORT
-OMPT_NOINLINE
-static void __ompt_enabled_task_begin_if0(ident_t *loc_ref, kmp_int32 gtid,
+template<bool ompt>
+static void __kmpc_omp_task_begin_if0_template(ident_t *loc_ref, kmp_int32 gtid,
                                           kmp_task_t *task, void *frame_address,
                                           void *return_address) {
   kmp_taskdata_t *taskdata = KMP_TASK_TO_TASKDATA(task);
@@ -539,22 +538,36 @@ static void __ompt_enabled_task_begin_if0(ident_t *loc_ref, kmp_int32 gtid,
 
   __kmp_task_start(gtid, task, current_task);
 
-  if (current_task->ompt_task_info.frame.reenter_runtime_frame == NULL) {
-    current_task->ompt_task_info.frame.reenter_runtime_frame =
-        taskdata->ompt_task_info.frame.exit_runtime_frame = frame_address;
+#if OMPT_SUPPORT
+  if(ompt)
+  {
+    if (current_task->ompt_task_info.frame.reenter_runtime_frame == NULL) {
+      current_task->ompt_task_info.frame.reenter_runtime_frame =
+          taskdata->ompt_task_info.frame.exit_runtime_frame = frame_address;
+    }
+    if (ompt_enabled.ompt_callback_task_create) {
+      ompt_task_info_t *parent_info = &(current_task->ompt_task_info);
+      ompt_callbacks.ompt_callback(ompt_callback_task_create)(
+          &(parent_info->task_data), &(parent_info->frame),
+          &(taskdata->ompt_task_info.task_data),
+          ompt_task_explicit | TASK_TYPE_DETAILS_FORMAT(taskdata), 0,
+          return_address);
+    }
+    __ompt_task_start(task, current_task, gtid);
   }
-  if (ompt_enabled.ompt_callback_task_create) {
-    ompt_task_info_t *parent_info = &(current_task->ompt_task_info);
-    ompt_callbacks.ompt_callback(ompt_callback_task_create)(
-        &(parent_info->task_data), &(parent_info->frame),
-        &(taskdata->ompt_task_info.task_data),
-        ompt_task_explicit | TASK_TYPE_DETAILS_FORMAT(taskdata), 0,
-        return_address);
-  }
-  __ompt_task_start(task, current_task, gtid);
+#endif // OMPT_SUPPORT
 
   KA_TRACE(10, ("__kmpc_omp_task_begin_if0(exit): T#%d loc=%p task=%p,\n", gtid,
                 loc_ref, taskdata));
+}
+
+#if OMPT_SUPPORT
+OMPT_NOINLINE
+static void __kmpc_omp_task_begin_if0_ompt(ident_t *loc_ref, kmp_int32 gtid,
+                                          kmp_task_t *task, void *frame_address,
+                                          void *return_address) {
+  return __kmpc_omp_task_begin_if0_template<true>(loc_ref, gtid, task,
+                                                 frame_address, return_address);
 }
 #endif // OMPT_SUPPORT
 
@@ -569,36 +582,14 @@ void __kmpc_omp_task_begin_if0(ident_t *loc_ref, kmp_int32 gtid,
 #if OMPT_SUPPORT
   if (UNLIKELY(ompt_enabled.enabled)) {
     OMPT_STORE_RETURN_ADDRESS(gtid);
-    __ompt_enabled_task_begin_if0(loc_ref, gtid, task,
+    __kmpc_omp_task_begin_if0_ompt(loc_ref, gtid, task,
                                   OMPT_GET_FRAME_ADDRESS(1),
                                   OMPT_LOAD_RETURN_ADDRESS(gtid));
     return;
   }
 #endif
-  kmp_taskdata_t *taskdata = KMP_TASK_TO_TASKDATA(task);
-  kmp_taskdata_t *current_task = __kmp_threads[gtid]->th.th_current_task;
-
-  KA_TRACE(10, ("__kmpc_omp_task_begin_if0(enter): T#%d loc=%p task=%p "
-                "current_task=%p\n",
-                gtid, loc_ref, taskdata, current_task));
-
-  if (taskdata->td_flags.tiedness == TASK_UNTIED) {
-    // untied task needs to increment counter so that the task structure is not
-    // freed prematurely
-    kmp_int32 counter = 1 + KMP_TEST_THEN_INC32(&taskdata->td_untied_count);
-    KA_TRACE(20, ("__kmpc_omp_task_begin_if0: T#%d untied_count (%d) "
-                  "incremented for task %p\n",
-                  gtid, counter, taskdata));
-  }
-
-  taskdata->td_flags.task_serial =
-      1; // Execute this task immediately, not deferred.
-  __kmp_task_start(gtid, task, current_task);
-
-  KA_TRACE(10, ("__kmpc_omp_task_begin_if0(exit): T#%d loc=%p task=%p,\n", gtid,
-                loc_ref, taskdata));
-
-  return;
+  return __kmpc_omp_task_begin_if0_template<false>(loc_ref, gtid, task,
+                                                  NULL, NULL);
 }
 
 #ifdef TASK_UNUSED
