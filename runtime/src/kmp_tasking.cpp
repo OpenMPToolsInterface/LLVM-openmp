@@ -838,9 +838,8 @@ static void __kmp_task_finish(kmp_int32 gtid, kmp_task_t *task,
   return;
 }
 
-#if OMPT_SUPPORT
-OMPT_NOINLINE
-static void __ompt_enabled_task_complete_if0(ident_t *loc_ref, kmp_int32 gtid,
+template<bool ompt>
+static void __kmpc_omp_task_complete_if0_template(ident_t *loc_ref, kmp_int32 gtid,
                                              kmp_task_t *task) {
   KA_TRACE(10, ("__kmpc_omp_task_complete_if0(enter): T#%d loc=%p task=%p\n",
                 gtid, loc_ref, KMP_TASK_TO_TASKDATA(task)));
@@ -851,14 +850,26 @@ static void __ompt_enabled_task_complete_if0(ident_t *loc_ref, kmp_int32 gtid,
   KA_TRACE(10, ("__kmpc_omp_task_complete_if0(exit): T#%d loc=%p task=%p\n",
                 gtid, loc_ref, KMP_TASK_TO_TASKDATA(task)));
 
-  __ompt_task_finish(task, NULL);
-  ompt_frame_t *ompt_frame;
-  __ompt_get_task_info_internal(0, NULL, NULL, &ompt_frame, NULL, NULL);
-  ompt_frame->reenter_runtime_frame = NULL;
+#if OMPT_SUPPORT
+  if(ompt)
+  {
+    __ompt_task_finish(task, NULL);
+    ompt_frame_t *ompt_frame;
+    __ompt_get_task_info_internal(0, NULL, NULL, &ompt_frame, NULL, NULL);
+    ompt_frame->reenter_runtime_frame = NULL;
+  }
+#endif
 
   return;
 }
-#endif
+
+#if OMPT_SUPPORT
+OMPT_NOINLINE
+void __kmpc_omp_task_complete_if0_ompt(ident_t *loc_ref, kmp_int32 gtid,
+                                  kmp_task_t *task) {
+  __kmpc_omp_task_complete_if0_template<true>(loc_ref, gtid, task);
+}
+#endif // OMPT_SUPPORT
 
 // __kmpc_omp_task_complete_if0: report that a task has completed execution
 //
@@ -869,18 +880,11 @@ void __kmpc_omp_task_complete_if0(ident_t *loc_ref, kmp_int32 gtid,
                                   kmp_task_t *task) {
 #if OMPT_SUPPORT
   if (UNLIKELY(ompt_enabled.enabled)) {
-    __ompt_enabled_task_complete_if0(loc_ref, gtid, task);
+    __kmpc_omp_task_complete_if0_ompt(loc_ref, gtid, task);
     return;
   }
 #endif
-  KA_TRACE(10, ("__kmpc_omp_task_complete_if0(enter): T#%d loc=%p task=%p\n",
-                gtid, loc_ref, KMP_TASK_TO_TASKDATA(task)));
-  // this routine will provide task to resume
-  __kmp_task_finish(gtid, task, NULL);
-
-  KA_TRACE(10, ("__kmpc_omp_task_complete_if0(exit): T#%d loc=%p task=%p\n",
-                gtid, loc_ref, KMP_TASK_TO_TASKDATA(task)));
-  return;
+  __kmpc_omp_task_complete_if0_template<false>(loc_ref, gtid, task);
 }
 
 #ifdef TASK_UNUSED
