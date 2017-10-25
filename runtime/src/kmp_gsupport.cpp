@@ -646,7 +646,7 @@ void xexpand(KMP_API_NAME_GOMP_LOOP_END)(void) {
   }
 #endif
   __kmp_barrier(bs_plain_barrier, gtid, FALSE, 0, NULL, NULL);
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_OPTIONAL
   if (ompt_enabled.enabled) {
     ompt_frame->reenter_runtime_frame = NULL;
   }
