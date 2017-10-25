@@ -1,5 +1,8 @@
 // RUN: %libomp-compile-and-run | %sort-threads | FileCheck %s
-// REQUIRES: ompt, taskyield
+// REQUIRES: ompt
+// Current GOMP interface implements taskyield as stub
+// XFAIL: gcc
+
 #include "callback.h"
 #include <omp.h>   
 #include <unistd.h>

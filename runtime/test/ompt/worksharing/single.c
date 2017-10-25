@@ -1,5 +1,8 @@
 // RUN: %libomp-compile-and-run | %sort-threads | FileCheck %s
-// REQUIRES: ompt, single_callback
+// REQUIRES: ompt
+// GCC generates code that does not call the runtime for the single construct
+// XFAIL: gcc
+
 #include "callback.h"
 #include <omp.h>
 

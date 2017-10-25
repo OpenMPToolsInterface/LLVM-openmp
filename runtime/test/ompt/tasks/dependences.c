@@ -1,5 +1,6 @@
 // RUN: %libomp-compile-and-run | %sort-threads | FileCheck %s
-// REQUIRES: ompt, dependences
+// REQUIRES: ompt
+
 #include "callback.h"
 #include <omp.h>   
 #include <math.h>

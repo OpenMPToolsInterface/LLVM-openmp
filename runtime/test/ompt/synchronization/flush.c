@@ -1,5 +1,8 @@
 // RUN: %libomp-compile-and-run | %sort-threads | FileCheck %s
-// REQUIRES: ompt, flush
+// REQUIRES: ompt
+// GCC generates code that does not call the runtime for the flush construct
+// XFAIL: gcc
+
 #include "callback.h"
 #include <omp.h>
 
