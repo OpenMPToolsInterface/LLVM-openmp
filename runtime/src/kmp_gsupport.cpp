@@ -980,6 +980,11 @@ void xexpand(KMP_API_NAME_GOMP_TASKWAIT)(void) {
   MKLOC(loc, "GOMP_taskwait");
   int gtid = __kmp_entry_gtid();
 
+#if OMPT_SUPPORT
+  if (ompt_enabled.enabled)
+    OMPT_STORE_RETURN_ADDRESS(gtid);
+#endif
+
   KA_TRACE(20, ("GOMP_taskwait: T#%d\n", gtid));
 
   __kmpc_omp_taskwait(&loc, gtid);
@@ -1251,6 +1256,11 @@ void xexpand(KMP_API_NAME_GOMP_TASKGROUP_START)(void) {
   MKLOC(loc, "GOMP_taskgroup_start");
   KA_TRACE(20, ("GOMP_taskgroup_start: T#%d\n", gtid));
 
+#if OMPT_SUPPORT
+  if (ompt_enabled.enabled)
+    OMPT_STORE_RETURN_ADDRESS(gtid);
+#endif
+
   __kmpc_taskgroup(&loc, gtid);
 
   return;
@@ -1260,6 +1270,11 @@ void xexpand(KMP_API_NAME_GOMP_TASKGROUP_END)(void) {
   int gtid = __kmp_get_gtid();
   MKLOC(loc, "GOMP_taskgroup_end");
   KA_TRACE(20, ("GOMP_taskgroup_end: T#%d\n", gtid));
+
+#if OMPT_SUPPORT
+  if (ompt_enabled.enabled)
+    OMPT_STORE_RETURN_ADDRESS(gtid);
+#endif
 
   __kmpc_end_taskgroup(&loc, gtid);
 

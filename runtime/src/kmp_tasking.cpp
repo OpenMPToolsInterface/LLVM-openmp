@@ -1692,8 +1692,9 @@ static kmp_int32 __ompt_enabled_taskwait(ident_t *loc_ref, kmp_int32 gtid,
 kmp_int32 __kmpc_omp_taskwait(ident_t *loc_ref, kmp_int32 gtid) {
 #if OMPT_SUPPORT && OMPT_OPTIONAL
   if (UNLIKELY(ompt_enabled.enabled)) {
+    OMPT_STORE_RETURN_ADDRESS(gtid);
     return __ompt_enabled_taskwait(loc_ref, gtid, OMPT_GET_FRAME_ADDRESS(1),
-                                   OMPT_GET_RETURN_ADDRESS(0));
+                                   OMPT_LOAD_RETURN_ADDRESS(gtid));
   }
 #endif
   kmp_taskdata_t *taskdata;
