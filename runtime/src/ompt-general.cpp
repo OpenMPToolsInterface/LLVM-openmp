@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #if KMP_OS_UNIX
-//#include <execinfo.h>
 #include <dlfcn.h>
 #endif
 
