@@ -8,7 +8,7 @@
 
 #if KMP_OS_UNIX
 #include <dlfcn.h>
-#include <execinfo.h>
+//#include <execinfo.h>
 #endif
 
 #if KMP_OS_WINDOWS
