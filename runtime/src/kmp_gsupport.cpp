@@ -1230,8 +1230,7 @@ void xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS)(void (*task)(void *),
       __kmp_GOMP_serialized_parallel(&loc, gtid, task);                        \
     }                                                                          \
                                                                                \
-    IF_OMPT_SUPPORT(if (ompt_enabled.enabled)                                  \
-                        OMPT_STORE_RETURN_ADDRESS(gtid);)                      \
+    IF_OMPT_SUPPORT(OMPT_STORE_RETURN_ADDRESS(gtid);)                          \
     KMP_DISPATCH_INIT(&loc, gtid, (schedule), lb,                              \
                       (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz,          \
                       (schedule) != kmp_sch_static);                           \

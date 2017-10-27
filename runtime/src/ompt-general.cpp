@@ -54,11 +54,6 @@ enum tool_setting_e {
   omp_tool_enabled
 };
 
-typedef int (*ompt_initialize_t)(ompt_function_lookup_t lookup,
-                                 struct ompt_fns_t *fns);
-
-typedef void (*ompt_finalize_t)(struct ompt_fns_t *fns);
-
 /*****************************************************************************
  * global variables
  ****************************************************************************/
@@ -225,7 +220,7 @@ static ompt_fns_t *ompt_try_start_tool(unsigned int omp_version,
 #if KMP_OS_UNIX
       void *h = dlopen(fname, RTLD_LAZY);
       if (h) {
-        *(void **)(&start_tool) = dlsym(h, "ompt_start_tool");
+        start_tool = (ompt_start_tool_t)dlsym(h, "ompt_start_tool");
 #elif KMP_OS_WINDOWS
       HMODULE h = LoadLibrary(fname);
       if (h) {

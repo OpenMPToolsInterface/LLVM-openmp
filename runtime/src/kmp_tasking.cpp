@@ -536,7 +536,6 @@ static void __kmpc_omp_task_begin_if0_template(ident_t *loc_ref, kmp_int32 gtid,
 
   taskdata->td_flags.task_serial =
       1; // Execute this task immediately, not deferred.
-
   __kmp_task_start(gtid, task, current_task);
 
 #if OMPT_SUPPORT
@@ -844,7 +843,6 @@ static void __kmpc_omp_task_complete_if0_template(ident_t *loc_ref,
                                                   kmp_task_t *task) {
   KA_TRACE(10, ("__kmpc_omp_task_complete_if0(enter): T#%d loc=%p task=%p\n",
                 gtid, loc_ref, KMP_TASK_TO_TASKDATA(task)));
-
   // this routine will provide task to resume
   __kmp_task_finish(gtid, task, NULL);
 
