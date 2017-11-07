@@ -67,8 +67,9 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
   ompt_team_info_t *team_info = NULL;
   ompt_task_info_t *task_info = NULL;
   ompt_work_type_t ompt_work_type;
+  static __thread int singleWarning=0;
 
-  if (ompt_enabled.enabled) {
+  if (ompt_enabled.ompt_callback_work) {
     // Only fully initialize variables needed by OMPT if OMPT is enabled.
     team_info = __ompt_get_teaminfo(0, NULL);
     task_info = __ompt_get_task_info_object(0);
@@ -81,8 +82,13 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
       } else if ((loc->flags & KMP_IDENT_WORK_DISTRIBUTE) != 0) {
         ompt_work_type = ompt_work_distribute;
       } else {
-        KMP_ASSERT2(0,
-                    "__kmpc_for_static_init: can't determine workshare type");
+        ompt_work_type = ompt_work_loop;
+        if(!singleWarning){
+          printf("OMPT Warning: The used compiler is outdated! The provided kind of worksharing event in OMPT is not reliable.\n");
+          singleWarning=1;
+        }
+//        KMP_ASSERT2(0,
+//                    "__kmpc_for_static_init: can't determine workshare type");
       }
       KMP_DEBUG_ASSERT(ompt_work_type);
     }
