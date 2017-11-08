@@ -82,13 +82,6 @@
                                                                                                 \
     /* implementation-specific states (512..) */
 
-
-#define FOREACH_OMPT_MUTEX_IMPL(macro)                                                \
-    macro (ompt_mutex_impl_unknown, 0)      /* unknown implementatin */               \
-    macro (ompt_mutex_impl_spin, 1)         /* based on spin */                       \
-    macro (ompt_mutex_impl_queuing, 2)      /* based on some fair policy */           \
-    macro (ompt_mutex_impl_speculative, 3)  /* based on HW-supported speculation */
-
 #define FOREACH_OMPT_EVENT(macro)                                                                                        \
                                                                                                                          \
     /*--- Mandatory Events ---*/                                                                                         \
@@ -231,16 +224,6 @@ typedef enum ompt_set_result_t {
     ompt_set_sometimes_paired = 3,
     ompt_set_always = 4
 } ompt_set_result_t;
-
-
-/*----------------------
- * mutex implementations
- *----------------------*/
-typedef enum ompt_mutex_impl_t {
-#define ompt_mutex_impl_macro(impl, code) impl = code,
-    FOREACH_OMPT_MUTEX_IMPL(ompt_mutex_impl_macro)
-#undef ompt_mutex_impl_macro
-} ompt_mutex_impl_t;
 
 
 /*****************************************************************************

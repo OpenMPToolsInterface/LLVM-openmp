@@ -72,6 +72,18 @@ typedef struct {
   void *idle_frame;
 } ompt_thread_info_t;
 
+#define FOREACH_OMPT_MUTEX_IMPL(macro)                                                \
+    macro (ompt_mutex_impl_unknown, 0)      /* unknown implementation */              \
+    macro (ompt_mutex_impl_spin, 1)         /* based on spin */                       \
+    macro (ompt_mutex_impl_queuing, 2)      /* based on some fair policy */           \
+    macro (ompt_mutex_impl_speculative, 3)  /* based on HW-supported speculation */
+
+typedef enum ompt_mutex_impl_t {
+#define ompt_mutex_impl_macro(impl, code) impl = code,
+    FOREACH_OMPT_MUTEX_IMPL(ompt_mutex_impl_macro)
+#undef ompt_mutex_impl_macro
+} ompt_mutex_impl_t;
+
 extern ompt_callbacks_internal_t ompt_callbacks;
 
 #if OMP_40_ENABLED && OMPT_SUPPORT && OMPT_OPTIONAL
