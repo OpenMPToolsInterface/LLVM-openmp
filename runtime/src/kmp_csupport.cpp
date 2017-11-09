@@ -18,6 +18,7 @@
 #include "kmp_itt.h"
 #include "kmp_lock.h"
 #include "kmp_stats.h"
+#include "kmp_io.h"
 
 #if OMPT_SUPPORT
 #include "ompt-specific.h"
@@ -1773,7 +1774,7 @@ void __kmpc_for_static_fini(ident_t *loc, kmp_int32 global_tid) {
       } else {
         ompt_work_type = ompt_work_loop;
         if(!singleWarning){
-          printf("OMPT Warning: The used compiler is outdated! The provided kind of worksharing event in OMPT is not reliable.\n");
+          __kmp_printf("OMPT Warning: The used compiler is outdated! The provided kind of worksharing event in OMPT is not reliable.\n");
           singleWarning=1;
         }
 //        KMP_ASSERT2(0,
