@@ -23,7 +23,6 @@
 #include "kmp_itt.h"
 #include "kmp_stats.h"
 #include "kmp_str.h"
-#include "kmp_io.h"
 
 #if OMPT_SUPPORT
 #include "ompt-specific.h"
@@ -68,7 +67,6 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
   ompt_team_info_t *team_info = NULL;
   ompt_task_info_t *task_info = NULL;
   ompt_work_type_t ompt_work_type;
-  static __thread int singleWarning=0;
 
   if (ompt_enabled.ompt_callback_work) {
     // Only fully initialize variables needed by OMPT if OMPT is enabled.
@@ -84,12 +82,7 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
         ompt_work_type = ompt_work_distribute;
       } else {
         ompt_work_type = ompt_work_loop;
-        if(!singleWarning){
-          __kmp_printf("OMPT Warning: The used compiler is outdated! The provided kind of worksharing event in OMPT is not reliable.\n");
-          singleWarning=1;
-        }
-//        KMP_ASSERT2(0,
-//                    "__kmpc_for_static_init: can't determine workshare type");
+        KMP_WARNING(OmptOutdatedWorkshare);
       }
       KMP_DEBUG_ASSERT(ompt_work_type);
     }

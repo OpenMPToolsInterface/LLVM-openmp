@@ -18,7 +18,6 @@
 #include "kmp_itt.h"
 #include "kmp_lock.h"
 #include "kmp_stats.h"
-#include "kmp_io.h"
 
 #if OMPT_SUPPORT
 #include "ompt-specific.h"
@@ -1762,7 +1761,6 @@ void __kmpc_for_static_fini(ident_t *loc, kmp_int32 global_tid) {
     ompt_work_type_t ompt_work_type;
     ompt_team_info_t *team_info = __ompt_get_teaminfo(0, NULL);
     ompt_task_info_t *task_info = __ompt_get_task_info_object(0);
-    static __thread int singleWarning=0;
       // Determine workshare type
     if (loc != NULL) {
       if ((loc->flags & KMP_IDENT_WORK_LOOP) != 0) {
@@ -1773,12 +1771,6 @@ void __kmpc_for_static_fini(ident_t *loc, kmp_int32 global_tid) {
         ompt_work_type = ompt_work_distribute;
       } else {
         ompt_work_type = ompt_work_loop;
-        if(!singleWarning){
-          __kmp_printf("OMPT Warning: The used compiler is outdated! The provided kind of worksharing event in OMPT is not reliable.\n");
-          singleWarning=1;
-        }
-//        KMP_ASSERT2(0,
-//                    "__kmpc_for_static_fini: can't determine workshare type");
       }
       KMP_DEBUG_ASSERT(ompt_work_type);
     }
