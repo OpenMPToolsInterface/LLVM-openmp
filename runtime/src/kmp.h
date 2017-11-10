@@ -744,7 +744,7 @@ extern unsigned __kmp_affinity_num_masks;
 extern void __kmp_affinity_bind_thread(int which);
 
 extern kmp_affin_mask_t *__kmp_affin_fullMask;
-extern char const *__kmp_cpuinfo_file;
+extern char *__kmp_cpuinfo_file;
 
 #endif /* KMP_AFFINITY_SUPPORTED */
 
@@ -801,10 +801,6 @@ extern kmp_hws_item_t __kmp_hws_core;
 extern kmp_hws_item_t __kmp_hws_proc;
 extern int __kmp_hws_requested;
 extern int __kmp_hws_abs_flag; // absolute or per-item number requested
-
-#if OMP_50_ENABLED && LIBOMP_OMPT_SUPPORT
-extern char const *__kmp_tool_libraries;
-#endif // OMP_50_ENABLED && LIBOMP_OMPT_SUPPORT
 
 /* ------------------------------------------------------------------------ */
 
@@ -2896,13 +2892,7 @@ extern int __kmp_gtid_mode; /* Method of getting gtid, values:
 extern int
     __kmp_adjust_gtid_mode; /* If true, adjust method based on #threads */
 #ifdef KMP_TDATA_GTID
-#if KMP_OS_WINDOWS
-extern __declspec(
-    thread) int __kmp_gtid; /* This thread's gtid, if __kmp_gtid_mode == 3 */
-#else
-extern __thread int __kmp_gtid;
-#endif /* KMP_OS_WINDOWS - workaround because Intel(R) Many Integrated Core    \
-          compiler 20110316 doesn't accept __declspec */
+extern KMP_THREAD_LOCAL int __kmp_gtid;
 #endif
 extern int __kmp_tls_gtid_min; /* #threads below which use sp search for gtid */
 extern int __kmp_foreign_tp; // If true, separate TP var for each foreign thread
