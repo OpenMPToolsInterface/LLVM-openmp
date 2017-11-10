@@ -67,6 +67,8 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
   ompt_team_info_t *team_info = NULL;
   ompt_task_info_t *task_info = NULL;
   ompt_work_type_t ompt_work_type;
+  
+  static kmp_int8 warn = 0;
 
   if (ompt_enabled.ompt_callback_work) {
     // Only fully initialize variables needed by OMPT if OMPT is enabled.
@@ -82,7 +84,9 @@ static void __kmp_for_static_init(ident_t *loc, kmp_int32 global_tid,
         ompt_work_type = ompt_work_distribute;
       } else {
         ompt_work_type = ompt_work_loop;
-        KMP_WARNING(OmptOutdatedWorkshare);
+        kmp_int8 bool_res = KMP_COMPARE_AND_STORE_ACQ8(&warn, (kmp_int8)0, (kmp_int8)1);
+        if(bool_res)
+          KMP_WARNING(OmptOutdatedWorkshare);
       }
       KMP_DEBUG_ASSERT(ompt_work_type);
     }
