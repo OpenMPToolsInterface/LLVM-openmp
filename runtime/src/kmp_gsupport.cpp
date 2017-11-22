@@ -326,10 +326,6 @@ static
                                           long chunk_size) {
 // Intialize the loop worksharing construct.
 
-#if OMPT_SUPPORT
-  if (ompt_enabled.enabled)
-    OMPT_STORE_RETURN_ADDRESS(*gtid);
-#endif
   KMP_DISPATCH_INIT(loc, *gtid, schedule, start, end, incr, chunk_size,
                     schedule != kmp_sch_static);
 
