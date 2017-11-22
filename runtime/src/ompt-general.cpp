@@ -411,9 +411,15 @@ OMPT_API_ROUTINE int ompt_set_callback(ompt_callbacks_t which,
   case event_name:                                                             \
     if (ompt_event_implementation_status(event_name)) {                        \
       ompt_callbacks.ompt_callback(event_name) = (callback_type)callback;      \
-      ompt_enabled.event_name = 1;                                             \
+      if(callback)                                                             \
+        ompt_enabled.event_name = 1;                                           \
+      else                                                                     \
+        ompt_enabled.event_name = 0;                                           \
     }                                                                          \
-    return ompt_event_implementation_status(event_name);
+    if(callback)                                                               \
+      return ompt_event_implementation_status(event_name);                     \
+    else                                                                       \
+      return ompt_set_always;
 
     FOREACH_OMPT_EVENT(ompt_event_macro)
 
