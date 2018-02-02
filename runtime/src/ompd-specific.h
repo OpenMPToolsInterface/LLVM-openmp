@@ -73,17 +73,20 @@ OMPD_ACCESS(kmp_team_p,           t) \
 \
 OMPD_ACCESS(ompt_task_info_t,     frame) \
 OMPD_ACCESS(ompt_task_info_t,     scheduling_parent) \
-OMPD_ACCESS(ompt_task_info_t,     task_id) \
-OMPD_ACCESS(ompt_task_info_t,     function) \
+OMPD_ACCESS(ompt_task_info_t,     task_data) \
+/*OMPD_ACCESS(ompt_task_info_t,     function)*/ \
 \
-OMPD_ACCESS(ompt_team_info_t,     parallel_id) \
-OMPD_ACCESS(ompt_team_info_t,     microtask) \
+OMPD_ACCESS(ompt_team_info_t,     parallel_data) \
+/*OMPD_ACCESS(ompt_team_info_t,     microtask)*/ \
 \
 OMPD_ACCESS(ompt_thread_info_t,   state) \
 OMPD_ACCESS(ompt_thread_info_t,   wait_id) \
 \
-OMPD_ACCESS(ompt_frame_t,         reenter_runtime_frame) \
-OMPD_ACCESS(ompt_frame_t,         exit_runtime_frame) \
+OMPD_ACCESS(ompt_data_t,   value) \
+OMPD_ACCESS(ompt_data_t,   ptr) \
+\
+OMPD_ACCESS(ompt_frame_t,         exit_frame) \
+OMPD_ACCESS(ompt_frame_t,         enter_frame) \
 \
 OMPD_ACCESS(ompt_lw_taskteam_t,   parent) \
 OMPD_ACCESS(ompt_lw_taskteam_t,   ompt_team_info) \
@@ -109,8 +112,8 @@ OMPD_SIZEOF(kmp_info_t) \
 OMPD_SIZEOF(kmp_taskdata_t) \
 OMPD_SIZEOF(kmp_tasking_flags_t) \
 OMPD_SIZEOF(kmp_thread_t) \
-OMPD_SIZEOF(ompt_parallel_id_t) \
-OMPD_SIZEOF(ompt_task_id_t) \
+OMPD_SIZEOF(ompt_data_t) \
+OMPD_SIZEOF(ompt_id_t) \
 OMPD_SIZEOF(__kmp_avail_proc) \
 OMPD_SIZEOF(__kmp_max_nth) \
 OMPD_SIZEOF(__kmp_gtid) \

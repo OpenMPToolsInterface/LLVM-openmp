@@ -72,23 +72,23 @@ OMPD_FOREACH_SIZEOF(ompd_init_sizeof)
   {
     fprintf(stderr,
                 "OMP_OMPD active\n");
-    ompt_enabled = 1;
+    ompt_enabled.enabled = 1;
     ompd_state |= OMPD_ENABLE_BP;
   }
     
   ompd_initialized = 1;
 }
 
-void omp_ompd_enable ( void )
+/*void omp_ompd_enable ( void )
 {
     fprintf(stderr,
                 "OMP_OMPD active\n");
-    ompt_enabled = 1;
+    ompt_enabled.enabled = 1;
     ompd_state |= OMPD_ENABLE_BP;
 #ifdef OMPD_SUPPORT
     ompt_post_init();
 #endif
-}
+}*/
 
 void ompd_dll_locations_valid ( void ){
   /* naive way of implementing hard to opt-out empty function 
