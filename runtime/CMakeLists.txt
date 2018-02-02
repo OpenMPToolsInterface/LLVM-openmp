@@ -194,12 +194,6 @@ elseif("${libomp_build_type_lowercase}" STREQUAL "minsizerel")
   set(MINSIZEREL_BUILD TRUE)
 endif()
 
-# OMPD-support
-set(OMPD_SUPPORT FALSE)
-if("${ompd_support}") # string "on" or "ON" is seen as boolean TRUE
-    set(OMPD_SUPPORT TRUE)
-endif()
-
 # Include itt notify interface?
 set(LIBOMP_USE_ITT_NOTIFY TRUE CACHE BOOL
   "Enable ITT notify?")
@@ -313,6 +307,9 @@ if ((${LIBOMP_OMP_VERSION} GREATER 49) AND (LIBOMP_HAVE_OMPT_SUPPORT))
 endif()
 set(LIBOMP_OMPT_SUPPORT ${OMPT_DEFAULT} CACHE BOOL
   "OMPT-support?")
+
+set(LIBOMP_OMPD_SUPPORT FALSE CACHE BOOL "OMPD-support?")
+
 
 set(LIBOMP_OMPT_DEBUG FALSE CACHE BOOL
   "Trace OMPT initialization?")

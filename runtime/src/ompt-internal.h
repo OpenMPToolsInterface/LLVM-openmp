@@ -39,8 +39,6 @@ typedef struct ompt_callbacks_active_s {
       (info->td_flags.final ? ompt_task_final : 0x0) |                         \
       (info->td_flags.merged_if0 ? ompt_task_mergeable : 0x0)
 
-//typedef struct kmp_taskdata  kmp_taskdata_t;
-    
 typedef struct {
   ompt_frame_t frame;
   ompt_data_t task_data;

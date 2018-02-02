@@ -587,9 +587,6 @@ void __kmpc_omp_task_begin_if0(ident_t *loc_ref, kmp_int32 gtid,
                                    OMPT_LOAD_RETURN_ADDRESS(gtid));
     return;
   }
-    if (ompt_enabled)
-        taskdata->ompt_task_info.scheduling_parent = current_task;
-        
 #endif
   __kmpc_omp_task_begin_if0_template<false>(loc_ref, gtid, task, NULL, NULL);
 }

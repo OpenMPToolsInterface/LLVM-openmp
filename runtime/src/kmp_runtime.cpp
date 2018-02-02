@@ -1792,14 +1792,11 @@ int __kmp_fork_call(ident_t *loc, int gtid,
                                    exit_runtime_p
 #endif
                                    );
-#if OMPT_SUPPORT
-                *exit_runtime_p=0;
-#endif
           }
 
 #if OMPT_SUPPORT
           if (ompt_enabled.enabled) {
-            exit_runtime_p = NULL;
+            *exit_runtime_p = NULL;
             if (ompt_enabled.ompt_callback_implicit_task) {
               ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
                   ompt_scope_end, NULL, &(task_info->task_data), 1,
@@ -1897,9 +1894,6 @@ int __kmp_fork_call(ident_t *loc, int gtid,
                                    exit_runtime_p
 #endif
                                    );
-#if OMPT_SUPPORT
-                *exit_runtime_p=0;
-#endif
           }
 
 #if OMPT_SUPPORT
