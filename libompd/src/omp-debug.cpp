@@ -1,5 +1,5 @@
 /*
- * ompd_intel.cpp
+ * omp-debug.cpp
  *
  *  Created on: Jan 14, 2015
  *      Author: Ignacio Laguna
@@ -13,7 +13,7 @@
 
 #define NDEBUG 1
 
-#include "ompd_intel.h"
+#include "omp-debug.h"
 #include "ompd.h"
 // #include <stdio.h>
 #include <cstdio>
@@ -122,6 +122,7 @@ ompd_rc_t ompd_release_address_space_handle (
   return ompd_rc_ok;
 }
 
+#if 0 // no device support yet
 ompd_rc_t ompd_device_initialize (
     ompd_address_space_context_t *context,  /* IN: */
     ompd_device_identifier_t id,            /* IN: object defined by native device API */
@@ -178,6 +179,7 @@ ompd_rc_t ompd_device_initialize (
   /* TODO(mjm) - Find appropriate error return result for not finding a match */
   return ompd_rc_ok;
 }
+#endif // no device support
             
 /* --- 4 Handle Management -------------------------------------------------- */
 
@@ -637,6 +639,7 @@ ompd_rc_t ompd_parallel_handle_compare (
   return ompd_rc_ok;
 }
 
+#if 0 // parallel-id is initialized to zero
 ompd_rc_t ompd_get_parallel_handle_string_id (
     ompd_parallel_handle_t *parallel_handle,
     char **string_id
@@ -653,6 +656,7 @@ ompd_rc_t ompd_get_parallel_handle_string_id (
     sprintf(*string_id, "0x%llx", (long long)id);
     return ompd_rc_ok;
 }
+#endif
 
 
 /* --- 4.3 Task Handles ----------------------------------------------------- */
@@ -935,6 +939,7 @@ ompd_rc_t ompd_task_handle_compare (
   return ompd_rc_ok;
 }
 
+#if 0 // all task ids are initialized to zero
 ompd_rc_t ompd_get_task_handle_string_id (
     ompd_task_handle_t *task_handle,
     char **string_id
@@ -950,6 +955,7 @@ ompd_rc_t ompd_get_task_handle_string_id (
     sprintf(*string_id, "0x%llx", (long long)id);
     return ompd_rc_ok;
 }
+#endif
 
 
 /* --- 5 Process and Thread Settings ---------------------------------------- */
@@ -1088,9 +1094,9 @@ ompd_rc_t ompd_get_active_level(
 
 /* --- 6.2 OMPT Parallel Region Inquiry Analogues ------------------------- */
 
-ompd_rc_t ompd_get_parallel_id(
+ompd_rc_t ompd_get_parallel_data(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_parallel_id_t *id                  /* OUT: OpenMP parallel id */
+    ompd_address_t *data                  /* OUT: OpenMP parallel id */
     )
 {
   if (!parallel_handle)
@@ -1115,12 +1121,12 @@ ompd_rc_t ompd_get_parallel_id(
   ompd_rc_t ret = teamInfo.
         access("ompt_team_info").             /*t.ompt_team_info*/
         cast("ompt_team_info_t",0).
-        access("parallel_id").                /*t.ompt_team_info.parallel_id*/
-        castBase("ompt_parallel_id_t").        /*type: ompt_parallel_id_t*/
-        getValue(*id);
+        access("parallel_data").                /*t.ompt_team_info.parallel_id*/
+        getAddress(data);
   return ret;
 }
 
+#if 0 // there is no such thing as a parallel function
 ompd_rc_t ompd_get_parallel_function(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
     ompd_address_t *parallel_addr /* OUT: first instruction in the parallel region */
@@ -1154,6 +1160,7 @@ ompd_rc_t ompd_get_parallel_function(
         getValue(parallel_addr->address);
   return ret;
 }
+#endif // no parallel function
 
 /* --- 7 Thread Inquiry ----------------------------------------------------- */
 
@@ -1637,7 +1644,7 @@ ompd_rc_t ompd_get_task_frame(
         cast("ompt_frame_t", 0);
   sp_reentry->segment = OMPD_SEGMENT_UNSPECIFIED;
   ompd_rc_t ret = frame.           
-        access("reenter_runtime_frame").                    // td->ompt_task_info.frame.reenter_runtime_frame
+        access("enter_frame").                    // td->ompt_task_info.frame.enter_frame
         castBase().
         getValue(sp_reentry->address);  
 
@@ -1646,16 +1653,16 @@ ompd_rc_t ompd_get_task_frame(
 
   sp_exit->segment = OMPD_SEGMENT_UNSPECIFIED;
   ret = frame.           
-        access("exit_runtime_frame").                    // td->ompt_task_info.frame.exit_runtime_frame
+        access("exit_frame").                    // td->ompt_task_info.frame.exit_frame
         castBase().
         getValue(sp_exit->address);  
 
   return ret;
 }
 
-ompd_rc_t ompd_get_task_id(
+ompd_rc_t ompd_get_task_data(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_task_id_t *task_id                 /* OUT: OpenMP task ID */
+    ompd_address_t *task_data                 /* OUT: OpenMP task ID */
     )
 {
   if (!task_handle)
@@ -1680,13 +1687,13 @@ ompd_rc_t ompd_get_task_id(
   ompd_rc_t ret = taskInfo.
         access("ompt_task_info").                    // td->ompt_task_info
         cast("ompt_task_info_t").           
-        access("task_id").                    // td->ompt_task_info.task_id
-        castBase("ompt_task_id_t").
-        getValue(*task_id);  
+        access("task_data").                    // td->ompt_task_info.task_data
+        getAddress(task_data);  
 
   return ret;
 }
 
+#if 0 // the runtime currently does not have task function information
 ompd_rc_t ompd_get_task_function(
     ompd_task_handle_t *task_handle, /* IN: OpenMP task handle */
     ompd_address_t *task_addr /* OUT: first instruction in the task region */
@@ -1731,7 +1738,7 @@ ompd_rc_t ompd_get_task_function(
         getValue(task_addr->address);
   return ret;
 }
-
+#endif
 
 /* --- 9 OMPD Version and Compatibility Information ------------------------- */
 
@@ -1747,9 +1754,10 @@ ompd_rc_t ompd_get_version_string(
     const char **string                     /* OUT: OMPD version string */
     )
 {
-  static char version_string[256]={0};
+/*  static char version_string[256]={0};
   if(version_string[0]=='\0')
-    sprintf(version_string, "Intel OpenMP %i.%i Debugging Library implemnting TR %i%c",OMPD_IMPLEMENTS_OPENMP, OMPD_IMPLEMENTS_OPENMP_SUBVERSION, OMPD_TR_VERSION, OMPD_TR_SUBVERSION);
+    sprintf(version_string, "LLVM OpenMP %i.%i Debugging Library implemnting TR %i%c",OMPD_IMPLEMENTS_OPENMP, OMPD_IMPLEMENTS_OPENMP_SUBVERSION, OMPD_TR_VERSION, OMPD_TR_SUBVERSION);*/
+  static const char version_string[] = "LLVM OpenMP " STR(OMPD_IMPLEMENTS_OPENMP) "." STR(OMPD_IMPLEMENTS_OPENMP_SUBVERSION) " Debugging Library implemnting TR " STR(OMPD_TR_VERSION) "" STR(OMPD_TR_SUBVERSION) ;
   *string = version_string;
   return ompd_rc_ok;
 }

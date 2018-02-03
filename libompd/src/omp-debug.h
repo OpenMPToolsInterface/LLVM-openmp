@@ -28,6 +28,9 @@ extern "C" {
 #define OMPD_TR_VERSION 6
 #define OMPD_TR_SUBVERSION 'j'
 #define OMPD_VERSION (OMPD_IMPLEMENTS_OPENMP << 24) + (OMPD_IMPLEMENTS_OPENMP_SUBVERSION << 16) + (OMPD_TR_VERSION << 8) + OMPD_TR_SUBVERSION
+
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
   
 #include "ompd.h"
 #include "ompd_typedefs.h"

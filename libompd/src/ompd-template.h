@@ -49,8 +49,6 @@ typedef uint64_t ompd_taddr_t;          /* unsigned integer large enough */
                                         /* to hold a target address or a */
                                         /* target segment value          */
 typedef int64_t  ompd_tword_t;          /* signed version of ompd_addr_t */
-typedef uint64_t ompd_parallel_id_t;    /* parallel region instance ID   */
-typedef uint64_t ompd_task_id_t;        /* task region instance ID       */
 typedef uint64_t ompd_wait_id_t;        /* identifies what a thread is   */
                                         /* waiting for                   */
 typedef uint64_t ompd_size_t;           /* For sizes (e.g., size_t)      */
@@ -628,6 +626,7 @@ typedef ompd_rc_t (*ompd_parallel_handle_compare_apifn_t) (
     int                    *cmp_value
 );
 
+#if 0
 ompd_rc_t ompd_get_parallel_handle_string_id (
     ompd_parallel_handle_t *parallel_handle,
     char **string_id
@@ -636,6 +635,7 @@ typedef ompd_rc_t (*ompd_get_parallel_handle_string_id_apifn_t) (
     ompd_parallel_handle_t *parallel_handle,
     char **string_id
 );
+#endif
 
 /* --- 4.3 Task Handles ----------------------------------------------------- */
 
@@ -727,6 +727,7 @@ typedef ompd_rc_t (*ompd_task_handle_compare_apifn_t) (
     int                *cmp_value
 );
 
+#if 0
 ompd_rc_t ompd_get_task_handle_string_id (
     ompd_task_handle_t *task_handle,
     char **string_id
@@ -735,7 +736,7 @@ typedef ompd_rc_t (*ompd_get_task_handle_string_id_apifn_t) (
     ompd_task_handle_t *task_handle,
     char **string_id
 );
-
+#endif
 
 /* --- 5o Process and Thread Settings ---------------------------------------- */
 
@@ -813,15 +814,16 @@ typedef ompd_rc_t (*ompd_get_active_level_apifn_t) (
  * the OMPD and OMPT versions is that the OMPD must supply a parallel region 
  * handle to provide a context for these inquiries.
  */
-ompd_rc_t ompd_get_parallel_id(
+ompd_rc_t ompd_get_parallel_data(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_parallel_id_t *id                  /* OUT: OpenMP parallel id */
+    ompd_address_t *data                  /* OUT: OpenMP parallel id */
     );
-typedef ompd_rc_t (*ompd_get_parallel_id_apifn_t) (
+typedef ompd_rc_t (*ompd_get_parallel_data_apifn_t) (
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_parallel_id_t *id                  /* OUT: OpenMP parallel id */
+    ompd_address_t *data                  /* OUT: OpenMP parallel id */
     );
 
+#if 0
 ompd_rc_t ompd_get_parallel_function(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
     ompd_address_t *parallel_addr /* OUT: first instruction in the parallel region */
@@ -830,6 +832,7 @@ typedef ompd_rc_t (*ompd_get_parallel_function_apifn_t) (
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
     ompd_address_t *parallel_addr /* OUT: first instruction in the parallel region */
     );
+#endif
 
 /* --- 7 Thread Inquiry ----------------------------------------------------- */
 /* --- 7.1 Operating System Thread Inquiry ---------------------------------- */
@@ -920,7 +923,7 @@ typedef ompd_rc_t (*ompd_get_state_apifn_t) (
  * corresponds to the body of code executed by the task.
  */
 
-
+#if 0
 ompd_rc_t ompd_get_task_function(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
     ompd_address_t *entry_point /* OUT: first instruction in the task region */
@@ -929,7 +932,7 @@ typedef ompd_rc_t (*ompd_get_task_function_apifn_t) (
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
     ompd_address_t *entry_point /* OUT: first instruction in the task region */
     );
-
+#endif
 
 /* --- 8.2 Task Settings ---------------------------------------------------- */
 
@@ -1035,7 +1038,7 @@ typedef ompd_rc_t (*ompd_is_implicit_apifn_t) (
 
 /**
  * The functions defined here are third-party versions of ompt_get_task_frame 
- * and ompt_get_task_id. The only difference between the OMPD and OMPT 
+ * and ompt_get_task_data. The only difference between the OMPD and OMPT 
  * counterparts is that the OMPD version must supply a task handle to provide a 
  * context for these inquiries.
  */
@@ -1068,13 +1071,13 @@ typedef ompd_rc_t (*ompd_get_task_frame_apifn_t) (
     ompd_address_t *sp_reentry                 /* OUT: previous frame is user code */
     );
     
-ompd_rc_t ompd_get_task_id(
+ompd_rc_t ompd_get_task_data(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
-    ompd_task_id_t *task_id                 /* OUT: OpenMP task ID */
+    ompd_address_t *task_data                 /* OUT: OpenMP task ID */
     );
-typedef ompd_rc_t (*ompd_get_task_id_apifn_t) (
+typedef ompd_rc_t (*ompd_get_task_data_apifn_t) (
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
-    ompd_task_id_t *task_id                 /* OUT: OpenMP task ID */
+    ompd_address_t *task_data                 /* OUT: OpenMP task ID */
     );
 
 
