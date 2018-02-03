@@ -45,45 +45,47 @@ extern "C" {
 /**
  * Basic types.
  */
-typedef uint64_t ompd_taddr_t;          /* unsigned integer large enough */
+typedef uint64_t ompd_addr_t;          /* unsigned integer large enough */
                                         /* to hold a target address or a */
                                         /* target segment value          */
-typedef int64_t  ompd_tword_t;          /* signed version of ompd_addr_t */
+typedef int64_t  ompd_word_t;          /* signed version of ompd_addr_t */
+typedef uint64_t ompd_seg_t;
 typedef uint64_t ompd_wait_id_t;        /* identifies what a thread is   */
                                         /* waiting for                   */
 typedef uint64_t ompd_size_t;           /* For sizes (e.g., size_t)      */
 
 typedef struct ompd_address_t {
-  ompd_taddr_t segment;                 /* target architecture specific  */
+  ompd_seg_t segment;                 /* target architecture specific  */
                                         /* segment value                 */
-  ompd_taddr_t address;                 /* target address in the segment */
+  ompd_addr_t address;                 /* target address in the segment */
 } ompd_address_t;
 
-#define OMPD_SEGMENT_UNSPECIFIED  ((ompd_taddr_t) 0)
-#define OMPD_SEGMENT_TEXT         ((ompd_taddr_t) 1)
-#define OMPD_SEGMENT_DATA         ((ompd_taddr_t) 2)
+#define OMPD_SEGMENT_UNSPECIFIED  ((ompd_seg_t) 0)
+#define OMPD_SEGMENT_TEXT         ((ompd_seg_t) 1)
+#define OMPD_SEGMENT_DATA         ((ompd_seg_t) 2)
 
 /**
  * The following definitions match with ptx information stored in DWARF
  */
-#define OMPD_SEGMENT_CUDA_PTX_UNSPECIFIED    ((ompd_taddr_t)0)
-#define OMPD_SEGMENT_CUDA_PTX_CODE           ((ompd_taddr_t)1)
-#define OMPD_SEGMENT_CUDA_PTX_REG            ((ompd_taddr_t)2)
-#define OMPD_SEGMENT_CUDA_PTX_SREG           ((ompd_taddr_t)3)
-#define OMPD_SEGMENT_CUDA_PTX_CONST          ((ompd_taddr_t)4)
-#define OMPD_SEGMENT_CUDA_PTX_GLOBAL         ((ompd_taddr_t)5)
-#define OMPD_SEGMENT_CUDA_PTX_LOCAL          ((ompd_taddr_t)6)
-#define OMPD_SEGMENT_CUDA_PTX_PARAM          ((ompd_taddr_t)7)
-#define OMPD_SEGMENT_CUDA_PTX_SHARED         ((ompd_taddr_t)8)
-#define OMPD_SEGMENT_CUDA_PTX_SURF           ((ompd_taddr_t)9)
-#define OMPD_SEGMENT_CUDA_PTX_TEX            ((ompd_taddr_t)10)
-#define OMPD_SEGMENT_CUDA_PTX_TEXSAMPLER     ((ompd_taddr_t)11)
-#define OMPD_SEGMENT_CUDA_PTX_GENERIC        ((ompd_taddr_t)12)
-#define OMPD_SEGMENT_CUDA_PTX_IPARAM         ((ompd_taddr_t)13)
-#define OMPD_SEGMENT_CUDA_PTX_OPARAM         ((ompd_taddr_t)14)
-#define OMPD_SEGMENT_CUDA_PTX_FRAME          ((ompd_taddr_t)15)
-#define OMPD_SEGMENT_CUDA_PTX_MAX            ((ompd_taddr_t)16)
+#define OMPD_SEGMENT_CUDA_PTX_UNSPECIFIED    ((ompd_seg_t)0)
+#define OMPD_SEGMENT_CUDA_PTX_CODE           ((ompd_seg_t)1)
+#define OMPD_SEGMENT_CUDA_PTX_REG            ((ompd_seg_t)2)
+#define OMPD_SEGMENT_CUDA_PTX_SREG           ((ompd_seg_t)3)
+#define OMPD_SEGMENT_CUDA_PTX_CONST          ((ompd_seg_t)4)
+#define OMPD_SEGMENT_CUDA_PTX_GLOBAL         ((ompd_seg_t)5)
+#define OMPD_SEGMENT_CUDA_PTX_LOCAL          ((ompd_seg_t)6)
+#define OMPD_SEGMENT_CUDA_PTX_PARAM          ((ompd_seg_t)7)
+#define OMPD_SEGMENT_CUDA_PTX_SHARED         ((ompd_seg_t)8)
+#define OMPD_SEGMENT_CUDA_PTX_SURF           ((ompd_seg_t)9)
+#define OMPD_SEGMENT_CUDA_PTX_TEX            ((ompd_seg_t)10)
+#define OMPD_SEGMENT_CUDA_PTX_TEXSAMPLER     ((ompd_seg_t)11)
+#define OMPD_SEGMENT_CUDA_PTX_GENERIC        ((ompd_seg_t)12)
+#define OMPD_SEGMENT_CUDA_PTX_IPARAM         ((ompd_seg_t)13)
+#define OMPD_SEGMENT_CUDA_PTX_OPARAM         ((ompd_seg_t)14)
+#define OMPD_SEGMENT_CUDA_PTX_FRAME          ((ompd_seg_t)15)
+#define OMPD_SEGMENT_CUDA_PTX_MAX            ((ompd_seg_t)16)
 
+#if 0 // types removed in Austin F2F
 /*
  * Definition of OMPD states, taken from OMPT
  */
@@ -145,6 +147,7 @@ typedef enum ompd_proc_bind_t {
   ompd_proc_bind_close = 3,
   ompd_proc_bind_spread = 4
 } ompd_proc_bind_t;
+#endif
 
 typedef uint64_t ompd_device_identifier_t;
 
@@ -183,34 +186,34 @@ typedef struct _ompd_address_space_handle_s ompd_address_space_handle_t;
 /**
  * Other handles.
  */
-#define OMPD_OSTHREAD_PTHREAD     0 
-#define OMPD_OSTHREAD_LWP         1 
-#define OMPD_OSTHREAD_WINTHREAD   2
-#define OMPD_OSTHREAD_CUDALOGICAL 3
-#define OMPD_OSTHREAD_MAX         4
+#define OMPD_THREAD_ID_PTHREAD     0 
+#define OMPD_THREAD_ID_LWP         1 
+#define OMPD_THREAD_ID_WINTHREAD   2
+#define OMPD_THREAD_ID_CUDALOGICAL 3
+#define OMPD_THREAD_ID_MAX         4
 
-typedef enum ompd_osthread_kind_t {
-  ompd_osthread_pthread=0,
-  ompd_osthread_lwp=1,
-  ompd_osthread_winthread=2,
-  ompd_osthread_cudalogical=3
-} ompd_osthread_kind_t;
+typedef enum ompd_thread_id_kind_t {
+  ompd_thread_id_pthread=0,
+  ompd_thread_id_lwp=1,
+  ompd_thread_id_winthread=2,
+  ompd_thread_id_cudalogical=3
+} ompd_thread_id_kind_t;
 
 /**
  * Logical coordinates of OMP target device threads
  */
 typedef struct ompd_dim3_t {
-    ompd_tword_t x;
-    ompd_tword_t y;
-    ompd_tword_t z;
+    ompd_word_t x;
+    ompd_word_t y;
+    ompd_word_t z;
 } ompd_dim3_t;
 
 typedef struct ompd_cudathread_coord_t {
-    ompd_taddr_t cudaDevId;
-    ompd_taddr_t cudaContext;
-    ompd_taddr_t warpSize;
-    ompd_taddr_t gridId;
-    ompd_taddr_t kernelId;    // TODO (MJM) - for some reason, cuda-gdb doesn't work with grids too well.
+    ompd_addr_t cudaDevId;
+    ompd_addr_t cudaContext;
+    ompd_addr_t warpSize;
+    ompd_addr_t gridId;
+    ompd_addr_t kernelId;    // TODO (MJM) - for some reason, cuda-gdb doesn't work with grids too well.
     ompd_dim3_t  gridDim;
     ompd_dim3_t  blockDim;
     ompd_dim3_t  blockIdx;
@@ -258,13 +261,13 @@ typedef enum ompd_target_prim_types_t
  */
 typedef struct ompd_target_type_sizes_t
 {
-  unsigned int sizeof_char;
-  unsigned int sizeof_short;
-  unsigned int sizeof_int;
-  unsigned int sizeof_long;
-  unsigned int sizeof_long_long;
-  unsigned int sizeof_pointer;
-} ompd_target_type_sizes_t;
+  uint8_t sizeof_char;
+  uint8_t sizeof_short;
+  uint8_t sizeof_int;
+  uint8_t sizeof_long;
+  uint8_t sizeof_long_long;
+  uint8_t sizeof_pointer;
+} ompd_device_type_sizes_t;
 
 
 /******************************************************************************
@@ -294,14 +297,15 @@ typedef ompd_rc_t (*ompd_dmemory_free_fn_t) (
 /**
  * Get thread specific context.
  */
-typedef ompd_rc_t (*ompd_get_thread_context_for_osthread_fn_t) (
+typedef ompd_rc_t (*ompd_get_thread_context_for_thread_id_fn_t) (
     ompd_address_space_context_t *context,
-    ompd_osthread_kind_t kind,
-    ompd_size_t sizeof_osthread,
-    const void* osthread,
+    ompd_thread_id_kind_t kind,
+    ompd_size_t sizeof_thread_id,
+    const void* thread_id,
     ompd_thread_context_t** thread_context
     );
 
+#if 0
 /**
  * Get containing (host) process context for address_space_context
  */
@@ -311,6 +315,7 @@ typedef ompd_rc_t (*ompd_get_process_context_for_context_fn_t) (
     ompd_address_space_context_t**
       containing_address_space_context /* OUT: Containing omp process addr space */
 );
+#endif
 
 /**
  * Look up the sizes of primitive types in the target
@@ -337,7 +342,7 @@ typedef ompd_rc_t (*ompd_tmemory_read_fn_t) (
     ompd_address_space_context_t *context,    /* IN: debugger handle for the target */
     ompd_thread_context_t *tcontext,    /* IN: debugger handle for a target thread might be NULL */
     ompd_address_t addr,         /* IN: address in the target */
-    ompd_tword_t nbytes,       /* IN: number of items to read */
+    ompd_word_t nbytes,       /* IN: number of items to read */
     void *buffer                /* OUT: output buffer */
     );
 
@@ -348,7 +353,7 @@ typedef ompd_rc_t (*ompd_tmemory_write_fn_t) (
     ompd_address_space_context_t *context,    /* IN: debugger handle for the target */
     ompd_thread_context_t *tcontext,    /* IN: debugger handle for a target thread might be NULL */
     ompd_address_t addr,         /* IN: address in the target */
-    ompd_tword_t nbytes,       /* IN: number of items to write */
+    ompd_word_t nbytes,       /* IN: number of items to write */
     const void *buffer                /* IN: output buffer */
     );
 
@@ -388,8 +393,8 @@ typedef struct ompd_callbacks_t
   ompd_target_host_fn_t     target_to_host;
   ompd_target_host_fn_t     host_to_target;
 
-  ompd_get_thread_context_for_osthread_fn_t  get_thread_context_for_osthread;
-  ompd_get_process_context_for_context_fn_t  get_containing_process_context;
+  ompd_get_thread_context_for_thread_id_fn_t  get_thread_context_for_thread_id;
+//  ompd_get_process_context_for_context_fn_t  get_containing_process_context;
   
 } ompd_callbacks_t;
 
@@ -406,17 +411,17 @@ typedef struct ompd_callbacks_t
  * revision of the OMPD specification supported by an implementation of OMPD.
  */
 
-ompd_rc_t ompd_get_version ( 
-    int *version 
+ompd_rc_t ompd_get_api_version ( 
+    ompd_word_t *version 
     );
-typedef ompd_rc_t (*ompd_get_version_apifn_t) ( 
-    int *version 
+typedef ompd_rc_t (*ompd_get_api_version_apifn_t) ( 
+    ompd_word_t *version 
     );
 
-ompd_rc_t ompd_get_version_string(
+ompd_rc_t ompd_get_api_version_string(
     const char **string                     /* OUT: OMPD version string */
     );
-typedef ompd_rc_t (*ompd_get_version_string_apifn_t) (
+typedef ompd_rc_t (*ompd_get_api_version_string_apifn_t) (
     const char **string                     /* OUT: OMPD version string */
     );
     
@@ -427,10 +432,12 @@ typedef ompd_rc_t (*ompd_get_version_string_apifn_t) (
  * maintain the functions valid for as long as needed.
  */
 ompd_rc_t ompd_initialize (
-    const ompd_callbacks_t *table /* IN: callbacks table */
+    const ompd_callbacks_t *table, /* IN: callbacks table */
+    ompd_word_t version 
     );
 typedef ompd_rc_t (*ompd_initialize_apifn_t) (
-    const ompd_callbacks_t *table /* IN: callbacks table */
+    const ompd_callbacks_t *table, /* IN: callbacks table */
+    ompd_word_t version 
     );
 
 ompd_rc_t ompd_process_initialize (
@@ -440,6 +447,15 @@ ompd_rc_t ompd_process_initialize (
 typedef ompd_rc_t (*ompd_process_initialize_apifn_t) (
     ompd_address_space_context_t *context,    /* IN: debugger handle for the target */
     ompd_address_space_handle_t **addrhandle      /* OUT: ompd handle for the target */
+    );
+
+ompd_rc_t ompd_get_openmp_version ( 
+    ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
+    ompd_word_t *version 
+    );
+typedef ompd_rc_t (*ompd_get_openmp_version_apifn_t) ( 
+    ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
+    ompd_word_t *version 
     );
 
 ompd_rc_t ompd_release_address_space_handle (
@@ -480,6 +496,7 @@ typedef ompd_rc_t (*ompd_finalize_apifn_t) ( void );
  * and/or destroying threads during or after the call, rendering useless the 
  * vector of handles returned.
  */
+#if 0 
 ompd_rc_t ompd_get_threads (
     ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
     ompd_thread_handle_t ***thread_handle_array, /* OUT: array of handles */
@@ -490,7 +507,7 @@ typedef ompd_rc_t (*ompd_get_threads_apifn_t) (
     ompd_thread_handle_t ***thread_handle_array, /* OUT: array of handles */
     int                     *num_handles    /* OUT: number of handles in the array */
     );
-
+#endif
 /**
  * Retrieve handles for OpenMP threads in a parallel region. 
  * 
@@ -505,22 +522,23 @@ typedef ompd_rc_t (*ompd_get_threads_apifn_t) (
  */
 ompd_rc_t ompd_get_thread_in_parallel(
     ompd_parallel_handle_t *parallel_handle,    /* IN */
-    ompd_thread_handle_t ***thread_handle_array, /* OUT: array of handles */
-    int *num_handles            /* OUT: number of handles in the array */
+    int nth_thread,            /* IN: number of the thread in team */
+    ompd_thread_handle_t **thread_handle /* OUT: handle */
     );
 typedef ompd_rc_t (*ompd_get_thread_in_parallel_apifn_t) (
     ompd_parallel_handle_t *parallel_handle,    /* IN */
-    ompd_thread_handle_t ***thread_handle_array, /* OUT: array of handles */
-    int *num_handles            /* OUT: number of handles in the array */
+    int nth_thread,            /* IN: number of the thread in team */
+    ompd_thread_handle_t **thread_handle /* OUT: handle */
     );
 
+#if 0
 ompd_rc_t ompd_get_master_thread_in_parallel (
     ompd_parallel_handle_t *parallel_handle,    /* IN */
     ompd_thread_handle_t **thread_handle);
 typedef ompd_rc_t (*ompd_get_master_thread_in_parallel_apifn_t) (
     ompd_parallel_handle_t *parallel_handle,    /* IN */
     ompd_thread_handle_t **thread_handle);
-
+#endif
 
 ompd_rc_t ompd_release_thread_handle (
     ompd_thread_handle_t *thread_handle
@@ -541,6 +559,7 @@ typedef ompd_rc_t (*ompd_thread_handle_compare_apifn_t) (
     int *cmp_value
 );
 
+#if 0
 ompd_rc_t ompd_get_thread_handle_string_id (
     ompd_thread_handle_t *thread_handle,
     char **string_id
@@ -549,23 +568,24 @@ typedef ompd_rc_t (*ompd_get_thread_handle_string_id_apifn_t) (
     ompd_thread_handle_t *thread_handle,
     char **string_id
 );
+#endif
 
 /* --- 4.2 Parallel Region Handles------------------------------------------- */
 
 /**
  * Retrieve the handle for the innermost patallel region for an OpenMP thread.
  * 
- * The operation ompd_get_top_parallel_region enables the debugger to obtain 
+ * The operation ompd_get_current_parallel_handle enables the debugger to obtain 
  * the handle for the innermost parallel region associated with an OpenMP 
  * thread. This call is meaningful only if the thread whose handle is provided 
  * is stopped.
  */
 
-ompd_rc_t ompd_get_top_parallel_region(
+ompd_rc_t ompd_get_current_parallel_handle(
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
     ompd_parallel_handle_t **parallel_handle /* OUT: OpenMP parallel handle */
     );
-typedef ompd_rc_t (*ompd_get_top_parallel_region_apifn_t) (
+typedef ompd_rc_t (*ompd_get_current_parallel_handle_apifn_t) (
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
     ompd_parallel_handle_t **parallel_handle /* OUT: OpenMP parallel handle */
     );
@@ -591,17 +611,17 @@ typedef ompd_rc_t (*ompd_get_enclosing_parallel_handle_apifn_t) (
 /**
  * Retrieve the handle for the enclosing parallel region or a task region.
  * 
- * The ompd_get_task_enclosing_parallel_handle operation enables the debugger to 
+ * The ompd_get_task_parallel_handle operation enables the debugger to 
  * obtain the handle for the parallel region enclosing the task region 
  * specified by task_handle. This call is meaningful only if at least one 
  * thread in the parallel region is stopped.
  */
 
-ompd_rc_t ompd_get_task_enclosing_parallel_handle(
+ompd_rc_t ompd_get_task_parallel_handle(
     ompd_task_handle_t* task_handle, /* IN: OpenMP task handle */
     ompd_parallel_handle_t **enclosing_parallel_handle /* OUT: OpenMP parallel handle */
     );
-typedef ompd_rc_t (*ompd_get_task_enclosing_parallel_handle_apifn_t) (
+typedef ompd_rc_t (*ompd_get_task_parallel_handle_apifn_t) (
     ompd_task_handle_t* task_handle, /* IN: OpenMP task handle */
     ompd_parallel_handle_t **enclosing_parallel_handle /* OUT: OpenMP parallel handle */
     );
@@ -642,15 +662,15 @@ typedef ompd_rc_t (*ompd_get_parallel_handle_string_id_apifn_t) (
 /**
  * Retrieve the handle for the innermost task for an OpenMP thread.
  * 
- * The debugger uses the operation ompd_get_top_task_region to obtain the handle
+ * The debugger uses the operation ompd_get_current_task__handle to obtain the handle
  * for the innermost task region associated with an OpenMP thread. This call is 
  * meaningful only if the thread whose handle is provided is stopped.
  */
-ompd_rc_t ompd_get_top_task_region(
+ompd_rc_t ompd_get_current_task__handle(
     ompd_thread_handle_t* thread_handle,     /* IN: OpenMP thread handle*/
     ompd_task_handle_t **task_handle         /* OUT: OpenMP task handle */
     );
-typedef ompd_rc_t (*ompd_get_top_task_region_apifn_t) (
+typedef ompd_rc_t (*ompd_get_current_task__handle_apifn_t) (
     ompd_thread_handle_t* thread_handle,     /* IN: OpenMP thread handle*/
     ompd_task_handle_t **task_handle         /* OUT: OpenMP task handle */
     );
@@ -658,34 +678,36 @@ typedef ompd_rc_t (*ompd_get_top_task_region_apifn_t) (
 /**
  * Retrieve the handle for an enclosing task.
  * 
- * The debugger uses ompd_get_ancestor_task_region to obtain the handle for the 
+ * The debugger uses ompd_get_ancestor_task_handle to obtain the handle for the 
  * task region enclosing the task region specified by task_handle. This call is 
  * meaningful only if the thread executing the task specified by task_handle is 
  * stopped.
  */
-ompd_rc_t ompd_get_ancestor_task_region(
+#if 0
+ompd_rc_t ompd_get_ancestor_task_handle(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
     ompd_task_handle_t **parent_task_handle  /* OUT: OpenMP task handle */
     );
-typedef ompd_rc_t (*ompd_get_ancestor_task_region_apifn_t) (
+typedef ompd_rc_t (*ompd_get_ancestor_task_handle_apifn_t) (
+    ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
+    ompd_task_handle_t **parent_task_handle  /* OUT: OpenMP task handle */
+    );
+#endif
+    
+ompd_rc_t ompd_get_generating_ancestor_task_handle(
+    ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
+    ompd_task_handle_t **parent_task_handle  /* OUT: OpenMP task handle */
+    );
+typedef ompd_rc_t (*ompd_get_generating_ancestor_task_handle_apifn_t) (
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
     ompd_task_handle_t **parent_task_handle  /* OUT: OpenMP task handle */
     );
     
-ompd_rc_t ompd_get_generating_ancestor_task_region(
+ompd_rc_t ompd_get_scheduling_ancestor_task_handle(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
     ompd_task_handle_t **parent_task_handle  /* OUT: OpenMP task handle */
     );
-typedef ompd_rc_t (*ompd_get_generating_ancestor_task_region_apifn_t) (
-    ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
-    ompd_task_handle_t **parent_task_handle  /* OUT: OpenMP task handle */
-    );
-    
-ompd_rc_t ompd_get_scheduling_ancestor_task_region(
-    ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
-    ompd_task_handle_t **parent_task_handle  /* OUT: OpenMP task handle */
-    );
-typedef ompd_rc_t (*ompd_get_scheduling_ancestor_task_region_apifn_t) (
+typedef ompd_rc_t (*ompd_get_scheduling_ancestor_task_handle_apifn_t) (
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
     ompd_task_handle_t **parent_task_handle  /* OUT: OpenMP task handle */
     );
@@ -698,15 +720,15 @@ typedef ompd_rc_t (*ompd_get_scheduling_ancestor_task_region_apifn_t) (
  * call is meaningful only if all threads associated with the parallel region 
  * are stopped.
  */
-ompd_rc_t ompd_get_implicit_task_in_parallel(
+ompd_rc_t ompd_get_task_in_parallel(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_task_handle_t ***task_handle_array, /* OUT: array of OpenMP task handles */
-    int *num_handles                        /* OUT: number of task handles */
+    int nth_handle,                        /* IN: number of the task handle */
+    ompd_task_handle_t **task_handle /* OUT: OpenMP task handle */
     );
-typedef ompd_rc_t (*ompd_get_implicit_task_in_parallel_apifn_t) (
+typedef ompd_rc_t (*ompd_get_task_in_parallel_apifn_t) (
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_task_handle_t ***task_handle_array, /* OUT: array of OpenMP task handles */
-    int *num_handles                        /* OUT: number of task handles */
+    int nth_handle,                        /* IN: number of the task handle */
+    ompd_task_handle_t **task_handle /* OUT: OpenMP task handle */
     );
 
 ompd_rc_t ompd_release_task_handle (
@@ -748,20 +770,20 @@ typedef ompd_rc_t (*ompd_get_task_handle_string_id_apifn_t) (
 
 ompd_rc_t ompd_get_num_procs(
     ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
-    ompd_tword_t *val                       /* OUT: number of processes */
+    ompd_word_t *val                       /* OUT: number of processes */
     );
 typedef ompd_rc_t (*ompd_get_num_procs_apifn_t) (
     ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
-    ompd_tword_t *val                       /* OUT: number of processes */
+    ompd_word_t *val                       /* OUT: number of processes */
     );
 
 ompd_rc_t ompd_get_thread_limit(
     ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
-    ompd_tword_t *val                       /* OUT: max number of threads */
+    ompd_word_t *val                       /* OUT: max number of threads */
     );
 typedef ompd_rc_t (*ompd_get_thread_limit_apifn_t) (
     ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
-    ompd_tword_t *val                       /* OUT: max number of threads */
+    ompd_word_t *val                       /* OUT: max number of threads */
     );
 
 /* --- 6 Parallel Region Inqueries ------------------------------------------ */
@@ -772,11 +794,11 @@ typedef ompd_rc_t (*ompd_get_thread_limit_apifn_t) (
  */
 ompd_rc_t ompd_get_num_threads(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_tword_t *val                       /* OUT: number of threads */
+    ompd_word_t *val                       /* OUT: number of threads */
     );
 typedef ompd_rc_t (*ompd_get_num_threads_apifn_t) (
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_tword_t *val                       /* OUT: number of threads */
+    ompd_word_t *val                       /* OUT: number of threads */
     );
 
 /**
@@ -784,11 +806,11 @@ typedef ompd_rc_t (*ompd_get_num_threads_apifn_t) (
  */
 ompd_rc_t ompd_get_level(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_tword_t *val                       /* OUT: nesting level */
+    ompd_word_t *val                       /* OUT: nesting level */
     );
 typedef ompd_rc_t (*ompd_get_level_apifn_t) (
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_tword_t *val                       /* OUT: nesting level */
+    ompd_word_t *val                       /* OUT: nesting level */
     );
 
 /**
@@ -799,11 +821,11 @@ typedef ompd_rc_t (*ompd_get_level_apifn_t) (
  */
 ompd_rc_t ompd_get_active_level(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_tword_t *val                       /* OUT: active nesting level */
+    ompd_word_t *val                       /* OUT: active nesting level */
     );
 typedef ompd_rc_t (*ompd_get_active_level_apifn_t) (
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_tword_t *val                       /* OUT: active nesting level */
+    ompd_word_t *val                       /* OUT: active nesting level */
     );
 
 /* --- 6.2 OMPT Parallel Region Inquiry Analogues ------------------------- */
@@ -847,17 +869,17 @@ typedef ompd_rc_t (*ompd_get_parallel_function_apifn_t) (
  */
 ompd_rc_t ompd_get_thread_handle (
     ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
-    ompd_osthread_kind_t         kind,
-    ompd_size_t                  sizeof_osthread,
-    const void*                  osthread,
+    ompd_thread_id_kind_t         kind,
+    ompd_size_t                  sizeof_thread_id,
+    const void*                  thread_id,
     ompd_thread_handle_t       **thread_handle     /* OUT: OpenMP thread handle*/
     );
 
 typedef ompd_rc_t (*ompd_get_thread_handle_apifn_t) (
     ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
-    ompd_osthread_kind_t         kind,
-    ompd_size_t                  sizeof_osthread,
-    const void*                  osthread,
+    ompd_thread_id_kind_t         kind,
+    ompd_size_t                  sizeof_thread_id,
+    const void*                  thread_id,
     ompd_thread_handle_t       **thread_handle     /* OUT: OpenMP thread handle*/
     );
 
@@ -866,28 +888,37 @@ typedef ompd_rc_t (*ompd_get_thread_handle_apifn_t) (
  * this might change over time in case virtual openmp threads migrate between 
  * OS threads.
  */
-ompd_rc_t ompd_get_osthread (
+ompd_rc_t ompd_get_thread_id (
     ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
-    ompd_osthread_kind_t  kind,
-    ompd_size_t           sizeof_osthread,
-    void                 *osthread
+    ompd_thread_id_kind_t  kind,
+    ompd_size_t           sizeof_thread_id,
+    void                 *thread_id
     );
 
-typedef ompd_rc_t (*ompd_get_osthread_apifn_t) (
+typedef ompd_rc_t (*ompd_get_thread_id_apifn_t) (
     ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
-    ompd_osthread_kind_t  kind,
-    ompd_size_t           sizeof_osthread,
-    void                 *osthread
+    ompd_thread_id_kind_t  kind,
+    ompd_size_t           sizeof_thread_id,
+    void                 *thread_id
+    );
+
+ompd_rc_t ompd_get_thread_data(
+    ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
+    ompd_address_t *data                  /* OUT: OpenMP thread data */
+    );
+typedef ompd_rc_t (*ompd_get_thread_data_apifn_t) (
+    ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
+    ompd_address_t *data                  /* OUT: OpenMP thread data */
     );
 
 ompd_rc_t ompd_get_thread_num(
     ompd_thread_handle_t* thread_handle,     /* IN: OpenMP thread handle*/
-    ompd_tword_t *val                    /* OUT: number of the thread within the team */   
+    ompd_word_t *val                    /* OUT: number of the thread within the team */   
     );
 
 typedef ompd_rc_t (*ompd_get_thread_num_apifn_t) (
     ompd_thread_handle_t* thread_handle,     /* IN: OpenMP thread handle*/
-    ompd_tword_t *val                    /* OUT: number of the thread within the team */   
+    ompd_word_t *val                    /* OUT: number of the thread within the team */   
     );
 
 
@@ -904,12 +935,12 @@ typedef ompd_rc_t (*ompd_get_thread_num_apifn_t) (
  */
 ompd_rc_t ompd_get_state (
     ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
-    ompd_state_t *state,                    /* OUT: State of this thread */
+    ompd_word_t *state,                    /* OUT: State of this thread */
     ompd_wait_id_t *wait_id                 /* OUT: Wait ID */
 );
 typedef ompd_rc_t (*ompd_get_state_apifn_t) (
     ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
-    ompd_state_t *state,                    /* OUT: State of this thread */
+    ompd_word_t *state,                    /* OUT: State of this thread */
     ompd_wait_id_t *wait_id                 /* OUT: Wait ID */
 );
 
@@ -946,92 +977,92 @@ typedef ompd_rc_t (*ompd_get_task_function_apifn_t) (
 
 ompd_rc_t ompd_get_max_threads(  
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: max number of threads */
+    ompd_word_t *val                                /* OUT: max number of threads */
     );
 
 typedef ompd_rc_t (*ompd_get_max_threads_apifn_t) (  
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: max number of threads */
+    ompd_word_t *val                                /* OUT: max number of threads */
     );
 
 ompd_rc_t ompd_in_parallel( 
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: Is OpenMP in parallel? */
+    ompd_word_t *val                                /* OUT: Is OpenMP in parallel? */
     );
 
 typedef ompd_rc_t (*ompd_in_parallel_apifn_t) ( 
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: Is OpenMP in parallel? */
+    ompd_word_t *val                                /* OUT: Is OpenMP in parallel? */
     );
 
 ompd_rc_t ompd_in_final(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: Is OpenMP in final? */
+    ompd_word_t *val                                /* OUT: Is OpenMP in final? */
     );
 
 typedef ompd_rc_t (*ompd_in_final_apifn_t) (
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: Is OpenMP in final? */
+    ompd_word_t *val                                /* OUT: Is OpenMP in final? */
     );
 
 ompd_rc_t ompd_get_dynamic(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: ? */
+    ompd_word_t *val                                /* OUT: ? */
     );
 
 typedef ompd_rc_t (*ompd_get_dynamic_apifn_t) (
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: ? */
+    ompd_word_t *val                                /* OUT: ? */
     );
 
 ompd_rc_t ompd_get_nested(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
-    ompd_tword_t *val                                /* OUT: Is this task nested? */
+    ompd_word_t *val                                /* OUT: Is this task nested? */
     );
 
 typedef ompd_rc_t (*ompd_get_nested_apifn_t) (
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
-    ompd_tword_t *val                                /* OUT: Is this task nested? */
+    ompd_word_t *val                                /* OUT: Is this task nested? */
     );
 
 ompd_rc_t ompd_get_max_active_levels(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
-    ompd_tword_t *val                                /* OUT: max active levels */
+    ompd_word_t *val                                /* OUT: max active levels */
     );
 
 typedef ompd_rc_t (*ompd_get_max_active_levels_apifn_t) (
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
-    ompd_tword_t *val                                /* OUT: max active levels */
+    ompd_word_t *val                                /* OUT: max active levels */
     );
 
 ompd_rc_t ompd_get_schedule(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_sched_t *kind,                      /* OUT: Kind of OpenMP schedule*/
-    ompd_tword_t *modifier                           /* OUT: Schedunling modifier */
+    ompd_word_t *kind,                      /* OUT: Kind of OpenMP schedule*/
+    ompd_word_t *modifier                           /* OUT: Schedunling modifier */
     );
 
 typedef ompd_rc_t (*ompd_get_schedule_apifn_t) (
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_sched_t *kind,                      /* OUT: Kind of OpenMP schedule*/
-    ompd_tword_t *modifier                           /* OUT: Schedunling modifier */
+    ompd_word_t *kind,                      /* OUT: Kind of OpenMP schedule*/
+    ompd_word_t *modifier                           /* OUT: Schedunling modifier */
     );
 
 ompd_rc_t ompd_get_proc_bind(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_proc_bind_t *bind                   /* OUT: Kind of proc-binding */
+    ompd_word_t *bind                   /* OUT: Kind of proc-binding */
     );
 typedef ompd_rc_t (*ompd_get_proc_bind_apifn_t) (
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_proc_bind_t *bind                   /* OUT: Kind of proc-binding */
+    ompd_word_t *bind                   /* OUT: Kind of proc-binding */
     );
 
 ompd_rc_t ompd_is_implicit(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: implicit=1, explicit=0 */  
+    ompd_word_t *val                                /* OUT: implicit=1, explicit=0 */  
     );
 typedef ompd_rc_t (*ompd_is_implicit_apifn_t) (
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: implicit=1, explicit=0 */  
+    ompd_word_t *val                                /* OUT: implicit=1, explicit=0 */  
     );
             
 /* --- 8.3 OMPT Task Inquiry Analogues -------------------------------------- */

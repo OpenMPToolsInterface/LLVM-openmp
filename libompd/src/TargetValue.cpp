@@ -16,7 +16,7 @@ inline int ompd_sizeof(ompd_target_prim_types_t t)
 TType& TTypeFactory::getType(
         ompd_address_space_context_t *context, 
         const char * typeName, 
-        ompd_taddr_t segment
+        ompd_addr_t segment
 )
 {
     TType empty(true);
@@ -39,7 +39,7 @@ TType& TTypeFactory::getType(
 
 TType::TType(ompd_address_space_context_t *_context, 
         const char* _typeName, 
-        ompd_taddr_t _segment) : typeSize(0), fieldOffsets(), descSegment(_segment), 
+        ompd_addr_t _segment) : typeSize(0), fieldOffsets(), descSegment(_segment), 
       typeName(_typeName), context(_context), isvoid(false)
 {
 }
@@ -202,7 +202,7 @@ ompd_rc_t TType::getElementSize(const char* fieldName, ompd_size_t * size)
 //};
 
 
-TValue::TValue(ompd_address_space_context_t *_context, ompd_thread_context_t *_tcontext, const char* _valueName, ompd_taddr_t segment)
+TValue::TValue(ompd_address_space_context_t *_context, ompd_thread_context_t *_tcontext, const char* _valueName, ompd_addr_t segment)
 : errorState(ompd_rc_ok), type(&nullType), pointerLevel(0), /*valueName(_valueName),*/ context(_context), tcontext(_tcontext), fieldSize(0)
 {
   errorState.errorCode = callbacks->tsymbol_addr(context, tcontext, _valueName, &symbolAddr);
@@ -232,7 +232,7 @@ TValue& TValue::cast(const char* typeName)
   return *this;
 }
 
-TValue& TValue::cast(const char* typeName, int _pointerLevel, ompd_taddr_t segment)
+TValue& TValue::cast(const char* typeName, int _pointerLevel, ompd_addr_t segment)
 {
   if (gotError())
     return *this;
@@ -330,7 +330,7 @@ TValue TValue::access(const char* fieldName) const
   return ret;
 }
 
-ompd_rc_t TValue::check(const char* bitfieldName, ompd_tword_t* isSet) const
+ompd_rc_t TValue::check(const char* bitfieldName, ompd_word_t* isSet) const
 {
   if (gotError())
     return getError();

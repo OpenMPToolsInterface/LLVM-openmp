@@ -62,7 +62,7 @@ void operator delete[](void* addr) throw ()
 
 /* --- 3 Initialization ----------------------------------------------------- */
 
-ompd_rc_t ompd_initialize (const ompd_callbacks_t *table)
+ompd_rc_t ompd_initialize (const ompd_callbacks_t *table, ompd_word_t version)
 {
   ompd_rc_t ret = table ? ompd_rc_ok : ompd_rc_bad_input;
   callbacks = table;
@@ -187,106 +187,10 @@ ompd_rc_t ompd_device_initialize (
 
 /* thread_handle is of type (kmp_base_info_t) */
 
-ompd_rc_t ompd_get_threads (
-    ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
-    ompd_thread_handle_t      ***thread_handle_array, /* OUT: array of handles */
-    int                         *num_handles    /* OUT: number of handles in the array */
-    )
-{
-  int i;
-  if (!addr_handle)
-    return ompd_rc_stale_handle;
-  ompd_address_space_context_t *context = addr_handle->context;
-  ompd_rc_t ret;
-
-  if (!context)
-    return ompd_rc_stale_handle;
-
-  /* num_handles must be supplied, although thread_handle_array need not */
-  if (!num_handles)
-    return ompd_rc_bad_input;
-
-  assert(callbacks && "Callback table not initialized!");
-
-  int nth;
-  ret = TValue(context, "__kmp_nth").
-        castBase("__kmp_nth").
-        getValue(nth);
-
-  if ( ret != ompd_rc_ok )
-    return ret;
-
-  *num_handles = nth;
-  
-  /* if thread_handle_array is NULL, then we return only the number of  */
-  /* thread handles                                                     */
-  if ( ! thread_handle_array )
-    return ret;
-
-  TValue kmp_threads = TValue(context, "__kmp_threads").     /* __kmp_threads */
-          cast("kmp_info_t",2);
-  if (kmp_threads.gotError())
-    return kmp_threads.getError();
-
-  ret = callbacks->dmemory_alloc(nth * sizeof(ompd_thread_handle_t*), (void**)(thread_handle_array));
-  if ( ret != ompd_rc_ok )
-    return ret;
-
-  /* From here on control *MUST* flow to the end of the function to make  */
-  /* sure any memory is released should an error occur.                   */
-
-  /* zero out the array: make clean up on error easier */
-  for ( i = 0; i < *num_handles; i++ )
-    (*thread_handle_array) [ i ] = 0;
-
-  for (i =0; (ompd_rc_ok == ret) && (i<*num_handles); i++)
-  {
-    ret = callbacks->dmemory_alloc(sizeof(ompd_thread_handle_t), (void**)(*thread_handle_array+i));
-    if ( ompd_rc_ok == ret )
-    {
-      (*thread_handle_array)[i]->ah = addr_handle;
-      ret = kmp_threads.           
-            getArrayElement(i).             /* __kmp_threads[i] */
-            access("th").                   /* __kmp_threads[i]->th */
-            getAddress(&((*thread_handle_array)[i]->th));
-    }
-    else
-    {
-      (*thread_handle_array) [ i ] = 0;
-    }
-  }
-  if ( ompd_rc_ok != ret )
-  {
-    ompd_rc_t  free_err;
-
-    /* some error: we need to release the memory we've acquired   */
-    for ( i = 0; ((*thread_handle_array)[i]) && (i < *num_handles); i++ )
-    {
-      free_err = callbacks->dmemory_free ( (void *) (*thread_handle_array)[i] );
-      if ( ompd_rc_ok != free_err )
-      {
-        /* we don't want to return free_err from the function as  */
-        /* this would mask the error we've detected.  But we do   */
-        /* want some way to report that we're having trouble      */
-        /* releasing memory.                                      */
-        callbacks->print_string ( "OMPD (ompd_get_threads): error releasing thread handle after error\n" );
-      }
-    }
-    /* now release the vector */
-    free_err = callbacks->dmemory_free ( (void *) (*thread_handle_array) );
-    if ( ompd_rc_ok != free_err )
-    {
-      callbacks->print_string ( "OMPD (ompd_get_threads): error releasing thread handle vector after error\n" );
-    }
-    (*thread_handle_array) = 0;
-  }
-  return ret;
-}
-
 ompd_rc_t ompd_get_thread_in_parallel(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_thread_handle_t ***thread_handle_array, /* OUT: array of handles */
-    int *num_handles            /* OUT: number of handles in the array */
+    int nth_handle,            /* OUT: number of handles in the array */
+    ompd_thread_handle_t **thread_handle /* OUT: handle */
     )
 {
   if (!parallel_handle)
@@ -302,119 +206,24 @@ ompd_rc_t ompd_get_thread_in_parallel(
 
   assert(callbacks && "Callback table not initialized!");
 
-  TValue th = TValue(context, parallel_handle->th).  /* t */
-          cast("kmp_base_team_t",0);
-  if ( th.gotError() )
-    return th.getError();
-
-  ret = th.access("t_nproc").                    /*t.t_nproc*/
-        castBase().    
-        getValue(*num_handles);
-
-  if ( ret != ompd_rc_ok )
-    return ret;
-
-  ret = callbacks->dmemory_alloc((*num_handles) * sizeof(ompd_thread_handle_t*), (void**)thread_handle_array);
-
-  if ( ret != ompd_rc_ok )
-    return ret;
-
-  /* From here on control *MUST* flow to the end of the function to make  */
-  /* sure any memory is released should an error occur.                   */
-
-  /* zero out the array: make clean up on error easier */
-  for ( i = 0; i < *num_handles; i++ )
-    (*thread_handle_array) [ i ] = 0;
-
-  for ( i = 0; (i < *num_handles) && ( ret == ompd_rc_ok ); i++)
-  {
-    ret = callbacks->dmemory_alloc(sizeof(ompd_thread_handle_t), (void**)(*thread_handle_array+i));
-    if ( ret == ompd_rc_ok )
-    {
-      (*thread_handle_array)[i]->ah=parallel_handle->ah;
-      ret = th.access("t_threads").         /*t.t_threads*/
-            cast("kmp_info_t",2).
-            getArrayElement(i).             /*t.t_threads[i]*/
-            access("th").                   /*t.t_threads[i]->th*/
-            getAddress(&((*thread_handle_array)[i]->th));
-    }
-    else
-    {
-      (*thread_handle_array)[i]=0;
-    }
-  }
-  if ( ompd_rc_ok != ret )
-  {
-    ompd_rc_t  free_err;
-
-    /* some error: we need to release the memory we've acquired   */
-    for ( i = 0; ((*thread_handle_array)[i]) && (i < *num_handles); i++ )
-    {
-      free_err = callbacks->dmemory_free ( (void *) (*thread_handle_array)[i] );
-      if ( ompd_rc_ok != free_err )
-      {
-        /* we don't want to return free_err from the function as  */
-        /* this would mask the error we've detected.  But we do   */
-        /* want some way to report that we're having trouble      */
-        /* releasing memory.                                      */
-        callbacks->print_string ( "OMPD (ompd_get_thread_in_parallel): error releasing thread handle after error\n" );
-      }
-    }
-    /* now release the vector */
-    free_err = callbacks->dmemory_free ( (void *) (*thread_handle_array) );
-    if ( ompd_rc_ok != free_err )
-    {
-      callbacks->print_string ( "OMPD (ompd_get_thread_in_parallel): error releasing thread handle vector after error\n" );
-    }
-    (*thread_handle_array) = 0;
-  }
-  return ret;
-}
-
-ompd_rc_t ompd_get_master_thread_in_parallel (
-    ompd_parallel_handle_t *parallel_handle,	/* IN */
-    ompd_thread_handle_t **thread_handle)
-{
-  if (!parallel_handle)
-    return ompd_rc_stale_handle;
-  if (!parallel_handle->ah)
-    return ompd_rc_stale_handle;
-  ompd_address_space_context_t *context = parallel_handle->ah->context;
-  ompd_rc_t ret;
-
-  if (!context)
-    return ompd_rc_stale_handle;
-
-  assert(callbacks && "Callback table not initialized!");
-
-  int tId;
-  ret = TValue(context, parallel_handle->th).  /*t*/
-          cast("kmp_base_team_t",0).
-          access("t_master_tid").                   /*t.t_master_tid*/
-          castBase().    
-          getValue(tId);
-
-  if ( ret != ompd_rc_ok )
-    return ret;
-  
-  if (tId < 0) /*thread is no omp worker*/
-    return ompd_rc_unavailable;
   ompd_address_t taddr;
 
-  ret = TValue(context, "__kmp_threads").     /*__kmp_threads*/
-        cast("kmp_info_t",2).           
-        getArrayElement(tId).             /* __kmp_threads[t]*/
-        access("th").                     /* __kmp_threads[t]->th*/
+  ret = TValue(context, parallel_handle->th).  /* t */
+        cast("kmp_base_team_t",0).
+        access("t_threads").                    /*t.t_threads*/
+        cast("kmp_info_t",2).    
+        getArrayElement(nth_handle).             /*t.t_threads[nth_handle]*/
+        access("th").                   /*t.t_threads[i]->th*/
         getAddress(&taddr);
+
   if ( ret != ompd_rc_ok )
     return ret;
-
   ret = callbacks->dmemory_alloc(sizeof(ompd_thread_handle_t), (void**)(thread_handle));
   if ( ret != ompd_rc_ok )
     return ret;
-  (*thread_handle)->ah = parallel_handle->ah;
+
   (*thread_handle)->th = taddr;
-        
+  (*thread_handle)->ah = parallel_handle->ah;
   return ret;
 }
 
@@ -443,29 +252,30 @@ ompd_rc_t ompd_thread_handle_compare (
   return ompd_rc_ok;
 }
 
+#if 0
 ompd_rc_t ompd_get_thread_handle_string_id (
     ompd_thread_handle_t *thread_handle,
     char **string_id
     )
 {
-  pthread_t osthread;
+  pthread_t thread_id;
   ompd_rc_t ret;
-  ret = ompd_get_osthread(thread_handle, ompd_osthread_pthread, sizeof(pthread_t), &osthread);
+  ret = ompd_get_thread_id(thread_handle, ompd_thread_id_pthread, sizeof(pthread_t), &thread_id);
   if (ret!=ompd_rc_ok)
     return ret;
   ret = callbacks->dmemory_alloc(sizeof(void*)*2+3, (void**)string_id);
   if (ret!=ompd_rc_ok)
     return ret;
-  sprintf(*string_id, "0x%llx", (long long)osthread);
+  sprintf(*string_id, "0x%llx", (long long)thread_id);
   return ompd_rc_ok;
 }
-
+#endif
 
 /* --- 4.2 Parallel Region Handles------------------------------------------- */
 
 /* parallel_handle is of type (kmp_base_team_t)*/
 
-ompd_rc_t ompd_get_top_parallel_region(
+ompd_rc_t ompd_get_current_parallel_handle(
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
     ompd_parallel_handle_t **parallel_handle /* OUT: OpenMP parallel handle */
     )
@@ -572,7 +382,7 @@ ompd_rc_t ompd_get_enclosing_parallel_handle(
   return ompd_rc_ok;
 }
 
-ompd_rc_t ompd_get_task_enclosing_parallel_handle(
+ompd_rc_t ompd_get_task_parallel_handle(
     ompd_task_handle_t *task_handle, /* IN: OpenMP task handle */
     ompd_parallel_handle_t **enclosing_parallel_handle /* OUT: OpenMP parallel handle */
     )
@@ -663,7 +473,7 @@ ompd_rc_t ompd_get_parallel_handle_string_id (
 
 /* task_handle is of type (kmp_taskdata_t) */
 
-ompd_rc_t ompd_get_top_task_region(
+ompd_rc_t ompd_get_current_task__handle(
     ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
     ompd_task_handle_t **task_handle         /* OUT: OpenMP task handle */
     )
@@ -712,15 +522,7 @@ ompd_rc_t ompd_get_top_task_region(
   return ompd_rc_ok;
 }
 
-ompd_rc_t  ompd_get_ancestor_task_region(
-    ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
-    ompd_task_handle_t **parent_task_handle  /* OUT: OpenMP task handle */
-    )
-{
-  return ompd_get_generating_ancestor_task_region(task_handle,parent_task_handle);
-}
-
-ompd_rc_t  ompd_get_generating_ancestor_task_region(
+ompd_rc_t  ompd_get_generating_ancestor_task_handle(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
     ompd_task_handle_t **parent_task_handle  /* OUT: OpenMP task handle */
     )
@@ -784,7 +586,7 @@ ompd_rc_t  ompd_get_generating_ancestor_task_region(
   return ret;
 }
 
-ompd_rc_t  ompd_get_scheduling_ancestor_task_region(
+ompd_rc_t  ompd_get_scheduling_ancestor_task_handle(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
     ompd_task_handle_t **parent_task_handle  /* OUT: OpenMP task handle */
     )
@@ -820,10 +622,10 @@ ompd_rc_t  ompd_get_scheduling_ancestor_task_region(
   return ret;
 }
 
-ompd_rc_t ompd_get_implicit_task_in_parallel(
+ompd_rc_t ompd_get_task_in_parallel(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_task_handle_t ***task_handle_array, /* OUT: array of OpenMP task handles */
-    int *num_handles                        /* OUT: number of task handles */
+    int nth_handle,                        /* OUT: number of the task handle */
+    ompd_task_handle_t **task_handle /* OUT: OpenMP task handle */
     )
 {
   int i;
@@ -837,77 +639,23 @@ ompd_rc_t ompd_get_implicit_task_in_parallel(
 
   assert(callbacks && "Callback table not initialized!");
   
-  TValue th = TValue(context, parallel_handle->th).  /*t*/
-          cast("kmp_base_team_t",0);
-  if ( th.gotError() )
-    return th.getError();
-
   ompd_rc_t ret;
-  if (parallel_handle->lwt.address!=0)
-    *num_handles=1;
-  else
-  {
-    ret = th.access("t_nproc").                   /*t.t_nproc*/
-          castBase().    
-          getValue(*num_handles);
-    if ( ret != ompd_rc_ok )
-      return ret;
-  }
-
-  ret = callbacks->dmemory_alloc((*num_handles) * sizeof(ompd_task_handle_t*), (void**)task_handle_array);
+  ompd_address_t taddr;
+  ret = TValue(context, parallel_handle->th).  /* t */
+        cast("kmp_base_team_t",0).
+        access("t_implicit_task_taskdata").      /*t.t_implicit_task_taskdata*/
+        cast("kmp_taskdata_t", 1).
+        getArrayElement(nth_handle).             /*t.t_implicit_task_taskdata[nth_handle]*/
+        getAddress(&taddr);
 
   if ( ret != ompd_rc_ok )
     return ret;
+  ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t), (void**)(task_handle));
+  if ( ret != ompd_rc_ok )
+    return ret;
 
-  /* From here on control *MUST* flow to the end of the function to make  */
-  /* sure any memory is released should an error occur.                   */
-
-  /* zero out the array: make clean up on error easier */
-  for ( i = 0; i < *num_handles; i++ )
-    (*task_handle_array) [ i ] = 0;
-
-  for ( i = 0; (i < *num_handles) && ( ret == ompd_rc_ok ); i++)
-  {
-    ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t), (void**)(*task_handle_array+i));
-    if ( ret == ompd_rc_ok )
-    {
-      (*task_handle_array)[i]->lwt = parallel_handle->lwt;
-      (*task_handle_array)[i]->ah = parallel_handle->ah;
-      ret = th.access("t_implicit_task_taskdata").         /*t.t_implicit_task_taskdata*/
-            cast("kmp_taskdata_t",1).
-            getArrayElement(i).                            /*t.t_implicit_task_taskdata[i]*/
-            getAddress(&((*task_handle_array)[i]->th));
-    }
-    else
-    {
-      (*task_handle_array)[i]=0;
-    }
-  }
-  if ( ompd_rc_ok != ret )
-  {
-    ompd_rc_t  free_err;
-
-    /* some error: we need to release the memory we've acquired   */
-    for ( i = 0; ((*task_handle_array)[i]) && (i < *num_handles); i++ )
-    {
-      free_err = callbacks->dmemory_free ( (void *) (*task_handle_array)[i] );
-      if ( ompd_rc_ok != free_err )
-      {
-        /* we don't want to return free_err from the function as  */
-        /* this would mask the error we've detected.  But we do   */
-        /* want some way to report that we're having trouble      */
-        /* releasing memory.                                      */
-        callbacks->print_string ( "OMPD (ompd_get_implicit_task_in_parallel): error releasing task handle after error\n" );
-      }
-    }
-    /* now release the vector */
-    free_err = callbacks->dmemory_free ( (void *) (*task_handle_array) );
-    if ( ompd_rc_ok != free_err )
-    {
-      callbacks->print_string ( "OMPD (ompd_get_implicit_task_in_parallel): error releasing task handle vector after error\n" );
-    }
-    (*task_handle_array) = 0;
-  }
+  (*task_handle)->th = taddr;
+  (*task_handle)->ah = parallel_handle->ah;
   return ret;
 }
 
@@ -962,7 +710,7 @@ ompd_rc_t ompd_get_task_handle_string_id (
 
 ompd_rc_t ompd_get_num_procs(
     ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
-    ompd_tword_t *val                       /* OUT: number of processes */
+    ompd_word_t *val                       /* OUT: number of processes */
     )
 {
   if (!addr_handle)
@@ -985,7 +733,7 @@ ompd_rc_t ompd_get_num_procs(
 
 ompd_rc_t ompd_get_thread_limit(
     ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
-    ompd_tword_t *val                       /* OUT: max number of threads */
+    ompd_word_t *val                       /* OUT: max number of threads */
     )
 {
   if (!addr_handle)
@@ -1011,7 +759,7 @@ ompd_rc_t ompd_get_thread_limit(
 
 ompd_rc_t ompd_get_num_threads(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_tword_t *val                       /* OUT: number of threads */
+    ompd_word_t *val                       /* OUT: number of threads */
     )
 {
   if (!parallel_handle)
@@ -1042,7 +790,7 @@ ompd_rc_t ompd_get_num_threads(
 
 ompd_rc_t ompd_get_level(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_tword_t *val                       /* OUT: nesting level */
+    ompd_word_t *val                       /* OUT: nesting level */
     )
 {
   if (!parallel_handle)
@@ -1068,7 +816,7 @@ ompd_rc_t ompd_get_level(
 
 ompd_rc_t ompd_get_active_level(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_tword_t *val                       /* OUT: active nesting level */
+    ompd_word_t *val                       /* OUT: active nesting level */
     )
 {
   if (!parallel_handle)
@@ -1168,9 +916,9 @@ ompd_rc_t ompd_get_parallel_function(
 
 ompd_rc_t ompd_get_thread_handle (
     ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
-    ompd_osthread_kind_t         kind,
-    ompd_size_t                  sizeof_osthread,
-    const void*                  osthread,
+    ompd_thread_id_kind_t         kind,
+    ompd_size_t                  sizeof_thread_id,
+    const void*                  thread_id,
     ompd_thread_handle_t **thread_handle)
 {
   if (!addr_handle)
@@ -1183,15 +931,15 @@ ompd_rc_t ompd_get_thread_handle (
 
   assert(callbacks && "Callback table not initialized!");
   ompd_thread_context_t *tcontext;
-  ret = callbacks->get_thread_context_for_osthread(context, kind, sizeof_osthread, osthread, &tcontext);
+  ret = callbacks->get_thread_context_for_thread_id(context, kind, sizeof_thread_id, thread_id, &tcontext);
   if ( ret != ompd_rc_ok )
     return ret;
   
   int tId;
 
-  if (kind == ompd_osthread_cudalogical)
+  if (kind == ompd_thread_id_cudalogical)
   {
-    ompd_cudathread_coord_t* p = (ompd_cudathread_coord_t*)osthread;
+    ompd_cudathread_coord_t* p = (ompd_cudathread_coord_t*)thread_id;
 
     // omptarget_nvptx_threadPrivateContext->topTaskDescr[p->threadIdx.x]->data.items.threadId
 
@@ -1249,20 +997,20 @@ ompd_rc_t ompd_get_thread_handle (
           access("ds_thread").            /*__kmp_threads[t]->th.th_info.ds.ds_thread*/
           castBase();
 
-    assert( ompd_rc_ok == ds_handle.getValue(oshandle) && oshandle == *(pthread_t*)(osthread) && "Callback table not initialized!");
+    assert( ompd_rc_ok == ds_handle.getValue(oshandle) && oshandle == *(pthread_t*)(thread_id) && "Callback table not initialized!");
 #endif
   }
   return ret;
 }
 
-ompd_rc_t ompd_get_osthread (
+ompd_rc_t ompd_get_thread_id (
     ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
-    ompd_osthread_kind_t  kind,
-    ompd_size_t           sizeof_osthread,
-    void                 *osthread
+    ompd_thread_id_kind_t  kind,
+    ompd_size_t           sizeof_thread_id,
+    void                 *thread_id
     )
 {
-  if (kind!=ompd_osthread_pthread)
+  if (kind!=ompd_thread_id_pthread)
     return ompd_rc_bad_input;
   if (!thread_handle)
     return ompd_rc_stale_handle;
@@ -1275,7 +1023,7 @@ ompd_rc_t ompd_get_osthread (
   ompd_rc_t ret = tf.getType(context, "kmp_thread_t").getSize(&size);
   if ( ret != ompd_rc_ok )
     return ret;
-  if (sizeof_osthread!=size)
+  if (sizeof_thread_id!=size)
     return ompd_rc_bad_input;
 
   assert(callbacks && "Callback table not initialized!");
@@ -1288,13 +1036,13 @@ ompd_rc_t ompd_get_osthread (
         cast("kmp_desc_base_t").        
         access("ds_thread").            /*__kmp_threads[t]->th.th_info.ds.ds_thread*/
         cast("kmp_thread_t").    
-        getRawValue(osthread,1);
+        getRawValue(thread_id,1);
   return ret;
 }
 
 ompd_rc_t ompd_get_thread_num(
     ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
-    ompd_tword_t *val                    /* OUT: number of the thread within the team */
+    ompd_word_t *val                    /* OUT: number of the thread within the team */
     )
 {
 // __kmp_threads[8]->th.th_info.ds.ds_tid
@@ -1325,7 +1073,7 @@ ompd_rc_t ompd_get_thread_num(
 
 ompd_rc_t ompd_get_state (
     ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
-    ompd_state_t *state,                    /* OUT: State of this thread */
+    ompd_word_t *state,                    /* OUT: State of this thread */
     ompd_wait_id_t *wait_id                 /* OUT: Wait ID */
     )
 {
@@ -1367,7 +1115,7 @@ ompd_rc_t ompd_get_state (
 
 ompd_rc_t ompd_get_max_threads(  
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: max number of threads */
+    ompd_word_t *val                                /* OUT: max number of threads */
     )
 {
   if (!task_handle)
@@ -1393,7 +1141,7 @@ ompd_rc_t ompd_get_max_threads(
 
 ompd_rc_t ompd_in_parallel( // Why do we need a task context for _in_parallel?
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: max number of threads */
+    ompd_word_t *val                                /* OUT: max number of threads */
     )
 {
   if (!task_handle)
@@ -1425,7 +1173,7 @@ ompd_rc_t ompd_in_parallel( // Why do we need a task context for _in_parallel?
 
 ompd_rc_t ompd_in_final(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: max number of threads */
+    ompd_word_t *val                                /* OUT: max number of threads */
     )
 {
   if (!task_handle)
@@ -1449,7 +1197,7 @@ ompd_rc_t ompd_in_final(
 
 ompd_rc_t ompd_get_dynamic(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: max number of threads */
+    ompd_word_t *val                                /* OUT: max number of threads */
     )
 {
   if (!task_handle)
@@ -1475,7 +1223,7 @@ ompd_rc_t ompd_get_dynamic(
 
 ompd_rc_t ompd_get_nested(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: max number of threads */
+    ompd_word_t *val                                /* OUT: max number of threads */
     )
 {
   if (!task_handle)
@@ -1501,7 +1249,7 @@ ompd_rc_t ompd_get_nested(
 
 ompd_rc_t ompd_get_max_active_levels(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: max number of threads */
+    ompd_word_t *val                                /* OUT: max number of threads */
     )
 {
   if (!task_handle)
@@ -1527,8 +1275,8 @@ ompd_rc_t ompd_get_max_active_levels(
 
 ompd_rc_t ompd_get_schedule(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_sched_t *kind,                      /* OUT: Kind of OpenMP schedule*/
-    ompd_tword_t *modifier                           /* OUT: Schedunling modifier */
+    ompd_word_t *kind,                      /* OUT: Kind of OpenMP schedule*/
+    ompd_word_t *modifier                           /* OUT: Schedunling modifier */
     )
 {
   if (!task_handle)
@@ -1562,7 +1310,7 @@ ompd_rc_t ompd_get_schedule(
 
 ompd_rc_t ompd_get_proc_bind(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_proc_bind_t *bind                   /* OUT: Kind of proc-binding */
+    ompd_word_t *bind                   /* OUT: Kind of proc-binding */
     )
 {
   if (!task_handle)
@@ -1588,7 +1336,7 @@ ompd_rc_t ompd_get_proc_bind(
 
 ompd_rc_t ompd_is_implicit(
     ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_tword_t *val                                /* OUT: max number of threads */
+    ompd_word_t *val                                /* OUT: max number of threads */
     )
 {
   if (!task_handle)
@@ -1713,7 +1461,7 @@ ompd_rc_t ompd_get_task_function(
 
 #if 0
   /* We don't have a task function for implicit tasks */
-  ompd_tword_t implicit;
+  ompd_word_t implicit;
   ompd_rc_t ret = ompd_is_implicit (task_handle, &implicit);
   if (ret != ompd_rc_ok)
     return ret;
@@ -1742,7 +1490,7 @@ ompd_rc_t ompd_get_task_function(
 
 /* --- 9 OMPD Version and Compatibility Information ------------------------- */
 
-ompd_rc_t ompd_get_version ( 
+ompd_rc_t ompd_get_api_version ( 
     int *version 
     )
 {
@@ -1750,7 +1498,7 @@ ompd_rc_t ompd_get_version (
   return ompd_rc_ok;
 }
 
-ompd_rc_t ompd_get_version_string(
+ompd_rc_t ompd_get_api_version_string(
     const char **string                     /* OUT: OMPD version string */
     )
 {

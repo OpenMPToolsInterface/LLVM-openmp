@@ -24,7 +24,7 @@ public:
   TTypeFactory(): ttypes() {}
   TType& getType(ompd_address_space_context_t *context, 
           const char * typName, 
-          ompd_taddr_t segment=OMPD_SEGMENT_UNSPECIFIED);
+          ompd_addr_t segment=OMPD_SEGMENT_UNSPECIFIED);
 };
 
 static thread_local TTypeFactory tf = TTypeFactory();
@@ -36,15 +36,15 @@ protected:
   std::map<const char*, ompd_size_t> fieldOffsets;
   std::map<const char*, ompd_size_t> fieldSizes;
   std::map<const char*, uint64_t> bitfieldMasks;
-  ompd_taddr_t descSegment;
+  ompd_addr_t descSegment;
   const char* typeName;
   ompd_address_space_context_t *context;
   bool isvoid;
   TType(ompd_address_space_context_t *context, 
           const char* typeName, 
-          ompd_taddr_t _segment=OMPD_SEGMENT_UNSPECIFIED);
+          ompd_addr_t _segment=OMPD_SEGMENT_UNSPECIFIED);
 public:  
-  TType(bool, ompd_taddr_t _segment=OMPD_SEGMENT_UNSPECIFIED): descSegment(_segment), isvoid(true) {}
+  TType(bool, ompd_addr_t _segment=OMPD_SEGMENT_UNSPECIFIED): descSegment(_segment), isvoid(true) {}
   bool isVoid() const{return isvoid;}
   ompd_rc_t getElementOffset (const char* fieldName, ompd_size_t * offset);
   ompd_rc_t getElementSize (const char* fieldName, ompd_size_t * size);
@@ -107,13 +107,13 @@ public:
    */
   TValue(ompd_address_space_context_t *_context, 
           const char* _valueName, 
-          ompd_taddr_t segment=OMPD_SEGMENT_UNSPECIFIED): 
+          ompd_addr_t segment=OMPD_SEGMENT_UNSPECIFIED): 
       TValue(_context, NULL, _valueName, segment) {}
 
   TValue(ompd_address_space_context_t *context, 
           ompd_thread_context_t *tcontext, 
           const char* valueName, 
-          ompd_taddr_t segment=OMPD_SEGMENT_UNSPECIFIED);
+          ompd_addr_t segment=OMPD_SEGMENT_UNSPECIFIED);
   /**
    * Create a target value object from target value address
    */
@@ -135,7 +135,7 @@ public:
    *
    * This call modifies the object and returns a reference to the modified object
    */
-  TValue& cast(const char* typeName, int pointerLevel, ompd_taddr_t segment=OMPD_SEGMENT_UNSPECIFIED);
+  TValue& cast(const char* typeName, int pointerLevel, ompd_addr_t segment=OMPD_SEGMENT_UNSPECIFIED);
 
   /**
    * Get the target address of the target value
@@ -174,7 +174,7 @@ public:
   /**
    * Tests for a field bit in a bitfield
    */
-  ompd_rc_t check(const char* bitfieldName, ompd_tword_t* isSet) const;
+  ompd_rc_t check(const char* bitfieldName, ompd_word_t* isSet) const;
   /**
    * Get an array element
    */
