@@ -7,17 +7,13 @@
  *     Contact: ilaguna@llnl.gov
  *              protze@llnl.gov
  */
-#ifndef SRC_OMPD_INTEL_H_
-#define SRC_OMPD_INTEL_H_
+#ifndef SRC_OMP_DEBUG_H_
+#define SRC_OMP_DEBUG_H_
 
 #ifdef __cplusplus
 
 #include <cstdlib>
-//#include <new>
-// void* operator new(std::size_t size) /*throw (std::bad_alloc)*/;
-// void* operator new[](std::size_t size) /*throw (std::bad_alloc)*/;
-// void operator delete(void* addr) throw ();
-// void operator delete[](void* addr) throw ();
+#include <new>
 
 extern "C" {
 #endif
@@ -39,47 +35,74 @@ extern "C" {
  * General helper functions
  */
 ompd_rc_t initTypeSizes(ompd_address_space_context_t *context);
-// uint32_t getThreadLevel(ompd_context_t *context, int t);
-/*int getNumberOfOMPThreads(ompd_context_t *context);
-uint64_t getSystemThreadID(ompd_context_t *context, int t);
-int64_t getOmpThreadID(ompd_context_t *context);*/
 
 #ifdef __cplusplus
 }
-#endif
+
+static const ompd_callbacks_t *callbacks = NULL;
+
+class ompdAllocatable {
+public:
+  static void *operator new(std::size_t sz) {
+    void *res;
+    ompd_rc_t ret = callbacks->dmemory_alloc(sz, &res);
+    if (ret == ompd_rc_ok)
+      return res;
+    throw std::bad_alloc();
+  }
+  static void *operator new[](std::size_t sz) {
+    void *res;
+    ompd_rc_t ret = callbacks->dmemory_alloc(sz, &res);
+    if (ret == ompd_rc_ok)
+      return res;
+    throw std::bad_alloc();
+  }
+  void operator delete(void *addr) throw() {
+    ompd_rc_t ret = callbacks->dmemory_free(addr);
+    if (ret != ompd_rc_ok)
+      throw std::bad_alloc();
+  }
+  void operator delete[](void *addr) throw() {
+    ompd_rc_t ret = callbacks->dmemory_free(addr);
+    if (ret != ompd_rc_ok)
+      throw std::bad_alloc();
+  }
+};
 
 typedef struct _ompd_address_space_context_s ompd_address_space_context_t;
 
-typedef struct _ompd_process_handle_s {
+typedef struct _ompd_process_handle_s : public ompdAllocatable {
   ompd_address_space_context_t *context;
 } ompd_process_handle_t;
 
-typedef struct _ompd_address_space_handle_s {
+typedef struct _ompd_address_space_handle_s : public ompdAllocatable {
   ompd_address_space_context_t *context;
   ompd_device_kind_t kind;
   ompd_device_identifier_t id;
 } ompd_address_space_handle_t;
 
-typedef struct _ompd_device_handle_s {
+typedef struct _ompd_device_handle_s : public ompdAllocatable {
   ompd_address_space_handle_t *ah;
   ompd_address_t th; /* target handle */
 } ompd_device_handle_t;
 
-typedef struct _ompd_thread_handle_s {
+typedef struct _ompd_thread_handle_s : public ompdAllocatable {
   ompd_address_space_handle_t *ah;
   ompd_address_t th; /* target handle */
 } ompd_thread_handle_t;
 
-typedef struct _ompd_parallel_handle_s {
+typedef struct _ompd_parallel_handle_s : public ompdAllocatable {
   ompd_address_space_handle_t *ah;
   ompd_address_t th;  /* target handle */
   ompd_address_t lwt; /* lwt handle */
 } ompd_parallel_handle_t;
 
-typedef struct _ompd_task_handle_s {
+typedef struct _ompd_task_handle_s : public ompdAllocatable {
   ompd_address_space_handle_t *ah;
   ompd_address_t th;  /* target handle */
   ompd_address_t lwt; /* lwt handle */
 } ompd_task_handle_t;
 
-#endif /* SRC_OMPD_INTEL_H_ */
+#endif
+
+#endif /* SRC_OMP_DEBUG_H_ */

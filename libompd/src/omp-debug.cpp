@@ -8,7 +8,7 @@
  *              protze@llnl.gov
  */
 /*******************************************************************************
- * This implements an OMPD DLL the Intel runtime library.
+ * This implements an OMPD DLL for the LLVM OpenMP runtime library.
  */
 
 #define NDEBUG 1
@@ -24,38 +24,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-const ompd_callbacks_t *callbacks = NULL;
 ompd_target_type_sizes_t type_sizes;
 uint64_t ompd_state;
-
-// void* operator new(std::size_t size) /*throw (std::bad_alloc)*/
-/*{
-  void* res;
-  ompd_rc_t ret = callbacks->dmemory_alloc(size, &res);
-  if (ret==ompd_rc_ok)
-    return res;
-  throw std::bad_alloc();
-}*/
-// void* operator new[](std::size_t size) /*throw (std::bad_alloc)*/
-/*{
-  void* res;
-  ompd_rc_t ret = callbacks->dmemory_alloc(size, &res);
-  if (ret==ompd_rc_ok)
-    return res;
-  throw std::bad_alloc();
-}
-void operator delete(void* addr) throw ()
-{
-  ompd_rc_t ret = callbacks->dmemory_free(addr);
-  if (ret!=ompd_rc_ok)
-    throw std::bad_alloc();
-}
-void operator delete[](void* addr) throw ()
-{
-  ompd_rc_t ret = callbacks->dmemory_free(addr);
-  if (ret!=ompd_rc_ok)
-    throw std::bad_alloc();
-}*/
 
 /* --- OMPD functions ------------------------------------------------------- */
 
