@@ -8,7 +8,7 @@
 #ifndef SRC_OMPD_TEST_H_
 #define SRC_OMPD_TEST_H_
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -23,7 +23,7 @@ void test_print_header();
 void test_CB_dmemory_alloc();
 void test_CB_tsizeof_prim();
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 #endif /* SRC_OMPD_TEST_H_ */

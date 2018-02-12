@@ -11,14 +11,13 @@
  * It can be used as a template to implement (runtime-specific) OMPD DLLs.
  */
 
-#include <ompd.h>
 #include "ompd_test.h"
 #include "assert.h"
+#include <ompd.h>
 
 static ompd_callbacks_t *callbacks = NULL;
 
-ompd_rc_t ompd_initialize (ompd_callbacks_t *table)
-{
+ompd_rc_t ompd_initialize(ompd_callbacks_t *table) {
   ompd_rc_t ret = table ? ompd_rc_ok : ompd_rc_bad_input;
   callbacks = table;
   return ret;
@@ -31,13 +30,9 @@ ompd_rc_t ompd_initialize (ompd_callbacks_t *table)
  * debugger. The test routines start with "test_CB_".
  */
 
-void test_print_header()
-{
-  printf("\n*** OMPD Test ***\n");
-}
+void test_print_header() { printf("\n*** OMPD Test ***\n"); }
 
-void test_CB_dmemory_alloc()
-{
+void test_CB_dmemory_alloc() {
   assert(callbacks && "Invalid callbacks table");
   test_print_header();
 
@@ -59,23 +54,20 @@ void test_CB_dmemory_alloc()
     printf("Failed!\n");
 }
 
-void test_CB_tsizeof_prim()
-{
+void test_CB_tsizeof_prim() {
   assert(callbacks && "Invalid callbacks table");
   test_print_header();
 
   ompd_rc_t ret;
   ompd_target_type_sizes_t sizes;
   ret = callbacks->tsizeof_prim((ompd_context_t *)1, &sizes);
-  if (ret == ompd_rc_ok)
-  {
+  if (ret == ompd_rc_ok) {
     printf("%-20s %du\n", "Size of char:", sizes.sizeof_char);
     printf("%-20s %du\n", "Size of short:", sizes.sizeof_short);
     printf("%-20s %du\n", "Size of int:", sizes.sizeof_int);
     printf("%-20s %du\n", "Size of long:", sizes.sizeof_long);
     printf("%-20s %du\n", "Size of long long:", sizes.sizeof_long_long);
     printf("%-20s %du\n", "Size of pointer:", sizes.sizeof_pointer);
-  }
-  else
+  } else
     printf("Failed getting primitive sizes\n");
 }
