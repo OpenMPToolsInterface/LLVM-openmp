@@ -19,6 +19,8 @@
 //void operator delete(void* addr) throw ();
 //void operator delete[](void* addr) throw ();
 
+  #define OMPD_DLL_VERSION 201811;
+
 extern "C" {
 #endif
 

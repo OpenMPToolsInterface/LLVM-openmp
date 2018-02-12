@@ -15,6 +15,7 @@
 
 #include "omp-debug.h"
 #include "ompd.h"
+#include "omp.h"
 // #include <stdio.h>
 #include <cstdio>
 #include <pthread.h>
@@ -31,7 +32,10 @@ uint64_t ompd_state;
 
 /* --- 3 Initialization ----------------------------------------------------- */
 
-ompd_rc_t ompd_initialize (const ompd_callbacks_t *table, ompd_word_t version)
+ompd_rc_t ompd_initialize (
+    const ompd_callbacks_t *table, 
+    ompd_word_t version
+    )
 {
   ompd_rc_t ret = table ? ompd_rc_ok : ompd_rc_bad_input;
   callbacks = table;
@@ -79,6 +83,41 @@ ompd_rc_t ompd_process_initialize (
 
   return ompd_rc_ok;
 }
+
+ompd_rc_t ompd_get_openmp_version ( 
+    ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
+    ompd_word_t *version 
+    )
+{
+  if (!addr_handle)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = addr_handle->context;
+  ompd_rc_t ret;
+
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized!");
+
+  ret = TValue(context, "__kmp_openmp_version").
+        castBase(ompd_type_int).
+        getValue(*version);
+  return ret;
+}
+
+ompd_rc_t ompd_get_openmp_version_string ( 
+    ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
+    const char** string 
+    )
+{
+  if (!addr_handle)
+    return ompd_rc_bad_input;
+  static const char* omp_version="";
+  *string=omp_version;
+  return ompd_rc_ok;
+}
+
+
 
 ompd_rc_t ompd_release_address_space_handle (
     ompd_address_space_handle_t *addr_handle    /* IN: handle for the address space */
@@ -1460,7 +1499,7 @@ ompd_rc_t ompd_get_task_function(
 /* --- 9 OMPD Version and Compatibility Information ------------------------- */
 
 ompd_rc_t ompd_get_api_version ( 
-    int *version 
+    ompd_word_t *version 
     )
 {
   *version = OMPD_VERSION;
@@ -1474,7 +1513,7 @@ ompd_rc_t ompd_get_api_version_string(
 /*  static char version_string[256]={0};
   if(version_string[0]=='\0')
     sprintf(version_string, "LLVM OpenMP %i.%i Debugging Library implemnting TR %i%c",OMPD_IMPLEMENTS_OPENMP, OMPD_IMPLEMENTS_OPENMP_SUBVERSION, OMPD_TR_VERSION, OMPD_TR_SUBVERSION);*/
-  static const char version_string[] = "LLVM OpenMP " STR(OMPD_IMPLEMENTS_OPENMP) "." STR(OMPD_IMPLEMENTS_OPENMP_SUBVERSION) " Debugging Library implemnting TR " STR(OMPD_TR_VERSION) "" STR(OMPD_TR_SUBVERSION) ;
+  static const char version_string[] = "LLVM OpenMP " STR(OMPD_IMPLEMENTS_OPENMP) "." STR(OMPD_IMPLEMENTS_OPENMP_SUBVERSION) " Debugging Library implmenting TR " STR(OMPD_TR_VERSION) "" STR(OMPD_TR_SUBVERSION) ;
   *string = version_string;
   return ompd_rc_ok;
 }
