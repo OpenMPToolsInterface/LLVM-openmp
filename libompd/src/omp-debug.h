@@ -15,6 +15,8 @@
 #include <cstdlib>
 #include <new>
 
+#define OMPD_DLL_VERSION 201811;
+
 extern "C" {
 #endif
 
