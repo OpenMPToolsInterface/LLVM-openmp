@@ -1,3 +1,16 @@
+/*
+ * ompt-internal.h - header of OMPT internal data structures
+ */
+
+//===----------------------------------------------------------------------===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is dual licensed under the MIT and the University of Illinois Open
+// Source Licenses. See LICENSE.txt for details.
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef __OMPT_INTERNAL_H__
 #define __OMPT_INTERNAL_H__
 
@@ -43,6 +56,7 @@ typedef struct {
   ompt_frame_t frame;
   ompt_data_t task_data;
   struct kmp_taskdata *scheduling_parent;
+  int thread_num;
 #if OMP_40_ENABLED
   int ndeps;
   ompt_task_dependence_t *deps;
