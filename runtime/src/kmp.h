@@ -123,6 +123,10 @@ class kmp_stats_list;
 #include "ompt-internal.h"
 #endif
 
+#if OMPD_SUPPORT
+#include "ompd-specific.h"
+#endif
+
 /*Select data placement in NUMA memory */
 #define NO_FIRST_TOUCH 0
 #define FIRST_TOUCH 1 /* Exploit SGI's first touch page placement algo */

@@ -1388,6 +1388,11 @@ static void __kmp_invoke_task(kmp_int32 gtid, kmp_task_t *task,
     if (UNLIKELY(ompt_enabled.enabled))
       __ompt_task_start(task, current_task, gtid);
 #endif
+      
+#if OMPD_SUPPORT
+      if ( ompd_state & OMPD_ENABLE_BP )
+          ompd_bp_task_begin ();
+#endif
 
 #ifdef KMP_GOMP_COMPAT
     if (taskdata->td_flags.native) {
