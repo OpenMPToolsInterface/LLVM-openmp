@@ -486,7 +486,7 @@ void __kmpc_end_serialized_parallel(ident_t *loc, kmp_int32 global_tid) {
     if (ompt_enabled.ompt_callback_implicit_task) {
       ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
           ompt_scope_end, NULL, OMPT_CUR_TASK_DATA(this_thr), 1,
-          __kmp_tid_from_gtid(global_tid));
+          OMPT_CUR_TASK_INFO(this_thr)->thread_num);
     }
 
     // reset clear the task id only after unlinking the task
@@ -4064,5 +4064,14 @@ void __kmpc_doacross_fini(ident_t *loc, int gtid) {
   KA_TRACE(20, ("__kmpc_doacross_fini() exit: T#%d\n", gtid));
 }
 #endif
+
+#if OMP_50_ENABLED
+int __kmpc_get_target_offload(void) {
+  if (!__kmp_init_serial) {
+    __kmp_serial_initialize();
+  }
+  return __kmp_target_offload;
+}
+#endif // OMP_50_ENABLED
 
 // end of file //
