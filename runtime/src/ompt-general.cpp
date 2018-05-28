@@ -675,6 +675,10 @@ OMPT_API_ROUTINE uint64_t ompt_get_unique_id(void) {
   return __ompt_get_unique_id_internal();
 }
 
+OMPT_API_ROUTINE void ompt_finalize_tool( void ) {
+  __kmp_internal_end_atexit();
+}
+
 /*****************************************************************************
  * Target
  ****************************************************************************/

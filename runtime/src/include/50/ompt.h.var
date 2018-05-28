@@ -40,6 +40,7 @@
     macro (ompt_get_task_info)              \
     macro (ompt_get_thread_data)            \
     macro (ompt_get_unique_id)              \
+    macro (ompt_finalize_tool)              \
                                             \
     macro(ompt_get_num_procs)               \
     macro(ompt_get_num_places)              \
@@ -677,6 +678,9 @@ OMPT_API_FUNCTION(int, ompt_enumerate_mutex_impls, (
 
 /* get_unique_id */
 OMPT_API_FUNCTION(uint64_t, ompt_get_unique_id, (void));
+
+/* finalize tool */
+OMPT_API_FUNCTION(void, ompt_finalize_tool, (void));
 
 #ifdef  __cplusplus
 };
