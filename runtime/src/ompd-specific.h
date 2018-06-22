@@ -85,8 +85,8 @@ OMPD_ACCESS(ompt_thread_info_t,   wait_id) \
 OMPD_ACCESS(ompt_data_t,   value) \
 OMPD_ACCESS(ompt_data_t,   ptr) \
 \
-OMPD_ACCESS(ompt_frame_t,         exit_frame) \
-OMPD_ACCESS(ompt_frame_t,         enter_frame) \
+OMPD_ACCESS(omp_frame_t,         exit_frame) \
+OMPD_ACCESS(omp_frame_t,         enter_frame) \
 \
 OMPD_ACCESS(ompt_lw_taskteam_t,   parent) \
 OMPD_ACCESS(ompt_lw_taskteam_t,   ompt_team_info) \
