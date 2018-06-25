@@ -32,7 +32,7 @@ uint64_t ompd_state;
 
 /* --- 3 Initialization ----------------------------------------------------- */
 
-ompd_rc_t ompd_initialize(const ompd_callbacks_t *table, ompd_word_t version) {
+ompd_rc_t ompd_initialize(ompd_word_t version, const ompd_callbacks_t *table) {
   ompd_rc_t ret = table ? ompd_rc_ok : ompd_rc_bad_input;
   callbacks = table;
   TValue::callbacks = table;
@@ -57,6 +57,7 @@ ompd_process_initialize(ompd_address_space_context_t
   ompd_rc_t ret = initTypeSizes(context);
   if (ret != ompd_rc_ok)
     return ret;
+#if 0
   ret = TValue(context, "ompd_rtl_version")
             .castBase(ompd_type_int)
             .getValue(rtl_version);
@@ -70,6 +71,7 @@ ompd_process_initialize(ompd_address_space_context_t
             .getValue(ompd_state);
   if (ret != ompd_rc_ok)
     return ret;
+#endif
   *addrhandle = new ompd_address_space_handle_t;
   if (!addrhandle)
     return ompd_rc_error;
@@ -119,6 +121,56 @@ ompd_rc_t ompd_release_address_space_handle(
 
   delete addr_handle;
   return ompd_rc_ok;
+}
+
+ompd_rc_t ompd_device_initialize(
+    ompd_address_space_handle_t *process_handle,
+    ompd_address_space_context_t *device_context,
+    int kind,
+    ompd_size_t sizeof_id,
+    void *id,
+    ompd_address_space_handle_t **device_handle
+    )
+{
+  if (!device_context)
+    return ompd_rc_bad_input;
+
+  // TODO:(mr) primitive type sizes can be different on devices? Think about implementing that
+
+  ompd_rc_t ret;
+  uint64_t ompd_num_cuda_devices;
+
+  ret = TValue(process_handle->context, "ompd_num_cuda_devices").
+        castBase(ompd_type_long_long).
+        getValue(ompd_num_cuda_devices);
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  
+  for (uint64_t i = 0; i < ompd_num_cuda_devices; i++) {
+    uint64_t cuda_ctx;
+
+    ret = TValue(process_handle->context, "ompd_CudaContextArray").
+          cast("ompd_cuda_context_ptr_t",1).           
+          getArrayElement(i).
+          castBase(ompd_type_long_long).
+          getValue(cuda_ctx);
+
+    if ( ret != ompd_rc_ok )
+      continue;
+
+    if (cuda_ctx == (*((uint64_t *)id))) {
+      *device_handle = new ompd_address_space_handle_t;
+      if (!device_handle)
+        return ompd_rc_error;
+      (*device_handle)->context = device_context;
+      (*device_handle)->kind = ompd_device_kind_cuda;
+      (*device_handle)->id = (uint64_t)id;
+      return ompd_rc_ok;
+    }
+  }
+  
+  return ompd_rc_unavailable;
 }
 
 #if 0  // no device support yet
@@ -463,7 +515,7 @@ ompd_rc_t ompd_get_parallel_handle_string_id (
 
 /* task_handle is of type (kmp_taskdata_t) */
 
-ompd_rc_t ompd_get_current_task__handle(
+ompd_rc_t ompd_get_current_task_handle(
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
     ompd_task_handle_t **task_handle     /* OUT: OpenMP task handle */
     ) {
@@ -511,7 +563,7 @@ ompd_rc_t ompd_get_current_task__handle(
   return ompd_rc_ok;
 }
 
-ompd_rc_t ompd_get_generating_ancestor_task_handle(
+ompd_rc_t ompd_get_generating_task_handle(
     ompd_task_handle_t *task_handle,        /* IN: OpenMP task handle */
     ompd_task_handle_t **parent_task_handle /* OUT: OpenMP task handle */
     ) {
@@ -571,7 +623,7 @@ ompd_rc_t ompd_get_generating_ancestor_task_handle(
   return ret;
 }
 
-ompd_rc_t ompd_get_scheduling_ancestor_task_handle(
+ompd_rc_t ompd_get_scheduling_task_handle(
     ompd_task_handle_t *task_handle,        /* IN: OpenMP task handle */
     ompd_task_handle_t **parent_task_handle /* OUT: OpenMP task handle */
     ) {
@@ -831,8 +883,10 @@ ompd_rc_t ompd_get_parallel_data(
   ompd_address_space_context_t *context = parallel_handle->ah->context;
   if (!context)
     return ompd_rc_stale_handle;
+#if 0
   if (!ompd_state)
     return ompd_rc_needs_state_tracking;
+#endif
 
   assert(callbacks && "Callback table not initialized!");
 
@@ -1059,8 +1113,10 @@ ompd_rc_t ompd_get_state(
   ompd_address_space_context_t *context = thread_handle->ah->context;
   if (!context)
     return ompd_rc_stale_handle;
+#if 0
   if (!ompd_state)
     return ompd_rc_needs_state_tracking;
+#endif
 
   assert(callbacks && "Callback table not initialized!");
 
@@ -1341,8 +1397,10 @@ ompd_rc_t ompd_get_task_frame(
   ompd_address_space_context_t *context = task_handle->ah->context;
   if (!context)
     return ompd_rc_stale_handle;
+#if 0
   if (!ompd_state)
     return ompd_rc_needs_state_tracking;
+#endif
 
   assert(callbacks && "Callback table not initialized!");
 
@@ -1387,8 +1445,10 @@ ompd_get_task_data(ompd_task_handle_t *task_handle, /* IN: OpenMP task handle*/
   ompd_address_space_context_t *context = task_handle->ah->context;
   if (!context)
     return ompd_rc_stale_handle;
+#if 0
   if (!ompd_state)
     return ompd_rc_needs_state_tracking;
+#endif
 
   assert(callbacks && "Callback table not initialized!");
 

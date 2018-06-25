@@ -8,8 +8,27 @@
 const ompd_callbacks_t *TValue::callbacks = NULL;
 ompd_target_type_sizes_t TValue::type_sizes;
 
+// MARKER_MR: This is just compat stuff because I dont have time to
+// replace this function. TODO: replace this function
 inline int ompd_sizeof(ompd_target_prim_types_t t) {
-  return (((int *)&TValue::type_sizes)[(int)t]);
+  assert(t != ompd_type_max && "ompd_type_max should not be used anywhere");
+  assert(t != ompd_type_invalid && "request size of invalid type");
+
+  switch (t) {
+    case ompd_type_char:
+      return TValue::type_sizes.sizeof_char;
+    case ompd_type_short:
+      return TValue::type_sizes.sizeof_short;
+    case ompd_type_int:
+      return TValue::type_sizes.sizeof_int;
+    case ompd_type_long:
+      return TValue::type_sizes.sizeof_long;
+    case ompd_type_long_long:
+      return TValue::type_sizes.sizeof_long_long;
+    case ompd_type_pointer:
+      return TValue::type_sizes.sizeof_pointer;
+  }
+  return 0;
 }
 
 TType &TTypeFactory::getType(ompd_address_space_context_t *context,

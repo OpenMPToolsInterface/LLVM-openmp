@@ -107,6 +107,9 @@ OMPD_BITFIELD(kmp_tasking_flags_t,  freed) \
 OMPD_BITFIELD(kmp_tasking_flags_t,  native) \
 
 
+// TODO: (mr) this is a hack to cast cuda contexts to 64 bit values
+typedef uint64_t ompd_cuda_context_ptr_t;
+
 #define OMPD_FOREACH_SIZEOF(OMPD_SIZEOF) \
 OMPD_SIZEOF(kmp_info_t) \
 OMPD_SIZEOF(kmp_taskdata_t) \
@@ -118,6 +121,7 @@ OMPD_SIZEOF(__kmp_avail_proc) \
 OMPD_SIZEOF(__kmp_max_nth) \
 OMPD_SIZEOF(__kmp_gtid) \
 OMPD_SIZEOF(__kmp_nth) \
+OMPD_SIZEOF(ompd_cuda_context_ptr_t) \
 
 #endif /* OMPD_SUPPORT */
 #endif

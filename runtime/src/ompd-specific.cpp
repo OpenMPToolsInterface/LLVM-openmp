@@ -23,45 +23,45 @@ OMPD_FOREACH_SIZEOF(ompd_declare_sizeof)
 #undef ompd_declare_sizeof
 
 const char * * ompd_dll_locations=NULL;
-const char * ompd_my_dll_locations[2] = {"libompd_intel.so",NULL};
-uint64_t ompd_state=0;
+  const char * ompd_my_dll_locations[2] = {"libompd_intel.so",NULL};
+  uint64_t ompd_state=0;
 
-int ompd_rtl_version = 7;
+  int ompd_rtl_version = 7;
 
-void ompd_init()
-{
-  
-static int ompd_initialized = 0;
+  void ompd_init()
+  {
+    
+  static int ompd_initialized = 0;
 
-if (ompd_initialized)
-  return;
-  
-/**
- * Calculate member offsets for structs and unions
- */
+  if (ompd_initialized)
+    return;
+    
+  /**
+   * Calculate member offsets for structs and unions
+   */
 
 #define ompd_init_access(t,m) ompd_access__##t##__##m = (uint64_t)&(((t*)0)->m); 
-OMPD_FOREACH_ACCESS(ompd_init_access)
+  OMPD_FOREACH_ACCESS(ompd_init_access)
 #undef ompd_init_access
 
-/**
- * Create bit mask for bitfield access
- */
+  /**
+   * Create bit mask for bitfield access
+   */
 
 #define ompd_init_bitfield(t,m) ompd_bitfield__##t##__##m=0; ((t*)(&ompd_bitfield__##t##__##m))->m = 1; 
-OMPD_FOREACH_BITFIELD(ompd_init_bitfield)
+  OMPD_FOREACH_BITFIELD(ompd_init_bitfield)
 #undef ompd_init_bitfield
 
-/**
- * Calculate type size information
- */
+  /**
+   * Calculate type size information
+   */
 
 #define ompd_init_sizeof_member(t,m) ompd_sizeof__##t##__##m = sizeof(((t*)0)->m); 
-OMPD_FOREACH_ACCESS(ompd_init_sizeof_member)
+  OMPD_FOREACH_ACCESS(ompd_init_sizeof_member)
 #undef ompd_init_sizeof_member
 
 #define ompd_init_sizeof(t) ompd_sizeof__##t = sizeof(t); 
-OMPD_FOREACH_SIZEOF(ompd_init_sizeof)
+  OMPD_FOREACH_SIZEOF(ompd_init_sizeof)
 #undef ompd_init_sizeof
 
   ompd_dll_locations=ompd_my_dll_locations;

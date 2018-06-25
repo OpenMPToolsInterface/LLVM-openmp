@@ -85,7 +85,7 @@ typedef struct ompd_address_t {
 #define OMPD_SEGMENT_CUDA_PTX_FRAME ((ompd_seg_t)15)
 #define OMPD_SEGMENT_CUDA_PTX_MAX ((ompd_seg_t)16)
 
-#if 0 // types removed in Austin F2F
+//#if 0 // types removed in Austin F2F
 /*
  * Definition of OMPD states, taken from OMPT
  */
@@ -132,6 +132,7 @@ typedef enum ompd_state_t {
 #undef ompd_state_macro
 } ompd_state_t;
 
+#if 0
 typedef enum ompd_sched_t {
   ompd_sched_static = 1,
   ompd_sched_dynamic = 2,
@@ -425,8 +426,9 @@ ompd_get_api_version_string(const char **string /* OUT: OMPD version string */
  * maintain the functions valid for as long as needed.
  */
 ompd_rc_t
-ompd_initialize(const ompd_callbacks_t *table, /* IN: callbacks table */
-                ompd_word_t version);
+ompd_initialize(ompd_word_t version,
+                const ompd_callbacks_t *table /* IN: callbacks table */
+              );
 
 ompd_rc_t
 ompd_process_initialize(ompd_address_space_context_t
@@ -451,12 +453,12 @@ ompd_rc_t ompd_release_address_space_handle(
     );
 
 ompd_rc_t ompd_device_initialize(
-    ompd_address_space_context_t
-        *context,                /* IN: debugger handle for the device */
-    ompd_device_identifier_t id, /* IN: object defined by native device API */
-    ompd_device_kind_t kind,     /* IN: */
-    ompd_address_space_handle_t *
-        *addrhandle /* OUT: ompd handle for the device */
+    ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
+    ompd_address_space_context_t *device_context,
+    int kind,
+    ompd_size_t sizeof_id,
+    void *id,
+    ompd_address_space_handle_t **device_handle
     );
 
 ompd_rc_t ompd_finalize(void);
@@ -475,13 +477,8 @@ ompd_rc_t ompd_finalize(void);
  * and/or destroying threads during or after the call, rendering useless the
  * vector of handles returned.
  */
-#if 0 
-ompd_rc_t ompd_get_threads (
-    ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
-    ompd_thread_handle_t ***thread_handle_array, /* OUT: array of handles */
-    int                     *num_handles    /* OUT: number of handles in the array */
-    );
-#endif
+ 
+
 /**
  * Retrieve handles for OpenMP threads in a parallel region.
  *
@@ -589,7 +586,7 @@ ompd_rc_t ompd_get_parallel_handle_string_id (
  * for the innermost task region associated with an OpenMP thread. This call is
  * meaningful only if the thread whose handle is provided is stopped.
  */
-ompd_rc_t ompd_get_current_task__handle(
+ompd_rc_t ompd_get_current_task_handle(
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
     ompd_task_handle_t **task_handle     /* OUT: OpenMP task handle */
     );
@@ -609,12 +606,12 @@ ompd_rc_t ompd_get_ancestor_task_handle(
     );
 #endif
 
-ompd_rc_t ompd_get_generating_ancestor_task_handle(
+ompd_rc_t ompd_get_generating_task_handle(
     ompd_task_handle_t *task_handle,        /* IN: OpenMP task handle */
     ompd_task_handle_t **parent_task_handle /* OUT: OpenMP task handle */
     );
 
-ompd_rc_t ompd_get_scheduling_ancestor_task_handle(
+ompd_rc_t ompd_get_scheduling_task_handle(
     ompd_task_handle_t *task_handle,        /* IN: OpenMP task handle */
     ompd_task_handle_t **parent_task_handle /* OUT: OpenMP task handle */
     );
@@ -762,7 +759,7 @@ ompd_rc_t ompd_get_thread_num(
  * different states of threads (e.g., idle, working, or barrier, etc) and what
  * entity cased this state (e.g., address of a lock);
  *
- * The function ompd_get_state is a third-party version of ompt_get_state. The
+   * The function ompd_get_state is a third-party version of ompt_get_state. The
  * only difference between the OMPD and OMPT counterparts is that the OMPD
  * version must supply a thread handle to provide a context for this inquiry.
  */

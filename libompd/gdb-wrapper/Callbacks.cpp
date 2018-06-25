@@ -40,8 +40,7 @@ void initializeCallbacks(const GdbProcessPtr &proc)
   cb.dmemory_alloc  = CB_dmemory_alloc;
   cb.dmemory_free   = CB_dmemory_free;
   cb.print_string   = CB_print_string;
-  cb.get_thread_context_for_osthread = CB_thread_context;
-  cb.get_containing_process_context = CB_process_context;
+  cb.get_thread_context_for_thread_id = CB_thread_context;
   cb.tsizeof_prim   = CB_tsizeof_prim;
   cb.tsymbol_addr   = CB_tsymbol_addr;
   cb.read_tmemory   = CB_read_tmemory;
@@ -78,14 +77,14 @@ ompd_rc_t CB_dmemory_free (
 
 ompd_rc_t CB_thread_context (
     ompd_address_space_context_t *context,
-    ompd_osthread_kind_t          kind,
+    ompd_thread_id_kind_t          kind,
     ompd_size_t                   sizeof_osthread,
     const void*                   osthread,
     ompd_thread_context_t **tcontext
     )
 {
   ompd_rc_t ret = context ? ompd_rc_ok : ompd_rc_stale_handle;
-  if (kind == ompd_osthread_cudalogical) {
+  if (kind == ompd_thread_id_cudalogical) {
     *tcontext = ((OMPDContext*)context)->getContextForThread((CudaThread*)osthread);
   }
   else {
@@ -135,7 +134,12 @@ ompd_rc_t CB_tsizeof_prim(
     inited=1;
     init_sizes();
   }
-  memcpy(sizes, prim_sizes, sizeof(prim_sizes[0])*ompd_type_max);
+  sizes->sizeof_char = prim_sizes[ompd_type_char];
+  sizes->sizeof_short = prim_sizes[ompd_type_short];
+  sizes->sizeof_int = prim_sizes[ompd_type_int];
+  sizes->sizeof_long = prim_sizes[ompd_type_long];
+  sizes->sizeof_long_long = prim_sizes[ompd_type_long_long];
+  sizes->sizeof_pointer = prim_sizes[ompd_type_pointer];  
 
   return ret;
 }
@@ -175,7 +179,7 @@ ompd_rc_t CB_tsymbol_addr(
   parser.matchAddressValue(gdb->readOutput().c_str(), addr);
 
   if (strlen(addr) > 0)
-    symbol_addr->address = (ompd_taddr_t) strtoull (addr, NULL, 0);
+    symbol_addr->address = (ompd_addr_t) strtoull (addr, NULL, 0);
   else if (strlen(addr) == 0)
     ret = ompd_rc_error;
 
@@ -267,7 +271,7 @@ ompd_rc_t CB_write_tmemory (
     ompd_address_space_context_t *context,
     ompd_thread_context_t *tcontext,
     ompd_address_t addr,
-    ompd_tword_t nbytes,
+    ompd_word_t nbytes,
     const void *buffer)
 {
   return ompd_rc_unsupported;
@@ -277,7 +281,7 @@ ompd_rc_t CB_read_tmemory (
     ompd_address_space_context_t *context,
     ompd_thread_context_t *tcontext,
     ompd_address_t addr,
-    ompd_tword_t nbytes,
+    ompd_word_t nbytes,
     void *buffer)
 {
   if (!context)

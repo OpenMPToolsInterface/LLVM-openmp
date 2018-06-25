@@ -16,7 +16,7 @@
  */
 
 #include "ompd.h"
-#include "ompd_test.h"
+//#include "ompd_test.h"
 #include "GdbProcess.h"
 #include "Callbacks.h"
 #include "CudaGdb.h"

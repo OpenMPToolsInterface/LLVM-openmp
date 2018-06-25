@@ -5,14 +5,16 @@
  *      Author: Ignacio Laguna
  *     Contact: ilaguna@llnl.gov
  */
-#include <config.h>
+//#include <config.h>
 #include "OMPDCommand.h"
 #include "OMPDContext.h"
 #include "Callbacks.h"
 #include "OutputString.h"
 #include "Debug.h"
+#include "omp.h"
 #include "ompd.h"
-#include "ompd_test.h"
+//#include "ompd_test.h"
+#define ODB_LINUX
 #include "CudaGdb.h"
 
 #include <cstdlib>
@@ -38,9 +40,9 @@ OMPDCommandFactory::OMPDCommandFactory()
 
   // Load OMPD DLL and get a handle
 #ifdef ODB_LINUX
-  functions->ompdLibHandle = dlopen("libompd_intel.so", RTLD_LAZY);
+  functions->ompdLibHandle = dlopen("libompd.so", RTLD_LAZY);
 #elif defined(ODB_MACOS)
-  functions->ompdLibHandle = dlopen("libompd_intel.dylib", RTLD_LAZY);
+  functions->ompdLibHandle = dlopen("libompd.dylib", RTLD_LAZY);
 #else
 #error Unsupported platform!
 #endif
@@ -76,7 +78,7 @@ FOREACH_OMPD_API_FN(OMPD_FIND_API_FUNCTION)
   // Initialize OMPD library
   ompd_callbacks_t *table = getCallbacksTable();
   assert(table && "Invalid callbacks table");
-  ompd_rc_t ret = functions->ompd_initialize(table);
+  ompd_rc_t ret = functions->ompd_initialize(0, table);
   if (ret != ompd_rc_ok)
   {
     out << "ERROR: could not initialize OMPD\n";
@@ -191,11 +193,11 @@ void OMPDThreads::execute() const
   for(auto i: thread_ids) {
     ompd_thread_handle_t* thread_handle;
     ompd_rc_t ret = functions->ompd_get_thread_handle(
-        addrhandle, ompd_osthread_pthread, sizeof(i.second),
+        addrhandle, ompd_thread_id_pthread, sizeof(i.second),
         &(i.second), &thread_handle);
     if (ret == ompd_rc_ok)
     {
-      ompd_state_t state;
+      ompd_word_t state;
       ompd_wait_id_t wait_id;
       ret = functions->ompd_get_state(thread_handle, &state, &wait_id);
       printf("  %-12u     %p     0x%lx\t%i\t%lx\n", 
@@ -211,23 +213,30 @@ void OMPDThreads::execute() const
   int omp_cuda_threads = 0;
   vector<OMPDCudaContextPool*> cuda_ContextPools;
   map<uint64_t, bool> device_initialized;
-  map<ompd_taddr_t, ompd_address_space_handle_t*> address_spaces;
+  map<ompd_addr_t, ompd_address_space_handle_t*> address_spaces;
 
   for(auto i: cuda.threads) {
     if (!device_initialized[i.coord.cudaContext]) {
+      cout << "Cuda device with context " << i.coord.cudaContext << "not initialized as OpenMP device. Trying to initialize\n";
       OMPDCudaContextPool* cpool;
       cpool = new OMPDCudaContextPool(&i);
       ompd_rc_t result;
 
       device_initialized[i.coord.cudaContext] = true;
       result = functions->ompd_device_initialize(
-           cpool->getGlobalOmpdContext(),
-           i.coord.cudaContext,
-           ompd_device_kind_cuda, 
+          addrhandle,
+          cpool->getGlobalOmpdContext(),
+          ompd_device_kind_cuda, 
+          sizeof(i.coord.cudaContext),
+          &i.coord.cudaContext,
           &cpool->ompd_device_handle);
 
         if (result != ompd_rc_ok)
+        {
+          cout << "Could not initalize device with context " << i.coord.cudaContext << ". Probably not a OpenMP device\n";
           continue;
+        }
+        cout << "Device initialized\n";
 
         address_spaces[i.coord.cudaContext] = cpool->ompd_device_handle;
     }
@@ -235,7 +244,7 @@ void OMPDThreads::execute() const
     ompd_thread_handle_t* thread_handle;
     ompd_rc_t ret = functions->ompd_get_thread_handle(
                                     address_spaces[i.coord.cudaContext],
-                                    ompd_osthread_cudalogical,
+                                    ompd_thread_id_cudalogical,
                                     sizeof(i.coord), &i.coord,
                                     &thread_handle);
 
@@ -321,7 +330,7 @@ void OMPDCallback::execute() const
 
 /*ompd_rc_t CB_read_tmemory (
     ompd_context_t *context,
-    ompd_taddr_t addr,
+    ompd_addr_t addr,
     ompd_tword_t bufsize,
     void *buffer
     );*/
@@ -333,7 +342,7 @@ void OMPDCallback::execute() const
       return;
     }
     long long temp=0;
-    ompd_taddr_t addr = (ompd_taddr_t)strtoll(extraArgs[1].c_str(), NULL, 0);
+    ompd_addr_t addr = (ompd_addr_t)strtoll(extraArgs[1].c_str(), NULL, 0);
     int cnt = atoi(extraArgs[2].c_str());
     ret = CB_read_tmemory(
             host_contextPool->getGlobalOmpdContext(), NULL, {0,addr}, cnt, &temp);
@@ -345,7 +354,7 @@ void OMPDCallback::execute() const
 /*ompd_rc_t CB_tsymbol_addr (
     ompd_context_t *context,
     const char *symbol_name,
-    ompd_taddr_t *symbol_addr);*/
+    ompd_addr_t *symbol_addr);*/
 
   if (extraArgs[0] == "tsymbol_addr")
   {
@@ -388,6 +397,7 @@ void OMPDApi::execute() const
 
   if (extraArgs[0] == "get_threads")
   {
+#if 0 // MARKER_MR: TODO: reimplement this functionality with breakpoints
     if(extraArgs.size()>1)
     {
       hout << "Usage: odb api get_threads" << endl;
@@ -406,6 +416,8 @@ void OMPDApi::execute() const
       sout << "0x" << hex << thread_handle_array[i] << ", ";
     }    
     sout << endl << "";
+#endif
+    hout << "The 'odb api threads' command has been temporarily removed for the migration to a new ompd standard\n";
   }
 
 }
@@ -424,7 +436,7 @@ vector<ompd_thread_handle_t*> odbGetThreadHandles(ompd_address_space_handle_t* a
   {
     ompd_thread_handle_t* thread_handle;
     ret = functions->ompd_get_thread_handle(
-        addrhandle, ompd_osthread_pthread, sizeof(i.second) ,&(i.second), &thread_handle);
+        addrhandle, ompd_thread_id_pthread, sizeof(i.second) ,&(i.second), &thread_handle);
     if (ret!=ompd_rc_ok)
       continue;
     thread_handles.push_back(thread_handle);
@@ -437,7 +449,7 @@ vector<ompd_parallel_handle_t*> odbGetParallelRegions(OMPDFunctionsPtr functions
   ompd_rc_t ret;
   ompd_parallel_handle_t * parallel_handle;
   vector<ompd_parallel_handle_t*> parallel_handles;
-  ret = functions->ompd_get_top_parallel_region(
+  ret = functions->ompd_get_current_parallel_handle(
           th, &parallel_handle);  
   while(ret == ompd_rc_ok)
   {
@@ -450,6 +462,10 @@ vector<ompd_parallel_handle_t*> odbGetParallelRegions(OMPDFunctionsPtr functions
 
 bool odbCheckParallelIDs(OMPDFunctionsPtr functions, vector<ompd_parallel_handle_t*> phs)
 {
+  sout << "Checking of parallel IDs has been disabled for upgrade of ompd in branch ompd-devices\n";
+  // MARKER_MR: TODO: fix checking of parallel ids
+  return true;
+#if 0
   bool res=true;
 //  ompd_rc_t ret;
   int i=0;
@@ -466,10 +482,15 @@ bool odbCheckParallelIDs(OMPDFunctionsPtr functions, vector<ompd_parallel_handle
     if (ompt_res != ompd_res) res=false;
   }
   return res;
+#endif
 }
 
 bool odbCheckParallelNumThreads(OMPDFunctionsPtr functions, vector<ompd_parallel_handle_t*> phs)
 {
+  sout << "Checking of parallel IDs has been disable for upgrade of ompd in branch ompd-devices\n";
+  // MARKER_MR: TODO: fix checking of parallel ids for num threads
+  return true;
+#if 0
   bool res=true;
 //  ompd_rc_t ret;
   int i=0;
@@ -486,10 +507,15 @@ bool odbCheckParallelNumThreads(OMPDFunctionsPtr functions, vector<ompd_parallel
     if (ompt_res != ompd_res) res=false;
   }
   return res;
+#endif
 }
 
 bool odbCheckTaskIDs(OMPDFunctionsPtr functions, vector<ompd_task_handle_t*> ths)
 {
+  sout << "Checking of task IDs has been disable for upgrade of ompd in branch ompd-devices\n";
+  // MARKER_MR: TODO: fix checking of task ids
+  return true;
+#if 0
   bool res=true;
 //  ompd_rc_t ret;
   int i=0;
@@ -506,20 +532,21 @@ bool odbCheckTaskIDs(OMPDFunctionsPtr functions, vector<ompd_task_handle_t*> ths
     if (ompt_res != ompd_res) res=false;
   }
   return res;
+#endif
 }
 
 vector<ompd_task_handle_t*> odbGetTaskRegions(OMPDFunctionsPtr functions, ompd_thread_handle_t* th)
 {
   ompd_rc_t ret;
-  ompd_task_handle_t * task_handle;
+  ompd_task_handle_t *task_handle;
   vector<ompd_task_handle_t*> task_handles;
-  ret = functions->ompd_get_top_task_region(
+  ret = functions->ompd_get_current_task_handle(
           th, &task_handle);  
   while(ret == ompd_rc_ok)
   {
     task_handles.push_back(task_handle);
-    ret = functions->ompd_get_ancestor_task_region(
-          task_handle, &task_handle);  
+    ret = functions->ompd_get_generating_task_handle(
+          task_handle, &task_handle); // MARKER_MR: TODO: is it generating or scheduling task or something different?
   }
   return task_handles;
 }
@@ -527,16 +554,25 @@ vector<ompd_task_handle_t*> odbGetTaskRegions(OMPDFunctionsPtr functions, ompd_t
 vector<ompd_task_handle_t*> odbGetImplicitTasks(OMPDFunctionsPtr functions, ompd_parallel_handle_t* ph)
 {
 //  ompd_rc_t ret;
-  ompd_task_handle_t** task_handles;
-  int num_tasks;
+  int num_tasks = evalGdbExpression("call omp_get_num_threads()");
   vector<ompd_task_handle_t*> return_handles;
-  /*ret = */functions->ompd_get_implicit_task_in_parallel(
+
+  for (int i=0; i < num_tasks; ++i) {
+    ompd_task_handle_t* task_handle;
+    functions->ompd_get_task_in_parallel(
+        ph, i, &task_handle);
+    return_handles.push_back(task_handle);
+  }
+#if 0
+  ompd_task_handle_t* task_handles;
+  /*ret = */functions->ompd_get_task_in_parallel(
           ph, &task_handles, &num_tasks);  
   for(int i=0; i<num_tasks; i++)
   {
     return_handles.push_back(task_handles[i]);
   }
   free(task_handles);
+#endif
   return return_handles;
 }
 
@@ -573,10 +609,12 @@ void OMPDTest::execute() const
         auto implicit_task_h = odbGetImplicitTasks(functions, ph);
         for(auto ith: implicit_task_h)
         {
+#if 0 //MARKER_MR: TODO: fix this
           uint64_t tid;
           functions->ompd_get_task_id(
                ith, &tid);
-          sout << "0x" << hex << ith << " (" << tid << "), ";
+#endif
+          sout << "0x" << hex << ith << " (" << "DISABLED IN ompd-devices" << "), ";
           functions->ompd_release_task_handle(ith);
         }
         sout << endl;
@@ -587,7 +625,7 @@ void OMPDTest::execute() const
       }
       sout << endl;
       pthread_t            osthread;
-      functions->ompd_get_osthread(thr_h, ompd_osthread_pthread, sizeof(pthread_t), &osthread);
+      functions->ompd_get_thread_id(thr_h, ompd_thread_id_pthread, sizeof(pthread_t), &osthread);
       host_contextPool->getThreadContext(&osthread)->setThisGdbContext();
       odbCheckParallelIDs(functions, parallel_h);
       odbCheckTaskIDs(functions, task_h);

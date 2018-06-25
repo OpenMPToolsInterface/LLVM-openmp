@@ -48,7 +48,7 @@ ompd_rc_t CB_dmemory_free (
 
 ompd_rc_t CB_thread_context (
     ompd_address_space_context_t *context,
-    ompd_osthread_kind_t          kind,
+    ompd_thread_id_kind_t          kind,
     ompd_size_t                   sizeof_osthread,
     const void*                   osthread,
     ompd_thread_context_t **tcontext);
@@ -71,7 +71,7 @@ ompd_rc_t CB_read_tmemory (
     ompd_address_space_context_t *context,
     ompd_thread_context_t *tcontext,
     const ompd_address_t addr,
-    ompd_tword_t nbytes,
+    ompd_word_t nbytes,
     void *buffer
     );
 
@@ -79,7 +79,7 @@ ompd_rc_t CB_write_tmemory (
     ompd_address_space_context_t *context,
     ompd_thread_context_t *tcontext,
     const ompd_address_t addr,
-    ompd_tword_t nbytes,
+    ompd_word_t nbytes,
     const void *buffer
     );
 
