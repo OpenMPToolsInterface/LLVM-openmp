@@ -92,6 +92,9 @@ EXTERN void __kmpc_kernel_init(int ThreadLimit, int16_t RequiresOMPRuntime) {
       omptarget_nvptx_threadPrivateContext->GetTopLevelTaskDescr(threadId);
   currTaskDescr->NThreads() = GetNumberOfWorkersInTeam();
   currTaskDescr->ThreadLimit() = ThreadLimit;
+#ifdef OMPD_SUPPORT
+  ompd_init();
+#endif /*OMPD_SUPPORT*/
 }
 
 EXTERN void __kmpc_kernel_deinit(int16_t IsOMPRuntimeInitialized) {
@@ -173,6 +176,9 @@ EXTERN void __kmpc_spmd_kernel_init(int ThreadLimit, int16_t RequiresOMPRuntime,
     DataSharingState.SlotPtr[WID] = RootS;
     DataSharingState.StackPtr[WID] = (void *)&RootS->Data[0];
   }
+#ifdef OMPD_SUPPORT
+  ompd_init();
+#endif /*OMPD_SUPPORT*/
 }
 
 EXTERN void __kmpc_spmd_kernel_deinit() {

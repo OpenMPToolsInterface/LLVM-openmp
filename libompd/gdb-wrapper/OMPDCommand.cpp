@@ -217,7 +217,7 @@ void OMPDThreads::execute() const
 
   for(auto i: cuda.threads) {
     if (!device_initialized[i.coord.cudaContext]) {
-      cout << "Cuda device with context " << i.coord.cudaContext << "not initialized as OpenMP device. Trying to initialize\n";
+      cout << "Cuda device with context " << i.coord.cudaContext << " not initialized as OpenMP device. Trying to initialize\n";
       OMPDCudaContextPool* cpool;
       cpool = new OMPDCudaContextPool(&i);
       ompd_rc_t result;

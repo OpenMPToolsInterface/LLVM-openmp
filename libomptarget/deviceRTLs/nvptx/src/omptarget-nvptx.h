@@ -32,6 +32,7 @@
 #include "option.h"    // choices we have
 #include "state-queue.h"
 #include "support.h"
+#include "ompd-specific.h"
 
 #define OMPTARGET_NVPTX_VERSION 1.1
 
@@ -66,6 +67,9 @@
 
 // arguments needed for L0 parallelism only.
 class omptarget_nvptx_SharedArgs {
+#if OMPD_SUPPORT
+  friend void __device__ ompd_init( void );
+#endif /* OMPD_SUPPORT */
 public:
   // All these methods must be called by the master thread only.
   INLINE void Init() {
@@ -150,6 +154,9 @@ extern __device__ __shared__ DataSharingStateTy DataSharingState;
 // task ICV and (implicit & explicit) task state
 
 class omptarget_nvptx_TaskDescr {
+#if OMPD_SUPPORT
+  friend void __device__ ompd_init( void );
+#endif /* OMPD_SUPPORT */
 public:
   // methods for flags
   INLINE omp_sched_t GetRuntimeSched();
@@ -310,6 +317,9 @@ private:
 // tid refers here to the global thread id
 // do not support multiple concurrent kernel a this time
 class omptarget_nvptx_ThreadPrivateContext {
+#if OMPD_SUPPORT
+  friend void __device__ ompd_init( void );
+#endif /* OMPD_SUPPORT */
 public:
   // task
   INLINE omptarget_nvptx_TaskDescr *Level1TaskDescr(int tid) {
