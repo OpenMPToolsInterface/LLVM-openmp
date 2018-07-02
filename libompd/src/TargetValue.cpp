@@ -6,7 +6,7 @@
 #include <sstream>
 
 const ompd_callbacks_t *TValue::callbacks = NULL;
-ompd_target_type_sizes_t TValue::type_sizes;
+ompd_device_type_sizes_t TValue::type_sizes;
 
 // MARKER_MR: This is just compat stuff because I dont have time to
 // replace this function. TODO: replace this function
@@ -27,6 +27,8 @@ inline int ompd_sizeof(ompd_target_prim_types_t t) {
       return TValue::type_sizes.sizeof_long_long;
     case ompd_type_pointer:
       return TValue::type_sizes.sizeof_pointer;
+    default:
+      break;
   }
   return 0;
 }

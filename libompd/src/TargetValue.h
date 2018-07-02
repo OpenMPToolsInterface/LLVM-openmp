@@ -1,5 +1,6 @@
 
 #include "ompd.h"
+#include "ompd-private.h"
 #include <stdlib.h>
 
 #ifndef SRC_TARGET_VALUE_H_
@@ -100,7 +101,7 @@ protected:
 
 public:
   static const ompd_callbacks_t *callbacks;
-  static ompd_target_type_sizes_t type_sizes;
+  static ompd_device_type_sizes_t type_sizes;
 
   TValue() : errorState(ompd_rc_error) {}
   /**

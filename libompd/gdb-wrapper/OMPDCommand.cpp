@@ -327,20 +327,6 @@ const char* OMPDLevels::toString() const
 
 /* --- OMPDCallback ----------------------------------------------------------- */
 
-ompd_target_prim_types_t get_prim_type_from_string(const string& str)
-{
-  const char * names[ompd_type_max] = { 
-    "CHAR", 
-    "SHORT",
-    "INT",
-    "LONG",
-    "LONG_LONG",
-    "POINTER"
-    };
-  for (int i = 0; 0<ompd_type_max; i++)
-    if (str == names[i])
-      return (ompd_target_prim_types_t) i;
-}
 
 void OMPDCallback::execute() const
 { 

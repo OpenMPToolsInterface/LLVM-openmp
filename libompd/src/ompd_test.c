@@ -59,7 +59,7 @@ void test_CB_tsizeof_prim() {
   test_print_header();
 
   ompd_rc_t ret;
-  ompd_target_type_sizes_t sizes;
+  ompd_device_type_sizes_t sizes;
   ret = callbacks->tsizeof_prim((ompd_context_t *)1, &sizes);
   if (ret == ompd_rc_ok) {
     printf("%-20s %du\n", "Size of char:", sizes.sizeof_char);

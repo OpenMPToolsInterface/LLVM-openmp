@@ -32,6 +32,7 @@ extern "C" {
 #define STR(x) STR_HELPER(x)
 
 #include "ompd.h"
+#include "ompd-private.h"
 
 /******************************************************************************
  * General helper functions

@@ -21,10 +21,6 @@
  *    - Type entities end with the suffix "_t" (for type)
  *    - Function types end with the suffix "_fn_t" (for function type)
  *    - Return code entities have "_rc_" in it
- *    - Abstractions referring to the target have the prefix "t" (e.g.,
- *    "tmemory" for memory in the target, or "tsymbol" for symbol in the target)
- *    - Abstractions referring to the debugger have the prefix "d" (e.g.,
- *    "dmemory" for memory in the debugger)
  *
  * Comment conventions:
  *    - Input function parameters denoted by "IN:"
@@ -85,71 +81,6 @@ typedef struct ompd_address_t {
 #define OMPD_SEGMENT_CUDA_PTX_FRAME ((ompd_seg_t)15)
 #define OMPD_SEGMENT_CUDA_PTX_MAX ((ompd_seg_t)16)
 
-//#if 0 // types removed in Austin F2F
-/*
- * Definition of OMPD states, taken from OMPT
- */
-#define FOREACH_OMPD_STATE(macro)                                              \
-                                                                               \
-  /* first */                                                                  \
-  macro(ompd_state_first, 0x71) /* initial enumeration state */                \
-                                                                               \
-      /* work states (0..15) */                                                \
-      macro(ompd_state_work_serial, 0x00)    /* working outside parallel */    \
-      macro(ompd_state_work_parallel, 0x01)  /* working within parallel */     \
-      macro(ompd_state_work_reduction, 0x02) /* performing a reduction */      \
-                                                                               \
-      /* idle (16..31) */                                                      \
-      macro(ompd_state_idle, 0x10) /* waiting for work */                      \
-                                                                               \
-      /* overhead states (32..63) */                                           \
-      macro(ompd_state_overhead, 0x20) /* overhead excluding wait states */    \
-                                                                               \
-      /* barrier wait states (64..79) */                                       \
-      macro(ompd_state_wait_barrier, 0x40)          /* waiting at a barrier */ \
-      macro(ompd_state_wait_barrier_implicit, 0x41) /* implicit barrier */     \
-      macro(ompd_state_wait_barrier_explicit, 0x42) /* explicit barrier */     \
-                                                                               \
-      /* task wait states (80..95) */                                          \
-      macro(ompd_state_wait_taskwait, 0x50)  /* waiting at a taskwait */       \
-      macro(ompd_state_wait_taskgroup, 0x51) /* waiting at a taskgroup */      \
-                                                                               \
-      /* mutex wait states (96..111) */                                        \
-      macro(ompd_state_wait_lock, 0x60)      /* waiting for lock */            \
-      macro(ompd_state_wait_nest_lock, 0x61) /* waiting for nest lock */       \
-      macro(ompd_state_wait_critical, 0x62)  /* waiting for critical */        \
-      macro(ompd_state_wait_atomic, 0x63)    /* waiting for atomic */          \
-      macro(ompd_state_wait_ordered, 0x64)   /* waiting for ordered */         \
-      macro(ompd_state_wait_single,                                            \
-            0x6F) /* waiting for single region (non-standard!) */              \
-                                                                               \
-      /* misc (112..127) */                                                    \
-      macro(ompd_state_undefined, 0x70) /* undefined thread state */
-
-typedef enum ompd_state_t {
-#define ompd_state_macro(state, code) state = code,
-  FOREACH_OMPD_STATE(ompd_state_macro)
-#undef ompd_state_macro
-} ompd_state_t;
-
-#if 0
-typedef enum ompd_sched_t {
-  ompd_sched_static = 1,
-  ompd_sched_dynamic = 2,
-  ompd_sched_guided = 3,
-  ompd_sched_auto = 4,
-  ompd_sched_vendor_lo = 5,
-  ompd_sched_vendor_hi = 0x7fffffff
-} ompd_sched_t;
-
-typedef enum ompd_proc_bind_t {
-  ompd_proc_bind_false = 0,
-  ompd_proc_bind_true = 1,
-  ompd_proc_bind_master = 2,
-  ompd_proc_bind_close = 3,
-  ompd_proc_bind_spread = 4
-} ompd_proc_bind_t;
-#endif
 
 typedef uint64_t ompd_device_identifier_t;
 
@@ -242,25 +173,11 @@ typedef enum ompd_rc_t {
 } ompd_rc_t;
 
 /**
- * Primitive types.
- */
-typedef enum ompd_target_prim_types_t {
-  ompd_type_invalid = -1,
-  ompd_type_char = 0,
-  ompd_type_short = 1,
-  ompd_type_int = 2,
-  ompd_type_long = 3,
-  ompd_type_long_long = 4,
-  ompd_type_pointer = 5,
-  ompd_type_max
-} ompd_target_prim_types_t;
-
-/**
  * Primitive type sizes.
  * These types are used by OMPD to interrogate the debugger about the size of
  * primitive types in the target.
  */
-typedef struct ompd_target_type_sizes_t {
+typedef struct ompd_device_type_sizes_t {
   uint8_t sizeof_char;
   uint8_t sizeof_short;
   uint8_t sizeof_int;
@@ -301,25 +218,13 @@ typedef ompd_rc_t (*ompd_get_thread_context_for_thread_id_fn_t)(
     ompd_size_t sizeof_thread_id, const void *thread_id,
     ompd_thread_context_t **thread_context);
 
-#if 0
-/**
- * Get containing (host) process context for address_space_context
- */
-typedef ompd_rc_t (*ompd_get_process_context_for_context_fn_t) (
-    ompd_address_space_context_t*
-      address_space_context,           /* IN: OMP device/process addr space */
-    ompd_address_space_context_t**
-      containing_address_space_context /* OUT: Containing omp process addr space */
-);
-#endif
-
 /**
  * Look up the sizes of primitive types in the target
  */
 typedef ompd_rc_t (*ompd_tsizeof_prim_fn_t)(
     ompd_address_space_context_t
         *context,                   /* IN: debugger handle for the target */
-    ompd_target_type_sizes_t *sizes /* OUT: type sizes */
+    ompd_device_type_sizes_t *sizes /* OUT: type sizes */
     );
 
 /**
@@ -462,6 +367,7 @@ ompd_rc_t ompd_device_initialize(
     );
 
 ompd_rc_t ompd_finalize(void);
+
 /* --- 4 Handle Management -------------------------------------------------- */
 
 /* --- 4.1 Thread Handles --------------------------------------------------- */
@@ -497,24 +403,11 @@ ompd_rc_t ompd_get_thread_in_parallel(
     ompd_thread_handle_t **thread_handle /* OUT: handle */
     );
 
-#if 0
-ompd_rc_t ompd_get_master_thread_in_parallel (
-    ompd_parallel_handle_t *parallel_handle,    /* IN */
-    ompd_thread_handle_t **thread_handle);
-#endif
-
 ompd_rc_t ompd_release_thread_handle(ompd_thread_handle_t *thread_handle);
 
 ompd_rc_t ompd_thread_handle_compare(ompd_thread_handle_t *thread_handle_1,
                                      ompd_thread_handle_t *thread_handle_2,
                                      int *cmp_value);
-
-#if 0
-ompd_rc_t ompd_get_thread_handle_string_id (
-    ompd_thread_handle_t *thread_handle,
-    char **string_id
-);
-#endif
 
 /* --- 4.2 Parallel Region Handles------------------------------------------- */
 
@@ -569,13 +462,6 @@ ompd_parallel_handle_compare(ompd_parallel_handle_t *parallel_handle_1,
                              ompd_parallel_handle_t *parallel_handle_2,
                              int *cmp_value);
 
-#if 0
-ompd_rc_t ompd_get_parallel_handle_string_id (
-    ompd_parallel_handle_t *parallel_handle,
-    char **string_id
-);
-#endif
-
 /* --- 4.3 Task Handles ----------------------------------------------------- */
 
 /**
@@ -599,12 +485,6 @@ ompd_rc_t ompd_get_current_task_handle(
  * meaningful only if the thread executing the task specified by task_handle is
  * stopped.
  */
-#if 0
-ompd_rc_t ompd_get_ancestor_task_handle(
-    ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle */
-    ompd_task_handle_t **parent_task_handle  /* OUT: OpenMP task handle */
-    );
-#endif
 
 ompd_rc_t ompd_get_generating_task_handle(
     ompd_task_handle_t *task_handle,        /* IN: OpenMP task handle */
@@ -635,13 +515,6 @@ ompd_rc_t ompd_release_task_handle(ompd_task_handle_t *task_handle);
 ompd_rc_t ompd_task_handle_compare(ompd_task_handle_t *task_handle_1,
                                    ompd_task_handle_t *task_handle_2,
                                    int *cmp_value);
-
-#if 0
-ompd_rc_t ompd_get_task_handle_string_id (
-    ompd_task_handle_t *task_handle,
-    char **string_id
-);
-#endif
 
 /* --- 5o Process and Thread Settings ----------------------------------------
  */
@@ -707,13 +580,6 @@ ompd_rc_t ompd_get_parallel_data(
     ompd_address_t *data                     /* OUT: OpenMP parallel id */
     );
 
-#if 0
-ompd_rc_t ompd_get_parallel_function(
-    ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_address_t *parallel_addr /* OUT: first instruction in the parallel region */
-    );
-#endif
-
 /* --- 7 Thread Inquiry ----------------------------------------------------- */
 /* --- 7.1 Operating System Thread Inquiry ---------------------------------- */
 
@@ -771,19 +637,6 @@ ompd_rc_t ompd_get_state(
 
 /* --- 8 Task Inquiry ------------------------------------------------------- */
 
-/* --- 8.1 Task Function Entry Point ---------------------------------------- */
-
-/**
- * The ompd_get_task_function returns the entry point of the code that
- * corresponds to the body of code executed by the task.
- */
-
-#if 0
-ompd_rc_t ompd_get_task_function(
-    ompd_task_handle_t *task_handle,         /* IN: OpenMP task handle*/
-    ompd_address_t *entry_point /* OUT: first instruction in the task region */
-    );
-#endif
 
 /* --- 8.2 Task Settings ---------------------------------------------------- */
 

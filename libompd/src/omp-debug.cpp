@@ -15,7 +15,6 @@
 
 #include "omp-debug.h"
 #include "omp.h"
-#include "ompd.h"
 // #include <stdio.h>
 #include "TargetValue.h"
 #include <assert.h>
@@ -25,7 +24,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-ompd_target_type_sizes_t type_sizes;
+ompd_device_type_sizes_t type_sizes;
 uint64_t ompd_state;
 
 /* --- OMPD functions ------------------------------------------------------- */
@@ -57,21 +56,6 @@ ompd_process_initialize(ompd_address_space_context_t
   ompd_rc_t ret = initTypeSizes(context);
   if (ret != ompd_rc_ok)
     return ret;
-#if 0
-  ret = TValue(context, "ompd_rtl_version")
-            .castBase(ompd_type_int)
-            .getValue(rtl_version);
-  if ((ret == ompd_rc_ok && rtl_version < 5) ||
-      ret == ompd_rc_target_read_error)
-    return ompd_rc_incompatible;
-  if (ret != ompd_rc_ok)
-    return ret;
-  ret = TValue(context, "ompd_state")
-            .castBase(ompd_type_long_long)
-            .getValue(ompd_state);
-  if (ret != ompd_rc_ok)
-    return ret;
-#endif
   *addrhandle = new ompd_address_space_handle_t;
   if (!addrhandle)
     return ompd_rc_error;
@@ -241,53 +225,93 @@ ompd_rc_t ompd_thread_handle_compare(ompd_thread_handle_t *thread_handle_1,
       return ompd_rc_stale_handle;
     *cmp_value = thread_handle_1->th.address - thread_handle_2->th.address;
     return ompd_rc_ok;
+}
+
+/* --- 4.2 Parallel Region Handles------------------------------------------- */
+
+/* parallel_handle is of type (kmp_base_team_t)*/
+
+ompd_rc_t ompd_get_current_parallel_handle(
+    ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
+    ompd_parallel_handle_t **parallel_handle /* OUT: OpenMP parallel handle */
+    ) {
+  if (!thread_handle)
+    return ompd_rc_stale_handle;
+  if (!thread_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = thread_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized!");
+  ompd_address_t taddr, lwt;
+
+  TValue teamdata = TValue(context, thread_handle->th) /*__kmp_threads[t]->th*/
+                        .cast("kmp_base_info_t")
+                        .access("th_team") /*__kmp_threads[t]->th.th_team*/
+                        .cast("kmp_team_p", 1)
+                        .access("t"); /*__kmp_threads[t]->th.th_team->t*/
+
+  ompd_rc_t ret = teamdata.getAddress(&taddr);
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  lwt.segment = OMPD_SEGMENT_UNSPECIFIED;
+  ret = teamdata.cast("kmp_base_team_t", 0)
+            .access("ompt_serialized_team_info")
+            .castBase()
+            .getValue(lwt.address);
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  ret = callbacks->dmemory_alloc(sizeof(ompd_parallel_handle_t),
+                                 (void **)(parallel_handle));
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  (*parallel_handle)->ah = thread_handle->ah;
+  (*parallel_handle)->th = taddr;
+  (*parallel_handle)->lwt = lwt;
+  return ompd_rc_ok;
+}
+
+ompd_rc_t ompd_get_enclosing_parallel_handle(
+    ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
+    ompd_parallel_handle_t *
+        *enclosing_parallel_handle /* OUT: OpenMP parallel handle */
+    ) {
+  if (!parallel_handle)
+    return ompd_rc_stale_handle;
+  if (!parallel_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = parallel_handle->ah->context;
+
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized!");
+  ompd_address_t taddr = parallel_handle->th, lwt;
+
+  ompd_rc_t ret = ompd_rc_stale_handle;
+  TValue lwtValue = TValue(context, parallel_handle->lwt);
+  if (lwtValue.getError() == ompd_rc_ok) // lwt == 0x0
+  {                                      // if we are in lwt, get parent
+    ret = lwtValue.cast("ompt_lw_taskteam_t", 0)
+              .access("parent")
+              .cast("ompt_lw_taskteam_t", 1)
+              .dereference()
+              .getAddress(&lwt);
   }
+  if (ret != ompd_rc_ok) { // no lwt or parent==0x0
 
-#if 0
-  ompd_rc_t ompd_get_thread_handle_string_id (
-      ompd_thread_handle_t *thread_handle,
-      char **string_id
-      )
-  {
-    pthread_t thread_id;
-    ompd_rc_t ret;
-    ret = ompd_get_thread_id(thread_handle, ompd_thread_id_pthread, sizeof(pthread_t), &thread_id);
-    if (ret!=ompd_rc_ok)
-      return ret;
-    ret = callbacks->dmemory_alloc(sizeof(void*)*2+3, (void**)string_id);
-    if (ret!=ompd_rc_ok)
-      return ret;
-    sprintf(*string_id, "0x%llx", (long long)thread_id);
-    return ompd_rc_ok;
-  }
-#endif
+    TValue teamdata =
+        TValue(context, parallel_handle->th) /*__kmp_threads[t]->th*/
+            .cast("kmp_base_team_t", 0)      /*t*/
+            .access("t_parent")              /*t.t_parent*/
+            .cast("kmp_team_p", 1)
+            .access("t"); /*t.t_parent->t*/
 
-  /* --- 4.2 Parallel Region Handles------------------------------------------- */
-
-  /* parallel_handle is of type (kmp_base_team_t)*/
-
-  ompd_rc_t ompd_get_current_parallel_handle(
-      ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
-      ompd_parallel_handle_t **parallel_handle /* OUT: OpenMP parallel handle */
-      ) {
-    if (!thread_handle)
-      return ompd_rc_stale_handle;
-    if (!thread_handle->ah)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = thread_handle->ah->context;
-    if (!context)
-      return ompd_rc_stale_handle;
-
-    assert(callbacks && "Callback table not initialized!");
-    ompd_address_t taddr, lwt;
-
-    TValue teamdata = TValue(context, thread_handle->th) /*__kmp_threads[t]->th*/
-                          .cast("kmp_base_info_t")
-                          .access("th_team") /*__kmp_threads[t]->th.th_team*/
-                          .cast("kmp_team_p", 1)
-                          .access("t"); /*__kmp_threads[t]->th.th_team->t*/
-
-    ompd_rc_t ret = teamdata.getAddress(&taddr);
+    ret = teamdata.getAddress(&taddr);
     if (ret != ompd_rc_ok)
       return ret;
 
@@ -298,188 +322,169 @@ ompd_rc_t ompd_thread_handle_compare(ompd_thread_handle_t *thread_handle_1,
               .getValue(lwt.address);
     if (ret != ompd_rc_ok)
       return ret;
-
-    ret = callbacks->dmemory_alloc(sizeof(ompd_parallel_handle_t),
-                                   (void **)(parallel_handle));
-    if (ret != ompd_rc_ok)
-      return ret;
-
-    (*parallel_handle)->ah = thread_handle->ah;
-    (*parallel_handle)->th = taddr;
-    (*parallel_handle)->lwt = lwt;
-    return ompd_rc_ok;
   }
 
-  ompd_rc_t ompd_get_enclosing_parallel_handle(
-      ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-      ompd_parallel_handle_t *
-          *enclosing_parallel_handle /* OUT: OpenMP parallel handle */
-      ) {
-    if (!parallel_handle)
-      return ompd_rc_stale_handle;
-    if (!parallel_handle->ah)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = parallel_handle->ah->context;
+  ret = callbacks->dmemory_alloc(sizeof(ompd_parallel_handle_t),
+                                 (void **)(enclosing_parallel_handle));
+  if (ret != ompd_rc_ok)
+    return ret;
+  (*enclosing_parallel_handle)->th = taddr;
+  (*enclosing_parallel_handle)->lwt = lwt;
+  (*enclosing_parallel_handle)->ah = parallel_handle->ah;
+  return ompd_rc_ok;
+}
 
-    if (!context)
-      return ompd_rc_stale_handle;
+ompd_rc_t ompd_get_task_parallel_handle(
+    ompd_task_handle_t *task_handle, /* IN: OpenMP task handle */
+    ompd_parallel_handle_t *
+        *enclosing_parallel_handle /* OUT: OpenMP parallel handle */
+    ) {
+  if (!task_handle)
+    return ompd_rc_stale_handle;
+  if (!task_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = task_handle->ah->context;
 
-    assert(callbacks && "Callback table not initialized!");
-    ompd_address_t taddr = parallel_handle->th, lwt;
+  if (!context)
+    return ompd_rc_stale_handle;
 
-    ompd_rc_t ret = ompd_rc_stale_handle;
-    TValue lwtValue = TValue(context, parallel_handle->lwt);
-    if (lwtValue.getError() == ompd_rc_ok) // lwt == 0x0
-    {                                      // if we are in lwt, get parent
-      ret = lwtValue.cast("ompt_lw_taskteam_t", 0)
-                .access("parent")
-                .cast("ompt_lw_taskteam_t", 1)
-                .dereference()
-                .getAddress(&lwt);
-    }
-    if (ret != ompd_rc_ok) { // no lwt or parent==0x0
+  assert(callbacks && "Callback table not initialized!");
+  ompd_address_t taddr;
 
-      TValue teamdata =
-          TValue(context, parallel_handle->th) /*__kmp_threads[t]->th*/
-              .cast("kmp_base_team_t", 0)      /*t*/
-              .access("t_parent")              /*t.t_parent*/
-              .cast("kmp_team_p", 1)
-              .access("t"); /*t.t_parent->t*/
+  ompd_rc_t ret;
+  ret = TValue(context, task_handle->th)
+            .cast("kmp_taskdata_t") /*td*/
+            .access("td_team")      /*td.td_team*/
+            .cast("kmp_team_p", 1)
+            .access("t") /*td.td_team->t*/
+            .getAddress(&taddr);
 
-      ret = teamdata.getAddress(&taddr);
-      if (ret != ompd_rc_ok)
-        return ret;
+  if (ret != ompd_rc_ok)
+    return ret;
 
-      lwt.segment = OMPD_SEGMENT_UNSPECIFIED;
-      ret = teamdata.cast("kmp_base_team_t", 0)
-                .access("ompt_serialized_team_info")
-                .castBase()
-                .getValue(lwt.address);
-      if (ret != ompd_rc_ok)
-        return ret;
-    }
+  ret = callbacks->dmemory_alloc(sizeof(ompd_parallel_handle_t),
+                                 (void **)(enclosing_parallel_handle));
+  if (ret != ompd_rc_ok)
+    return ret;
 
-    ret = callbacks->dmemory_alloc(sizeof(ompd_parallel_handle_t),
-                                   (void **)(enclosing_parallel_handle));
-    if (ret != ompd_rc_ok)
-      return ret;
-    (*enclosing_parallel_handle)->th = taddr;
-    (*enclosing_parallel_handle)->lwt = lwt;
-    (*enclosing_parallel_handle)->ah = parallel_handle->ah;
-    return ompd_rc_ok;
+  (*enclosing_parallel_handle)->ah = task_handle->ah;
+  (*enclosing_parallel_handle)->lwt = task_handle->lwt;
+  (*enclosing_parallel_handle)->th = taddr;
+  return ompd_rc_ok;
+}
+
+ompd_rc_t ompd_release_parallel_handle(
+    ompd_parallel_handle_t *parallel_handle /* IN: OpenMP parallel handle */
+    ) {
+  if (!parallel_handle)
+    return ompd_rc_stale_handle;
+  ompd_rc_t ret = callbacks->dmemory_free((void *)(parallel_handle));
+  if (ret != ompd_rc_ok)
+    return ret;
+  return ompd_rc_ok;
+}
+
+ompd_rc_t
+ompd_parallel_handle_compare(ompd_parallel_handle_t *parallel_handle_1,
+                             ompd_parallel_handle_t *parallel_handle_2,
+                             int *cmp_value) {
+  if (!parallel_handle_1)
+    return ompd_rc_stale_handle;
+  if (!parallel_handle_2)
+    return ompd_rc_stale_handle;
+  if (parallel_handle_1->th.address - parallel_handle_2->th.address)
+    *cmp_value = parallel_handle_1->th.address - parallel_handle_2->th.address;
+  else
+    *cmp_value =
+        parallel_handle_1->lwt.address - parallel_handle_2->lwt.address;
+  return ompd_rc_ok;
+}
+
+/* --- 4.3 Task Handles ----------------------------------------------------- */
+
+/* task_handle is of type (kmp_taskdata_t) */
+
+ompd_rc_t ompd_get_current_task_handle(
+    ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
+    ompd_task_handle_t **task_handle     /* OUT: OpenMP task handle */
+    ) {
+  if (!thread_handle)
+    return ompd_rc_stale_handle;
+  if (!thread_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = thread_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized!");
+  ompd_address_t taddr, lwt;
+
+  TValue taskdata =
+      TValue(context, thread_handle->th) /*__kmp_threads[t]->th*/
+          .cast("kmp_base_info_t")
+          .access("th_current_task") /*__kmp_threads[t]->th.th_current_task*/
+          .cast("kmp_taskdata_t", 1);
+
+  ompd_rc_t ret = taskdata.dereference().getAddress(&taddr);
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  lwt.segment = OMPD_SEGMENT_UNSPECIFIED;
+  ret = taskdata
+            .access("td_team") /*td.td_team*/
+            .cast("kmp_team_p", 1)
+            .access("t") /*td.td_team->t*/
+            .cast("kmp_base_team_t", 0)
+            .access("ompt_serialized_team_info")
+            .castBase()
+            .getValue(lwt.address);
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t),
+                                 (void **)(task_handle));
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  (*task_handle)->th = taddr;
+  (*task_handle)->lwt = lwt;
+  (*task_handle)->ah = thread_handle->ah;
+  return ompd_rc_ok;
+}
+
+ompd_rc_t ompd_get_generating_task_handle(
+    ompd_task_handle_t *task_handle,        /* IN: OpenMP task handle */
+    ompd_task_handle_t **parent_task_handle /* OUT: OpenMP task handle */
+    ) {
+  if (!task_handle)
+    return ompd_rc_stale_handle;
+  if (!task_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = task_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized!");
+  ompd_address_t taddr = task_handle->th, lwt;
+
+  ompd_rc_t ret = ompd_rc_stale_handle;
+  TValue lwtValue = TValue(context, task_handle->lwt);
+  if (lwtValue.getError() == ompd_rc_ok) // lwt == 0x0
+  {                                      // if we are in lwt, get parent
+    ret = lwtValue.cast("ompt_lw_taskteam_t", 0)
+              .access("parent")
+              .cast("ompt_lw_taskteam_t", 1)
+              .dereference()
+              .getAddress(&lwt);
   }
+  if (ret != ompd_rc_ok) { // no lwt or parent==0x0
 
-  ompd_rc_t ompd_get_task_parallel_handle(
-      ompd_task_handle_t *task_handle, /* IN: OpenMP task handle */
-      ompd_parallel_handle_t *
-          *enclosing_parallel_handle /* OUT: OpenMP parallel handle */
-      ) {
-    if (!task_handle)
-      return ompd_rc_stale_handle;
-    if (!task_handle->ah)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = task_handle->ah->context;
+    TValue taskdata = TValue(context, task_handle->th) /*__kmp_threads[t]->th*/
+                          .cast("kmp_taskdata_t")      /*td*/
+                          .access("td_parent")         /*td->td_parent*/
+                          .cast("kmp_taskdata_t", 1);
 
-    if (!context)
-      return ompd_rc_stale_handle;
-
-    assert(callbacks && "Callback table not initialized!");
-    ompd_address_t taddr;
-
-    ompd_rc_t ret;
-    ret = TValue(context, task_handle->th)
-              .cast("kmp_taskdata_t") /*td*/
-              .access("td_team")      /*td.td_team*/
-              .cast("kmp_team_p", 1)
-              .access("t") /*td.td_team->t*/
-              .getAddress(&taddr);
-
-    if (ret != ompd_rc_ok)
-      return ret;
-
-    ret = callbacks->dmemory_alloc(sizeof(ompd_parallel_handle_t),
-                                   (void **)(enclosing_parallel_handle));
-    if (ret != ompd_rc_ok)
-      return ret;
-
-    (*enclosing_parallel_handle)->ah = task_handle->ah;
-    (*enclosing_parallel_handle)->lwt = task_handle->lwt;
-    (*enclosing_parallel_handle)->th = taddr;
-    return ompd_rc_ok;
-  }
-
-  ompd_rc_t ompd_release_parallel_handle(
-      ompd_parallel_handle_t *parallel_handle /* IN: OpenMP parallel handle */
-      ) {
-    if (!parallel_handle)
-      return ompd_rc_stale_handle;
-    ompd_rc_t ret = callbacks->dmemory_free((void *)(parallel_handle));
-    if (ret != ompd_rc_ok)
-      return ret;
-    return ompd_rc_ok;
-  }
-
-  ompd_rc_t
-  ompd_parallel_handle_compare(ompd_parallel_handle_t *parallel_handle_1,
-                               ompd_parallel_handle_t *parallel_handle_2,
-                               int *cmp_value) {
-    if (!parallel_handle_1)
-      return ompd_rc_stale_handle;
-    if (!parallel_handle_2)
-      return ompd_rc_stale_handle;
-    if (parallel_handle_1->th.address - parallel_handle_2->th.address)
-      *cmp_value = parallel_handle_1->th.address - parallel_handle_2->th.address;
-    else
-      *cmp_value =
-          parallel_handle_1->lwt.address - parallel_handle_2->lwt.address;
-    return ompd_rc_ok;
-  }
-
-#if 0 // parallel-id is initialized to zero
-  ompd_rc_t ompd_get_parallel_handle_string_id (
-      ompd_parallel_handle_t *parallel_handle,
-      char **string_id
-      )
-  {
-      ompd_parallel_id_t id;
-      ompd_rc_t ret;
-      ret = ompd_get_parallel_id(parallel_handle, &id);
-      if (ret!=ompd_rc_ok)
-        return ret;
-      ret = callbacks->dmemory_alloc(sizeof(void*)*2+3, (void**)string_id);
-      if (ret!=ompd_rc_ok)
-        return ret;
-      sprintf(*string_id, "0x%llx", (long long)id);
-      return ompd_rc_ok;
-  }
-#endif
-
-  /* --- 4.3 Task Handles ----------------------------------------------------- */
-
-  /* task_handle is of type (kmp_taskdata_t) */
-
-  ompd_rc_t ompd_get_current_task_handle(
-      ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
-      ompd_task_handle_t **task_handle     /* OUT: OpenMP task handle */
-      ) {
-    if (!thread_handle)
-      return ompd_rc_stale_handle;
-    if (!thread_handle->ah)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = thread_handle->ah->context;
-    if (!context)
-      return ompd_rc_stale_handle;
-
-    assert(callbacks && "Callback table not initialized!");
-    ompd_address_t taddr, lwt;
-
-    TValue taskdata =
-        TValue(context, thread_handle->th) /*__kmp_threads[t]->th*/
-            .cast("kmp_base_info_t")
-            .access("th_current_task") /*__kmp_threads[t]->th.th_current_task*/
-            .cast("kmp_taskdata_t", 1);
-
-    ompd_rc_t ret = taskdata.dereference().getAddress(&taddr);
+    ret = taskdata.dereference().getAddress(&taddr);
     if (ret != ompd_rc_ok)
       return ret;
 
@@ -494,485 +499,374 @@ ompd_rc_t ompd_thread_handle_compare(ompd_thread_handle_t *thread_handle_1,
               .getValue(lwt.address);
     if (ret != ompd_rc_ok)
       return ret;
-
-    ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t),
-                                   (void **)(task_handle));
-    if (ret != ompd_rc_ok)
-      return ret;
-
-    (*task_handle)->th = taddr;
-    (*task_handle)->lwt = lwt;
-    (*task_handle)->ah = thread_handle->ah;
-    return ompd_rc_ok;
   }
 
-  ompd_rc_t ompd_get_generating_task_handle(
-      ompd_task_handle_t *task_handle,        /* IN: OpenMP task handle */
-      ompd_task_handle_t **parent_task_handle /* OUT: OpenMP task handle */
-      ) {
-    if (!task_handle)
-      return ompd_rc_stale_handle;
-    if (!task_handle->ah)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = task_handle->ah->context;
-    if (!context)
-      return ompd_rc_stale_handle;
-
-    assert(callbacks && "Callback table not initialized!");
-    ompd_address_t taddr = task_handle->th, lwt;
-
-    ompd_rc_t ret = ompd_rc_stale_handle;
-    TValue lwtValue = TValue(context, task_handle->lwt);
-    if (lwtValue.getError() == ompd_rc_ok) // lwt == 0x0
-    {                                      // if we are in lwt, get parent
-      ret = lwtValue.cast("ompt_lw_taskteam_t", 0)
-                .access("parent")
-                .cast("ompt_lw_taskteam_t", 1)
-                .dereference()
-                .getAddress(&lwt);
-    }
-    if (ret != ompd_rc_ok) { // no lwt or parent==0x0
-
-      TValue taskdata = TValue(context, task_handle->th) /*__kmp_threads[t]->th*/
-                            .cast("kmp_taskdata_t")      /*td*/
-                            .access("td_parent")         /*td->td_parent*/
-                            .cast("kmp_taskdata_t", 1);
-
-      ret = taskdata.dereference().getAddress(&taddr);
-      if (ret != ompd_rc_ok)
-        return ret;
-
-      lwt.segment = OMPD_SEGMENT_UNSPECIFIED;
-      ret = taskdata
-                .access("td_team") /*td.td_team*/
-                .cast("kmp_team_p", 1)
-                .access("t") /*td.td_team->t*/
-                .cast("kmp_base_team_t", 0)
-                .access("ompt_serialized_team_info")
-                .castBase()
-                .getValue(lwt.address);
-      if (ret != ompd_rc_ok)
-        return ret;
-    }
-
-    ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t),
-                                   (void **)(parent_task_handle));
-    if (ret != ompd_rc_ok)
-      return ret;
-
-    (*parent_task_handle)->th = taddr;
-    (*parent_task_handle)->lwt = lwt;
-    (*parent_task_handle)->ah = task_handle->ah;
+  ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t),
+                                 (void **)(parent_task_handle));
+  if (ret != ompd_rc_ok)
     return ret;
-  }
 
-  ompd_rc_t ompd_get_scheduling_task_handle(
-      ompd_task_handle_t *task_handle,        /* IN: OpenMP task handle */
-      ompd_task_handle_t **parent_task_handle /* OUT: OpenMP task handle */
-      ) {
-    if (!task_handle)
-      return ompd_rc_stale_handle;
-    if (!task_handle->ah)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = task_handle->ah->context;
-    if (!context)
-      return ompd_rc_stale_handle;
+  (*parent_task_handle)->th = taddr;
+  (*parent_task_handle)->lwt = lwt;
+  (*parent_task_handle)->ah = task_handle->ah;
+  return ret;
+}
 
-    assert(callbacks && "Callback table not initialized!");
-    ompd_address_t taddr;
+ompd_rc_t ompd_get_scheduling_task_handle(
+    ompd_task_handle_t *task_handle,        /* IN: OpenMP task handle */
+    ompd_task_handle_t **parent_task_handle /* OUT: OpenMP task handle */
+    ) {
+  if (!task_handle)
+    return ompd_rc_stale_handle;
+  if (!task_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = task_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
 
-    ompd_rc_t ret =
-        TValue(context, task_handle->th)
-            .cast("kmp_taskdata_t")   /*td*/
-            .access("ompt_task_info") // td->ompt_task_info
-            .cast("ompt_task_info_t")
-            .access("scheduling_parent") // td->ompd_task_info.scheduling_parent
+  assert(callbacks && "Callback table not initialized!");
+  ompd_address_t taddr;
+
+  ompd_rc_t ret =
+      TValue(context, task_handle->th)
+          .cast("kmp_taskdata_t")   /*td*/
+          .access("ompt_task_info") // td->ompt_task_info
+          .cast("ompt_task_info_t")
+          .access("scheduling_parent") // td->ompd_task_info.scheduling_parent
+          .cast("kmp_taskdata_t", 1)
+          .dereference()
+          .getAddress(&taddr);
+
+  if (ret != ompd_rc_ok)
+    return ret;
+  ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t),
+                                 (void **)(parent_task_handle));
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  (*parent_task_handle)->th = taddr;
+  (*parent_task_handle)->ah = task_handle->ah;
+  return ret;
+}
+
+ompd_rc_t ompd_get_task_in_parallel(
+    ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
+    int nth_handle,                  /* OUT: number of the task handle */
+    ompd_task_handle_t **task_handle /* OUT: OpenMP task handle */
+    ) {
+  int i;
+  if (!parallel_handle)
+    return ompd_rc_stale_handle;
+  if (!parallel_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = parallel_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized!");
+
+  ompd_rc_t ret;
+  ompd_address_t taddr;
+  ret = TValue(context, parallel_handle->th) /* t */
+            .cast("kmp_base_team_t", 0)
+            .access("t_implicit_task_taskdata") /*t.t_implicit_task_taskdata*/
             .cast("kmp_taskdata_t", 1)
-            .dereference()
+            .getArrayElement(
+                nth_handle) /*t.t_implicit_task_taskdata[nth_handle]*/
             .getAddress(&taddr);
 
-    if (ret != ompd_rc_ok)
-      return ret;
-    ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t),
-                                   (void **)(parent_task_handle));
-    if (ret != ompd_rc_ok)
-      return ret;
-
-    (*parent_task_handle)->th = taddr;
-    (*parent_task_handle)->ah = task_handle->ah;
+  if (ret != ompd_rc_ok)
     return ret;
-  }
-
-  ompd_rc_t ompd_get_task_in_parallel(
-      ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-      int nth_handle,                  /* OUT: number of the task handle */
-      ompd_task_handle_t **task_handle /* OUT: OpenMP task handle */
-      ) {
-    int i;
-    if (!parallel_handle)
-      return ompd_rc_stale_handle;
-    if (!parallel_handle->ah)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = parallel_handle->ah->context;
-    if (!context)
-      return ompd_rc_stale_handle;
-
-    assert(callbacks && "Callback table not initialized!");
-
-    ompd_rc_t ret;
-    ompd_address_t taddr;
-    ret = TValue(context, parallel_handle->th) /* t */
-              .cast("kmp_base_team_t", 0)
-              .access("t_implicit_task_taskdata") /*t.t_implicit_task_taskdata*/
-              .cast("kmp_taskdata_t", 1)
-              .getArrayElement(
-                  nth_handle) /*t.t_implicit_task_taskdata[nth_handle]*/
-              .getAddress(&taddr);
-
-    if (ret != ompd_rc_ok)
-      return ret;
-    ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t),
-                                   (void **)(task_handle));
-    if (ret != ompd_rc_ok)
-      return ret;
-
-    (*task_handle)->th = taddr;
-    (*task_handle)->ah = parallel_handle->ah;
+  ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t),
+                                 (void **)(task_handle));
+  if (ret != ompd_rc_ok)
     return ret;
-  }
 
-  ompd_rc_t ompd_release_task_handle(
-      ompd_task_handle_t *task_handle /* IN: OpenMP task handle */
-      ) {
-    if (!task_handle)
-      return ompd_rc_stale_handle;
-    ompd_rc_t ret = callbacks->dmemory_free((void *)(task_handle));
-    if (ret != ompd_rc_ok)
-      return ret;
-    return ompd_rc_ok;
-  }
+  (*task_handle)->th = taddr;
+  (*task_handle)->ah = parallel_handle->ah;
+  return ret;
+}
 
-  ompd_rc_t ompd_task_handle_compare(ompd_task_handle_t *task_handle_1,
-                                     ompd_task_handle_t *task_handle_2,
-                                     int *cmp_value) {
-    if (!task_handle_1)
-      return ompd_rc_stale_handle;
-    if (!task_handle_2)
-      return ompd_rc_stale_handle;
-    if (task_handle_1->th.address - task_handle_2->th.address)
-      *cmp_value = task_handle_1->th.address - task_handle_2->th.address;
-    else
-      *cmp_value = task_handle_1->lwt.address - task_handle_2->lwt.address;
-    return ompd_rc_ok;
-  }
-
-#if 0 // all task ids are initialized to zero
-  ompd_rc_t ompd_get_task_handle_string_id (
-      ompd_task_handle_t *task_handle,
-      char **string_id
-      )
-  {
-      ompd_task_id_t id;
-      ompd_rc_t ret = ompd_get_task_id(task_handle, &id);
-      if (ret!=ompd_rc_ok)
-        return ret;
-      ret = callbacks->dmemory_alloc(sizeof(void*)*2+3, (void**)string_id);
-      if (ret!=ompd_rc_ok)
-        return ret;
-      sprintf(*string_id, "0x%llx", (long long)id);
-      return ompd_rc_ok;
-  }
-#endif
-
-  /* --- 5 Process and Thread Settings ---------------------------------------- */
-
-  ompd_rc_t
-  ompd_get_num_procs(ompd_address_space_handle_t
-                         *addr_handle, /* IN: handle for the address space */
-                     ompd_word_t *val  /* OUT: number of processes */
-                     ) {
-    if (!addr_handle)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = addr_handle->context;
-    ompd_rc_t ret;
-
-    if (!context)
-      return ompd_rc_stale_handle;
-
-    assert(callbacks && "Callback table not initialized!");
-
-    int nth;
-    ret = TValue(context, "__kmp_avail_proc")
-              .castBase("__kmp_avail_proc")
-              .getValue(nth);
-    *val = nth;
+ompd_rc_t ompd_release_task_handle(
+    ompd_task_handle_t *task_handle /* IN: OpenMP task handle */
+    ) {
+  if (!task_handle)
+    return ompd_rc_stale_handle;
+  ompd_rc_t ret = callbacks->dmemory_free((void *)(task_handle));
+  if (ret != ompd_rc_ok)
     return ret;
-  }
+  return ompd_rc_ok;
+}
 
-  ompd_rc_t
-  ompd_get_thread_limit(ompd_address_space_handle_t
-                            *addr_handle, /* IN: handle for the address space */
-                        ompd_word_t *val  /* OUT: max number of threads */
-                        ) {
-    if (!addr_handle)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = addr_handle->context;
-    ompd_rc_t ret;
+ompd_rc_t ompd_task_handle_compare(ompd_task_handle_t *task_handle_1,
+                                   ompd_task_handle_t *task_handle_2,
+                                   int *cmp_value) {
+  if (!task_handle_1)
+    return ompd_rc_stale_handle;
+  if (!task_handle_2)
+    return ompd_rc_stale_handle;
+  if (task_handle_1->th.address - task_handle_2->th.address)
+    *cmp_value = task_handle_1->th.address - task_handle_2->th.address;
+  else
+    *cmp_value = task_handle_1->lwt.address - task_handle_2->lwt.address;
+  return ompd_rc_ok;
+}
 
-    if (!context)
-      return ompd_rc_stale_handle;
 
-    assert(callbacks && "Callback table not initialized!");
+/* --- 5 Process and Thread Settings ---------------------------------------- */
 
-    int nth;
-    ret =
-        TValue(context, "__kmp_max_nth").castBase("__kmp_max_nth").getValue(nth);
-    *val = nth;
-    return ret;
-  }
+ompd_rc_t
+ompd_get_num_procs(ompd_address_space_handle_t
+                       *addr_handle, /* IN: handle for the address space */
+                   ompd_word_t *val  /* OUT: number of processes */
+                   ) {
+  if (!addr_handle)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = addr_handle->context;
+  ompd_rc_t ret;
 
-  /* --- 6 Parallel Region Inqueries ------------------------------------------ */
-  /* --- 6.1 Settings --------------------------------------------------------- */
+  if (!context)
+    return ompd_rc_stale_handle;
 
-  ompd_rc_t ompd_get_num_threads(
-      ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-      ompd_word_t *val                         /* OUT: number of threads */
-      ) {
-    if (!parallel_handle)
-      return ompd_rc_stale_handle;
-    if (!parallel_handle->ah)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = parallel_handle->ah->context;
-    if (!context)
-      return ompd_rc_stale_handle;
+  assert(callbacks && "Callback table not initialized!");
 
-    assert(callbacks && "Callback table not initialized!");
+  int nth;
+  ret = TValue(context, "__kmp_avail_proc")
+            .castBase("__kmp_avail_proc")
+            .getValue(nth);
+  *val = nth;
+  return ret;
+}
 
-    ompd_rc_t ret = ompd_rc_ok;
-    if (parallel_handle->lwt.address != 0)
-      *val = 1;
-    else {
-      uint32_t res;
-      ret = TValue(context, parallel_handle->th)
-                .cast("kmp_base_team_t", 0) /*t*/
-                .access("t_nproc")          /*t.t_nproc*/
-                .castBase()
-                .getValue(res);
-      *val = res;
-    }
-    return ret;
-  }
+ompd_rc_t
+ompd_get_thread_limit(ompd_address_space_handle_t
+                          *addr_handle, /* IN: handle for the address space */
+                      ompd_word_t *val  /* OUT: max number of threads */
+                      ) {
+  if (!addr_handle)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = addr_handle->context;
+  ompd_rc_t ret;
 
-  ompd_rc_t ompd_get_level(
-      ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-      ompd_word_t *val                         /* OUT: nesting level */
-      ) {
-    if (!parallel_handle)
-      return ompd_rc_stale_handle;
-    if (!parallel_handle->ah)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = parallel_handle->ah->context;
-    if (!context)
-      return ompd_rc_stale_handle;
+  if (!context)
+    return ompd_rc_stale_handle;
 
-    assert(callbacks && "Callback table not initialized!");
+  assert(callbacks && "Callback table not initialized!");
 
+  int nth;
+  ret =
+      TValue(context, "__kmp_max_nth").castBase("__kmp_max_nth").getValue(nth);
+  *val = nth;
+  return ret;
+}
+
+/* --- 6 Parallel Region Inqueries ------------------------------------------ */
+/* --- 6.1 Settings --------------------------------------------------------- */
+
+ompd_rc_t ompd_get_num_threads(
+    ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
+    ompd_word_t *val                         /* OUT: number of threads */
+    ) {
+  if (!parallel_handle)
+    return ompd_rc_stale_handle;
+  if (!parallel_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = parallel_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized!");
+
+  ompd_rc_t ret = ompd_rc_ok;
+  if (parallel_handle->lwt.address != 0)
+    *val = 1;
+  else {
     uint32_t res;
-
-    ompd_rc_t ret = TValue(context, parallel_handle->th)
-                        .cast("kmp_base_team_t", 0) /*t*/
-                        .access("t_level")          /*t.t_level*/
-                        .castBase()
-                        .getValue(res);
+    ret = TValue(context, parallel_handle->th)
+              .cast("kmp_base_team_t", 0) /*t*/
+              .access("t_nproc")          /*t.t_nproc*/
+              .castBase()
+              .getValue(res);
     *val = res;
-    return ret;
   }
+  return ret;
+}
 
-  ompd_rc_t ompd_get_active_level(
-      ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-      ompd_word_t *val                         /* OUT: active nesting level */
-      ) {
-    if (!parallel_handle)
-      return ompd_rc_stale_handle;
-    if (!parallel_handle->ah)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = parallel_handle->ah->context;
-    if (!context)
-      return ompd_rc_stale_handle;
+ompd_rc_t ompd_get_level(
+    ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
+    ompd_word_t *val                         /* OUT: nesting level */
+    ) {
+  if (!parallel_handle)
+    return ompd_rc_stale_handle;
+  if (!parallel_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = parallel_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
 
-    assert(callbacks && "Callback table not initialized!");
+  assert(callbacks && "Callback table not initialized!");
 
-    uint32_t res;
+  uint32_t res;
 
-    ompd_rc_t ret = TValue(context, parallel_handle->th)
-                        .cast("kmp_base_team_t", 0) /*t*/
-                        .access("t_active_level")   /*t.t_active_level*/
-                        .castBase()
-                        .getValue(res);
-    *val = res;
-    return ret;
-  }
+  ompd_rc_t ret = TValue(context, parallel_handle->th)
+                      .cast("kmp_base_team_t", 0) /*t*/
+                      .access("t_level")          /*t.t_level*/
+                      .castBase()
+                      .getValue(res);
+  *val = res;
+  return ret;
+}
 
-  /* --- 6.2 OMPT Parallel Region Inquiry Analogues ------------------------- */
+ompd_rc_t ompd_get_active_level(
+    ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
+    ompd_word_t *val                         /* OUT: active nesting level */
+    ) {
+  if (!parallel_handle)
+    return ompd_rc_stale_handle;
+  if (!parallel_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = parallel_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
 
-  ompd_rc_t ompd_get_parallel_data(
-      ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-      ompd_address_t *data                     /* OUT: OpenMP parallel id */
-      ) {
-    if (!parallel_handle)
-      return ompd_rc_stale_handle;
-    if (!parallel_handle->ah)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = parallel_handle->ah->context;
-    if (!context)
-      return ompd_rc_stale_handle;
+  assert(callbacks && "Callback table not initialized!");
+
+  uint32_t res;
+
+  ompd_rc_t ret = TValue(context, parallel_handle->th)
+                      .cast("kmp_base_team_t", 0) /*t*/
+                      .access("t_active_level")   /*t.t_active_level*/
+                      .castBase()
+                      .getValue(res);
+  *val = res;
+  return ret;
+}
+
+/* --- 6.2 OMPT Parallel Region Inquiry Analogues ------------------------- */
+
+ompd_rc_t ompd_get_parallel_data(
+    ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
+    ompd_address_t *data                     /* OUT: OpenMP parallel id */
+    ) {
+  if (!parallel_handle)
+    return ompd_rc_stale_handle;
+  if (!parallel_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = parallel_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
 #if 0
     if (!ompd_state)
       return ompd_rc_needs_state_tracking;
 #endif
 
-    assert(callbacks && "Callback table not initialized!");
+  assert(callbacks && "Callback table not initialized!");
 
-    TValue teamInfo;
-    if (parallel_handle->lwt.address != 0)
-      teamInfo = TValue(context, parallel_handle->lwt)
-                     .cast("ompt_lw_taskteam_t", 0); /*lwt*/
-    else
-      teamInfo =
-          TValue(context, parallel_handle->th).cast("kmp_base_team_t", 0); /*t*/
-    ompd_rc_t ret = teamInfo
-                        .access("ompt_team_info") /*t.ompt_team_info*/
-                        .cast("ompt_team_info_t", 0)
-                        .access("parallel_data") /*t.ompt_team_info.parallel_id*/
-                        .getAddress(data);
+  TValue teamInfo;
+  if (parallel_handle->lwt.address != 0)
+    teamInfo = TValue(context, parallel_handle->lwt)
+                   .cast("ompt_lw_taskteam_t", 0); /*lwt*/
+  else
+    teamInfo =
+        TValue(context, parallel_handle->th).cast("kmp_base_team_t", 0); /*t*/
+  ompd_rc_t ret = teamInfo
+                      .access("ompt_team_info") /*t.ompt_team_info*/
+                      .cast("ompt_team_info_t", 0)
+                      .access("parallel_data") /*t.ompt_team_info.parallel_id*/
+                      .getAddress(data);
+  return ret;
+}
+
+
+/* --- 7 Thread Inquiry ----------------------------------------------------- */
+
+/* --- 7.1 Operating System Thread Inquiry ---------------------------------- */
+
+ompd_rc_t
+ompd_get_thread_handle(ompd_address_space_handle_t
+                           *addr_handle, /* IN: handle for the address space */
+                       ompd_thread_id_kind_t kind,
+                       ompd_size_t sizeof_thread_id, const void *thread_id,
+                       ompd_thread_handle_t **thread_handle) {
+  if (!addr_handle)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = addr_handle->context;
+  ompd_rc_t ret;
+
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized!");
+  ompd_thread_context_t *tcontext;
+  ret = callbacks->get_thread_context_for_thread_id(
+      context, kind, sizeof_thread_id, thread_id, &tcontext);
+  if (ret != ompd_rc_ok)
     return ret;
-  }
 
-#if 0  // there is no such thing as a parallel function
-  ompd_rc_t ompd_get_parallel_function(
-      ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-      ompd_address_t *parallel_addr /* OUT: first instruction in the parallel region */
-      )
-  {
-    if (!parallel_handle)
-      return ompd_rc_stale_handle;
-    if (!parallel_handle->ah)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = parallel_handle->ah->context;
-    if (!context)
-      return ompd_rc_stale_handle;
-    if (!ompd_state)
-      return ompd_rc_needs_state_tracking;
+  int tId;
 
-    assert(callbacks && "Callback table not initialized!");
-    parallel_addr->segment = OMPD_SEGMENT_UNSPECIFIED;
+  if (kind == ompd_thread_id_cudalogical) {
+    ompd_cudathread_coord_t *p = (ompd_cudathread_coord_t *)thread_id;
 
-    TValue teamInfo;
-    if(parallel_handle->lwt.address!=0)
-      teamInfo = TValue(context, parallel_handle->lwt).
-            cast("ompt_lw_taskteam_t",0);		/*lwt*/
-    else
-      teamInfo = TValue(context, parallel_handle->th).
-            cast("kmp_base_team_t",0);		/*t*/
-    ompd_rc_t ret = teamInfo.
-          access("ompt_team_info").             /*t.ompt_team_info*/
-          cast("ompt_team_info_t",0).
-          access("microtask").                /*t.ompt_team_info.microtask*/
-          castBase().
-          getValue(parallel_addr->address);
-    return ret;
-  }
-#endif // no parallel function
-
-  /* --- 7 Thread Inquiry ----------------------------------------------------- */
-
-  /* --- 7.1 Operating System Thread Inquiry ---------------------------------- */
-
-  ompd_rc_t
-  ompd_get_thread_handle(ompd_address_space_handle_t
-                             *addr_handle, /* IN: handle for the address space */
-                         ompd_thread_id_kind_t kind,
-                         ompd_size_t sizeof_thread_id, const void *thread_id,
-                         ompd_thread_handle_t **thread_handle) {
-    if (!addr_handle)
-      return ompd_rc_stale_handle;
-    ompd_address_space_context_t *context = addr_handle->context;
-    ompd_rc_t ret;
-
-    if (!context)
-      return ompd_rc_stale_handle;
-
-    assert(callbacks && "Callback table not initialized!");
-    ompd_thread_context_t *tcontext;
-    ret = callbacks->get_thread_context_for_thread_id(
-        context, kind, sizeof_thread_id, thread_id, &tcontext);
-    if (ret != ompd_rc_ok)
-      return ret;
-
-    int tId;
-
-    if (kind == ompd_thread_id_cudalogical) {
-      ompd_cudathread_coord_t *p = (ompd_cudathread_coord_t *)thread_id;
-
-      // omptarget_nvptx_threadPrivateContext->topTaskDescr[p->threadIdx.x]->items.threadId
-      TValue th = TValue(context, tcontext,
-                         "omptarget_nvptx_threadPrivateContext",
-                         OMPD_SEGMENT_CUDA_PTX_SHARED)
-                  .cast("omptarget_nvptx_ThreadPrivateContext", 1,
-                        OMPD_SEGMENT_CUDA_PTX_SHARED)
-                  .access("topTaskDescr")
-                  .cast("omptarget_nvptx_TaskDescr", 1,
-                        OMPD_SEGMENT_CUDA_PTX_GLOBAL)
-                  .getArrayElement(p->threadIdx.x);
-
-      ompd_address_t taddr;
-      ret = th.getAddress(&taddr);
-
-      if (ret != ompd_rc_ok)
-        return ret;
-
-      ret = th.access("items__threadId")
-              .castBase(ompd_type_short)
-              .getValue(tId);
-
-    if (ret != ompd_rc_ok)
-      return ret;
-
-    if (tId != p->threadIdx.x)
-      return ompd_rc_stale_handle;
-
-    ret = callbacks->dmemory_alloc(sizeof(ompd_thread_handle_t),
-                                   (void **)(thread_handle));
-    if (ret != ompd_rc_ok)
-      return ret;
-
-    (*thread_handle)->ah = addr_handle;
-    (*thread_handle)->th = taddr;
-  } else {
-    ret = TValue(context, tcontext, "__kmp_gtid")
-              .castBase("__kmp_gtid")
-              .getValue(tId);
-    if (ret != ompd_rc_ok)
-      return ret;
-
-    if (tId < 0) // thread is no omp worker
-      return ompd_rc_unavailable;
-
-    TValue th = TValue(context, "__kmp_threads") // __kmp_threads
-                    .cast("kmp_info_t", 2)
-                    .getArrayElement(tId) /*__kmp_threads[t]*/
-                    .access("th");        /*__kmp_threads[t]->th*/
+    // omptarget_nvptx_threadPrivateContext->topTaskDescr[p->threadIdx.x]->items.threadId
+    TValue th = TValue(context, tcontext,
+                       "omptarget_nvptx_threadPrivateContext",
+                       OMPD_SEGMENT_CUDA_PTX_SHARED)
+                .cast("omptarget_nvptx_ThreadPrivateContext", 1,
+                      OMPD_SEGMENT_CUDA_PTX_SHARED)
+                .access("topTaskDescr")
+                .cast("omptarget_nvptx_TaskDescr", 1,
+                      OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+                .getArrayElement(p->threadIdx.x);
 
     ompd_address_t taddr;
     ret = th.getAddress(&taddr);
+
     if (ret != ompd_rc_ok)
       return ret;
-    ret = callbacks->dmemory_alloc(sizeof(ompd_thread_handle_t),
-                                   (void **)(thread_handle));
-    if (ret != ompd_rc_ok)
-      return ret;
-    (*thread_handle)->ah = addr_handle;
-    (*thread_handle)->th = taddr;
+
+    ret = th.access("items__threadId")
+            .castBase(ompd_type_short)
+            .getValue(tId);
+
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  if (tId != p->threadIdx.x)
+    return ompd_rc_stale_handle;
+
+  ret = callbacks->dmemory_alloc(sizeof(ompd_thread_handle_t),
+                                 (void **)(thread_handle));
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  (*thread_handle)->ah = addr_handle;
+  (*thread_handle)->th = taddr;
+} else {
+  ret = TValue(context, tcontext, "__kmp_gtid")
+            .castBase("__kmp_gtid")
+            .getValue(tId);
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  if (tId < 0) // thread is no omp worker
+    return ompd_rc_unavailable;
+
+  TValue th = TValue(context, "__kmp_threads") // __kmp_threads
+                  .cast("kmp_info_t", 2)
+                  .getArrayElement(tId) /*__kmp_threads[t]*/
+                  .access("th");        /*__kmp_threads[t]->th*/
+
+  ompd_address_t taddr;
+  ret = th.getAddress(&taddr);
+  if (ret != ompd_rc_ok)
+    return ret;
+  ret = callbacks->dmemory_alloc(sizeof(ompd_thread_handle_t),
+                                 (void **)(thread_handle));
+  if (ret != ompd_rc_ok)
+    return ret;
+  (*thread_handle)->ah = addr_handle;
+  (*thread_handle)->th = taddr;
 
 #ifndef NDEBUG
     if (ret != ompd_rc_ok)
