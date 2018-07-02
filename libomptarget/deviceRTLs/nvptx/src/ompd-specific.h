@@ -3,7 +3,6 @@
 
 #ifdef OMPD_SUPPORT
 
-#include "omptarget-nvptx.h"
 #include "state-queue.h"
 #include "option.h"
 #include <stdint.h>
@@ -21,10 +20,31 @@ extern "C" __device__ void ompd_bp_task_end ( void );
 
 #define OMPD_FOREACH_ACCESS(OMPD_ACCESS) \
   OMPD_ACCESS(omptarget_nvptx_ThreadPrivateContext, topTaskDescr) \
+  OMPD_ACCESS(omptarget_nvptx_TaskDescr,ompd_thread_info) \
+  OMPD_ACCESS(ompd_nvptx_thread_info_t,state)
 
 #define OMPD_FOREACH_SIZEOF(OMPD_SIZEOF) \
   OMPD_SIZEOF(omptarget_nvptx_ThreadPrivateContext)\
-  OMPD_SIZEOF(omptarget_nvptx_TaskDescr)
+  OMPD_SIZEOF(omptarget_nvptx_TaskDescr) \
+  OMPD_SIZEOF(ompd_nvptx_thread_info_t)
+
+
+/* we only support work states for the moment */
+typedef enum {
+  omp_state_undefined     = 0x102,
+  omp_state_work_serial   = 0x000,
+  omp_state_work_parallel = 0x001
+} omp_state_t;
+
+__device__ void ompd_set_device_thread_state(omp_state_t);
+
+INLINE void ompd_reset_device_thread_state() {
+  ompd_set_device_thread_state(omp_state_undefined);
+}
+
+typedef struct {
+  uint64_t state;
+} ompd_nvptx_thread_info_t;
 
 #endif /* OMPD_SUPPORT */
 #endif

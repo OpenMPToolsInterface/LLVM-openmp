@@ -146,13 +146,13 @@ ompd_rc_t ompd_device_initialize(
   if (ret != ompd_rc_ok)
     return ret;
 
-  
+
   for (uint64_t i = 0; i < ompd_num_cuda_devices; i++) {
     uint64_t cuda_ctx;
 
     // TODO: (mr) think of a better way to cast contexts
     ret = TValue(process_handle->context, "ompd_CudaContextArray").
-          cast("ompd_cuda_context_ptr_t",1).           
+          cast("ompd_cuda_context_ptr_t",1).
           getArrayElement(i).
           castBase(ompd_type_long_long).
           getValue(cuda_ctx);
@@ -170,7 +170,7 @@ ompd_rc_t ompd_device_initialize(
       return ompd_rc_ok;
     }
   }
-  
+
   return ompd_rc_unavailable;
 }
 
@@ -878,7 +878,7 @@ ompd_rc_t ompd_thread_handle_compare(ompd_thread_handle_t *thread_handle_1,
           access("ompt_team_info").             /*t.ompt_team_info*/
           cast("ompt_team_info_t",0).
           access("microtask").                /*t.ompt_team_info.microtask*/
-          castBase().    
+          castBase().
           getValue(parallel_addr->address);
     return ret;
   }
@@ -914,28 +914,40 @@ ompd_rc_t ompd_thread_handle_compare(ompd_thread_handle_t *thread_handle_1,
     if (kind == ompd_thread_id_cudalogical) {
       ompd_cudathread_coord_t *p = (ompd_cudathread_coord_t *)thread_id;
 
-      // omptarget_nvptx_threadPrivateContext->topTaskDescr[p->threadIdx.x]->data.items.threadId
+      // omptarget_nvptx_threadPrivateContext->topTaskDescr[p->threadIdx.x]->items.threadId
+      TValue th = TValue(context, tcontext,
+                         "omptarget_nvptx_threadPrivateContext",
+                         OMPD_SEGMENT_CUDA_PTX_SHARED)
+                  .cast("omptarget_nvptx_ThreadPrivateContext", 1,
+                        OMPD_SEGMENT_CUDA_PTX_SHARED)
+                  .access("topTaskDescr")
+                  .cast("omptarget_nvptx_TaskDescr", 1,
+                        OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+                  .getArrayElement(p->threadIdx.x);
 
-      ret =
-            TValue(context, tcontext, "omptarget_nvptx_threadPrivateContext",
-               OMPD_SEGMENT_CUDA_PTX_SHARED)
-            .cast("omptarget_nvptx_ThreadPrivateContext", 1,
-                  OMPD_SEGMENT_CUDA_PTX_SHARED)
-            .access("topTaskDescr")
-            .cast("omptarget_nvptx_TaskDescr", 1, OMPD_SEGMENT_CUDA_PTX_GLOBAL)
-            .getArrayElement(p->threadIdx.x)
-            .access("items__threadId")
-            .castBase(ompd_type_short)
-            .getValue(tId);
+      ompd_address_t taddr;
+      ret = th.getAddress(&taddr);
+
+      if (ret != ompd_rc_ok)
+        return ret;
+
+      ret = th.access("items__threadId")
+              .castBase(ompd_type_short)
+              .getValue(tId);
 
     if (ret != ompd_rc_ok)
       return ret;
 
     if (tId != p->threadIdx.x)
-    {
-      printf("tId(%i) != p->threadIdx.x(%i)\n", tId, p->threadIdx.x);
       return ompd_rc_stale_handle;
-    }
+
+    ret = callbacks->dmemory_alloc(sizeof(ompd_thread_handle_t),
+                                   (void **)(thread_handle));
+    if (ret != ompd_rc_ok)
+      return ret;
+
+    (*thread_handle)->ah = addr_handle;
+    (*thread_handle)->th = taddr;
   } else {
     ret = TValue(context, tcontext, "__kmp_gtid")
               .castBase("__kmp_gtid")
@@ -1064,26 +1076,38 @@ ompd_rc_t ompd_get_state(
     return ompd_rc_needs_state_tracking;
 #endif
 
+  ompd_rc_t ret;
   assert(callbacks && "Callback table not initialized!");
 
-  TValue ompt_thread_info =
-      TValue(context, thread_handle->th) /*__kmp_threads[t]->th*/
-          .cast("kmp_base_info_t")
-          .access("ompt_thread_info") /*__kmp_threads[t]->th.ompt_thread_info*/
-          .cast("ompt_thread_info_t");
-  if (ompt_thread_info.gotError())
-    return ompt_thread_info.getError();
-  ompd_rc_t ret =
-      ompt_thread_info
-          .access("state") /*__kmp_threads[t]->th.ompt_thread_info.state*/
-          .castBase()
-          .getValue(*state);
-  if (ret != ompd_rc_ok)
-    return ret;
-  ret = ompt_thread_info
-            .access("wait_id") /*__kmp_threads[t]->th.ompt_thread_info.state*/
+  if (thread_handle->ah->kind == ompd_device_kind_cuda) {
+    if (wait_id)
+      *wait_id = 0; //TODO: (mr) implement wait_ids in nvptx device rtl
+    ret  = TValue(context, thread_handle->th)
+            .cast("omptarget_nvptx_TaskDescr", 0, OMPD_SEGMENT_CUDA_PTX_SHARED)
+            .access("ompd_thread_info")
+            .cast("ompd_nvptx_thread_info_t", 0, OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+            .access("state")
+            .castBase(ompd_type_long_long)
+            .getValue(*state);
+  } else {
+    TValue ompt_thread_info =
+        TValue(context, thread_handle->th) /*__kmp_threads[t]->th*/
+            .cast("kmp_base_info_t")
+            .access("ompt_thread_info") /*__kmp_threads[t]->th.ompt_thread_info*/
+            .cast("ompt_thread_info_t");
+    if (ompt_thread_info.gotError())
+      return ompt_thread_info.getError();
+    ret = ompt_thread_info
+            .access("state") /*__kmp_threads[t]->th.ompt_thread_info.state*/
             .castBase()
-            .getValue(*wait_id);
+            .getValue(*state);
+    if (ret != ompd_rc_ok)
+      return ret;
+    ret = ompt_thread_info
+              .access("wait_id") /*__kmp_threads[t]->th.ompt_thread_info.state*/
+              .castBase()
+              .getValue(*wait_id);
+  }
   return ret;
 }
 
@@ -1441,7 +1465,7 @@ ompd_rc_t ompd_get_task_function(
     return ompd_rc_bad_input;
 #else
   ompd_rc_t ret;
-#endif  
+#endif
   task_addr->segment = OMPD_SEGMENT_UNSPECIFIED;
   TValue taskInfo;
   if(task_handle->lwt.address!=0)
@@ -1454,7 +1478,7 @@ ompd_rc_t ompd_get_task_function(
         access("ompt_task_info").             /*td->ompt_task_info*/
         cast("ompt_task_info_t").
         access("function").                /*td->ompt_task_info.function*/
-        castBase().    
+        castBase().
         getValue(task_addr->address);
   return ret;
 }

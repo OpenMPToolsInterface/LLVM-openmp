@@ -202,6 +202,7 @@ void OMPDThreads::execute() const
       ret = functions->ompd_get_state(thread_handle, &state, &wait_id);
       printf("  %-12u     %p     0x%lx\t%i\t%lx\n", 
           (unsigned int)i.first, thread_handle, i.second, state, wait_id);
+      functions->ompd_release_thread_handle(thread_handle);
     }
     else
     {
@@ -214,10 +215,15 @@ void OMPDThreads::execute() const
   vector<OMPDCudaContextPool*> cuda_ContextPools;
   map<uint64_t, bool> device_initialized;
   map<ompd_addr_t, ompd_address_space_handle_t*> address_spaces;
+  ompd_word_t last_state = -1;
+  ompd_cudathread_coord_t last_coords;
+
+  printf("\nCUDA THREADS\n");
+  printf("Cuda block    from Thread    to Thread    state\n");
+  printf("-------------------------------------------------\n");
 
   for(auto i: cuda.threads) {
     if (!device_initialized[i.coord.cudaContext]) {
-      cout << "Cuda device with context " << i.coord.cudaContext << " not initialized as OpenMP device. Trying to initialize\n";
       OMPDCudaContextPool* cpool;
       cpool = new OMPDCudaContextPool(&i);
       ompd_rc_t result;
@@ -233,10 +239,8 @@ void OMPDThreads::execute() const
 
         if (result != ompd_rc_ok)
         {
-          cout << "Could not initalize device with context " << i.coord.cudaContext << ". Probably not a OpenMP device\n";
           continue;
         }
-        cout << "Device initialized\n";
 
         address_spaces[i.coord.cudaContext] = cpool->ompd_device_handle;
     }
@@ -249,7 +253,28 @@ void OMPDThreads::execute() const
                                     &thread_handle);
 
     if (ret == ompd_rc_ok)
+    {
+      ompd_word_t state;
+      functions->ompd_get_state(thread_handle, &state, NULL);
+      if (last_state == -1) {
+        last_state = state;
+        last_coords = i.coord;
+        printf("(%li,0,0)    (%li,%li,%li)", i.coord.blockIdx.x, i.coord.threadIdx.x, i.coord.threadIdx.y, i.coord.threadIdx.z);
+      } else if (state != last_state || i.coord.blockIdx.x != last_coords.blockIdx.x) {
+        printf("    (%li,%li,%li)    %li\n", last_coords.threadIdx.x, last_coords.threadIdx.y, last_coords.threadIdx.z, last_state);
+        last_coords = i.coord;
+        last_state = state;
+        printf("(%li,0,0)      (%li,%li,%li)", i.coord.blockIdx.x, i.coord.threadIdx.x, i.coord.threadIdx.y, i.coord.threadIdx.z);
+      } else { /* state == last_state*/
+        last_coords = i.coord;
+      }
+      functions->ompd_release_thread_handle(thread_handle);
       omp_cuda_threads++;
+    }
+  }
+
+  if (last_state != -1) {
+    printf("    (%i,%i,%i)    %i\n", last_coords.threadIdx.x, last_coords.threadIdx.y, last_coords.threadIdx.z, last_state);
   }
 
   if (cuda.threads.size() != 0) {

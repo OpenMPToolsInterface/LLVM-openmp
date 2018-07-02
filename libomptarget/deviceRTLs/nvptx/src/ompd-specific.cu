@@ -1,6 +1,6 @@
-#include "ompd-specific.h"
 #ifdef OMPD_SUPPORT
-
+#include "ompd-specific.h"
+#include "omptarget-nvptx.h"
 /**
    * Declaration of symbols to hold struct size and member offset information
     */
@@ -28,11 +28,10 @@ __device__ __shared__
 
 __device__ void ompd_init ( void )
 {
-  PRINT0(LD_IO, "call to ompd_init\n");
+  getMyTopTaskDescriptor()->ompd_thread_info.state = omp_state_undefined;
+
   if (ompd_target_initialized)
     return;
-
-  PRINT0(LD_IO, "ompd_init: initializing\n");
 
 #define ompd_target_init_access(t,m) ompd_access__##t##__##m = (uint64_t)&(((t*)0)->m); 
   OMPD_FOREACH_ACCESS(ompd_target_init_access)
@@ -53,6 +52,10 @@ __device__ void ompd_init ( void )
 #undef ompd_target_init_sizeof
 
   ompd_target_initialized = 1;
+}
+
+__device__ void ompd_set_device_thread_state(omp_state_t state) {
+  getMyTopTaskDescriptor()->ompd_thread_info.state = state;
 }
 
 __device__ void ompd_bp_parallel_begin (){ asm (""); }

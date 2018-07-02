@@ -14,7 +14,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "omptarget-nvptx.h"
-
+#ifdef OMPD_SUPPORT
+  #include "ompd-specific.h"
+#endif /*OMPD_SUPPORT*/
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 // template class that encapsulate all the helper functions
@@ -205,6 +207,9 @@ public:
                                 IsRuntimeUninitialized),
           GetNumberOfWorkersInTeam(), P64(*plower), P64(*pupper),
           P64(*pstride));
+#ifdef OMPD_SUPPORT
+    ompd_set_device_thread_state(omp_state_work_parallel);
+#endif /*OMPD_SUPPORT*/
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -712,6 +717,9 @@ void __kmpc_for_static_init_8u_simple_generic(
 }
 
 EXTERN void __kmpc_for_static_fini(kmp_Indent *loc, int32_t global_tid) {
+#ifdef OMP_SUPPORT
+  ompd_reset_device_thread_state()
+#endif
   PRINT0(LD_IO, "call kmpc_for_static_fini\n");
 }
 

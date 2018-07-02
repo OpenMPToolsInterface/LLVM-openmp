@@ -34,6 +34,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "omptarget-nvptx.h"
+#ifdef OMPD_SUPPORT
+  #include "ompd-specific.h"
+#endif /*OMPD_SUPPORT*/
 
 typedef struct ConvergentSimdJob {
   omptarget_nvptx_TaskDescr taskDescr;
@@ -355,6 +358,9 @@ EXTERN bool __kmpc_kernel_parallel(void **WorkFn,
           newTaskDescr->ThreadId(), newTaskDescr->NThreads());
 
     isActive = true;
+#ifdef OMPD_SUPPORT
+    ompd_set_device_thread_state(omp_state_work_parallel);
+#endif /*OMPD_SUPPORT*/
   }
 
   return isActive;
@@ -369,6 +375,9 @@ EXTERN void __kmpc_kernel_end_parallel() {
   omptarget_nvptx_TaskDescr *currTaskDescr = getMyTopTaskDescriptor(threadId);
   omptarget_nvptx_threadPrivateContext->SetTopLevelTaskDescr(
       threadId, currTaskDescr->GetPrevTaskDescr());
+#ifdef OMPD_SUPPORT
+  ompd_reset_device_thread_state();
+#endif /*OMPD_SUPPORT*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////
