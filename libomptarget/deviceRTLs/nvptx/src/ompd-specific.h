@@ -31,9 +31,10 @@ extern "C" __device__ void ompd_bp_task_end ( void );
 
 /* we only support work states for the moment */
 typedef enum {
-  omp_state_undefined     = 0x102,
-  omp_state_work_serial   = 0x000,
-  omp_state_work_parallel = 0x001
+  omp_state_undefined      = 0x102,
+  omp_state_work_serial    = 0x000,
+  omp_state_work_parallel  = 0x001,
+  omp_state_work_reduction = 0x002
 } omp_state_t;
 
 __device__ void ompd_set_device_thread_state(omp_state_t);

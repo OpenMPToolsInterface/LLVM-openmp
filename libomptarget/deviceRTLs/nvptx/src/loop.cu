@@ -360,6 +360,9 @@ public:
             omptarget_nvptx_threadPrivateContext->LoopUpperBound(teamId),
             omptarget_nvptx_threadPrivateContext->Chunk(teamId));
     }
+#ifdef OMPD_SUPPORT
+    ompd_set_device_thread_state(omp_state_work_parallel);
+#endif /*OMPD_SUPPORT*/
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -472,6 +475,9 @@ public:
 
   INLINE static void dispatch_fini() {
     // nothing
+#ifdef OMP_SUPPORT
+  ompd_reset_device_thread_state()
+#endif
   }
 
   ////////////////////////////////////////////////////////////////////////////////
