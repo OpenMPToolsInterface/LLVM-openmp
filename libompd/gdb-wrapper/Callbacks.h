@@ -59,7 +59,7 @@ ompd_rc_t CB_process_context (
 
 ompd_rc_t CB_tsizeof_prim (
     ompd_address_space_context_t *context,
-    ompd_target_type_sizes_t *sizes);
+    ompd_device_type_sizes_t *sizes);
 
 ompd_rc_t CB_tsymbol_addr (
     ompd_address_space_context_t *context,

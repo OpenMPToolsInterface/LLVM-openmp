@@ -37,16 +37,16 @@ void initializeCallbacks(const GdbProcessPtr &proc)
   gdb = proc;
 
   // Initialize static table
-  cb.dmemory_alloc  = CB_dmemory_alloc;
-  cb.dmemory_free   = CB_dmemory_free;
-  cb.print_string   = CB_print_string;
+  cb.memory_alloc       = CB_dmemory_alloc;
+  cb.memory_free        = CB_dmemory_free;
+  cb.print_string       = CB_print_string;
   cb.get_thread_context_for_thread_id = CB_thread_context;
-  cb.tsizeof_prim   = CB_tsizeof_prim;
-  cb.tsymbol_addr   = CB_tsymbol_addr;
-  cb.read_tmemory   = CB_read_tmemory;
-  cb.write_tmemory  = CB_write_tmemory;
-  cb.host_to_target  = CB_host_to_target;
-  cb.target_to_host  = CB_target_to_host;
+  cb.sizeof_types       = CB_tsizeof_prim;
+  cb.symbol_addr_lookup = CB_tsymbol_addr;
+  cb.read_memory        = CB_read_tmemory;
+  cb.write_memory       = CB_write_tmemory;
+  cb.host_to_device     = CB_host_to_target;
+  cb.device_to_host     = CB_target_to_host;
 }
 
 ompd_callbacks_t * getCallbacksTable()
@@ -125,7 +125,7 @@ void init_sizes(){
 
 ompd_rc_t CB_tsizeof_prim(
     ompd_address_space_context_t *context,
-    ompd_target_type_sizes_t *sizes)
+    ompd_device_type_sizes_t *sizes)
 {
   ompd_rc_t ret = context ? ompd_rc_ok : ompd_rc_stale_handle;
   static int inited = 0;

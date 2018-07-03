@@ -195,7 +195,7 @@ ompd_rc_t ompd_get_thread_in_parallel(
 
   if (ret != ompd_rc_ok)
     return ret;
-  ret = callbacks->dmemory_alloc(sizeof(ompd_thread_handle_t),
+  ret = callbacks->memory_alloc(sizeof(ompd_thread_handle_t),
                                  (void **)(thread_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -210,7 +210,7 @@ ompd_rc_t ompd_release_thread_handle(
     ) {
   if (!thread_handle)
     return ompd_rc_stale_handle;
-  ompd_rc_t ret = callbacks->dmemory_free((void *)(thread_handle));
+  ompd_rc_t ret = callbacks->memory_free((void *)(thread_handle));
   if (ret != ompd_rc_ok)
     return ret;
   return ompd_rc_ok;
@@ -264,7 +264,7 @@ ompd_rc_t ompd_get_current_parallel_handle(
   if (ret != ompd_rc_ok)
     return ret;
 
-  ret = callbacks->dmemory_alloc(sizeof(ompd_parallel_handle_t),
+  ret = callbacks->memory_alloc(sizeof(ompd_parallel_handle_t),
                                  (void **)(parallel_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -324,7 +324,7 @@ ompd_rc_t ompd_get_enclosing_parallel_handle(
       return ret;
   }
 
-  ret = callbacks->dmemory_alloc(sizeof(ompd_parallel_handle_t),
+  ret = callbacks->memory_alloc(sizeof(ompd_parallel_handle_t),
                                  (void **)(enclosing_parallel_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -362,7 +362,7 @@ ompd_rc_t ompd_get_task_parallel_handle(
   if (ret != ompd_rc_ok)
     return ret;
 
-  ret = callbacks->dmemory_alloc(sizeof(ompd_parallel_handle_t),
+  ret = callbacks->memory_alloc(sizeof(ompd_parallel_handle_t),
                                  (void **)(enclosing_parallel_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -378,7 +378,7 @@ ompd_rc_t ompd_release_parallel_handle(
     ) {
   if (!parallel_handle)
     return ompd_rc_stale_handle;
-  ompd_rc_t ret = callbacks->dmemory_free((void *)(parallel_handle));
+  ompd_rc_t ret = callbacks->memory_free((void *)(parallel_handle));
   if (ret != ompd_rc_ok)
     return ret;
   return ompd_rc_ok;
@@ -441,7 +441,7 @@ ompd_rc_t ompd_get_current_task_handle(
   if (ret != ompd_rc_ok)
     return ret;
 
-  ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t),
+  ret = callbacks->memory_alloc(sizeof(ompd_task_handle_t),
                                  (void **)(task_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -501,7 +501,7 @@ ompd_rc_t ompd_get_generating_task_handle(
       return ret;
   }
 
-  ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t),
+  ret = callbacks->memory_alloc(sizeof(ompd_task_handle_t),
                                  (void **)(parent_task_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -539,7 +539,7 @@ ompd_rc_t ompd_get_scheduling_task_handle(
 
   if (ret != ompd_rc_ok)
     return ret;
-  ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t),
+  ret = callbacks->memory_alloc(sizeof(ompd_task_handle_t),
                                  (void **)(parent_task_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -577,7 +577,7 @@ ompd_rc_t ompd_get_task_in_parallel(
 
   if (ret != ompd_rc_ok)
     return ret;
-  ret = callbacks->dmemory_alloc(sizeof(ompd_task_handle_t),
+  ret = callbacks->memory_alloc(sizeof(ompd_task_handle_t),
                                  (void **)(task_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -592,7 +592,7 @@ ompd_rc_t ompd_release_task_handle(
     ) {
   if (!task_handle)
     return ompd_rc_stale_handle;
-  ompd_rc_t ret = callbacks->dmemory_free((void *)(task_handle));
+  ompd_rc_t ret = callbacks->memory_free((void *)(task_handle));
   if (ret != ompd_rc_ok)
     return ret;
   return ompd_rc_ok;
@@ -835,7 +835,7 @@ ompd_get_thread_handle(ompd_address_space_handle_t
   if (tId != p->threadIdx.x)
     return ompd_rc_stale_handle;
 
-  ret = callbacks->dmemory_alloc(sizeof(ompd_thread_handle_t),
+  ret = callbacks->memory_alloc(sizeof(ompd_thread_handle_t),
                                  (void **)(thread_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -861,7 +861,7 @@ ompd_get_thread_handle(ompd_address_space_handle_t
   ret = th.getAddress(&taddr);
   if (ret != ompd_rc_ok)
     return ret;
-  ret = callbacks->dmemory_alloc(sizeof(ompd_thread_handle_t),
+  ret = callbacks->memory_alloc(sizeof(ompd_thread_handle_t),
                                  (void **)(thread_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -1418,12 +1418,12 @@ ompd_rc_t initTypeSizes(ompd_address_space_context_t *context) {
   static ompd_rc_t ret;
   if (inited)
     return ret;
-  ret = callbacks->tsizeof_prim(context, &type_sizes);
+  ret = callbacks->sizeof_types(context, &type_sizes);
   if (ret != ompd_rc_ok)
     return ret;
   if (!(type_sizes.sizeof_pointer > 0))
     return ompd_rc_error;
-  ret = callbacks->tsizeof_prim(context, &TValue::type_sizes);
+  ret = callbacks->sizeof_types(context, &TValue::type_sizes);
   if (ret != ompd_rc_ok)
     return ret;
   inited = 1;

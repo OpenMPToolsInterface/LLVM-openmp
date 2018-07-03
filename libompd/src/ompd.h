@@ -133,28 +133,6 @@ typedef enum ompd_thread_id_kind_t {
 } ompd_thread_id_kind_t;
 
 /**
- * Logical coordinates of OMP target device threads
- */
-typedef struct ompd_dim3_t {
-  ompd_word_t x;
-  ompd_word_t y;
-  ompd_word_t z;
-} ompd_dim3_t;
-
-typedef struct ompd_cudathread_coord_t {
-  ompd_addr_t cudaDevId;
-  ompd_addr_t cudaContext;
-  ompd_addr_t warpSize;
-  ompd_addr_t gridId;
-  ompd_addr_t kernelId; // TODO (MJM) - for some reason, cuda-gdb doesn't work
-                        // with grids too well.
-  ompd_dim3_t gridDim;
-  ompd_dim3_t blockDim;
-  ompd_dim3_t blockIdx;
-  ompd_dim3_t threadIdx;
-} ompd_cudathread_coord_t;
-
-/**
  * Return codes.
  * Each OMPD operation returns a code.
  */
@@ -198,7 +176,7 @@ typedef struct ompd_device_type_sizes_t {
 /**
  * Allocate memory in the debugger's address space.
  */
-typedef ompd_rc_t (*ompd_dmemory_alloc_fn_t)(
+typedef ompd_rc_t (*ompd_callback_memory_alloc_fn_t)(
     ompd_size_t bytes, /* IN: bytes of the primitive type */
     void **ptr         /* OUT: pointer of the allocated memory */
     );
@@ -206,14 +184,14 @@ typedef ompd_rc_t (*ompd_dmemory_alloc_fn_t)(
 /**
  * Free memory in the debugger's address space.
  */
-typedef ompd_rc_t (*ompd_dmemory_free_fn_t)(
+typedef ompd_rc_t (*ompd_callback_memory_free_fn_t)(
     void *ptr /* IN: pointer of memory to deallocate */
     );
 
 /**
  * Get thread specific context.
  */
-typedef ompd_rc_t (*ompd_get_thread_context_for_thread_id_fn_t)(
+typedef ompd_rc_t (*ompd_callback_get_thread_context_for_thread_id_fn_t)(
     ompd_address_space_context_t *context, ompd_thread_id_kind_t kind,
     ompd_size_t sizeof_thread_id, const void *thread_id,
     ompd_thread_context_t **thread_context);
@@ -221,7 +199,7 @@ typedef ompd_rc_t (*ompd_get_thread_context_for_thread_id_fn_t)(
 /**
  * Look up the sizes of primitive types in the target
  */
-typedef ompd_rc_t (*ompd_tsizeof_prim_fn_t)(
+typedef ompd_rc_t (*ompd_callback_sizeof_fn_t)(
     ompd_address_space_context_t
         *context,                   /* IN: debugger handle for the target */
     ompd_device_type_sizes_t *sizes /* OUT: type sizes */
@@ -230,7 +208,7 @@ typedef ompd_rc_t (*ompd_tsizeof_prim_fn_t)(
 /**
  * Look up the address of a global symbol in the target
  */
-typedef ompd_rc_t (*ompd_tsymbol_addr_fn_t)(
+typedef ompd_rc_t (*ompd_callback_symbol_addr_fn_t)(
     ompd_address_space_context_t
         *context, /* IN: debugger handle for the target */
     ompd_thread_context_t
@@ -242,7 +220,7 @@ typedef ompd_rc_t (*ompd_tsymbol_addr_fn_t)(
 /**
  * Read memory from the target
  */
-typedef ompd_rc_t (*ompd_tmemory_read_fn_t)(
+typedef ompd_rc_t (*ompd_callback_memory_read_fn_t)(
     ompd_address_space_context_t
         *context, /* IN: debugger handle for the target */
     ompd_thread_context_t
@@ -255,7 +233,7 @@ typedef ompd_rc_t (*ompd_tmemory_read_fn_t)(
 /**
  * Write memory from the target
  */
-typedef ompd_rc_t (*ompd_tmemory_write_fn_t)(
+typedef ompd_rc_t (*ompd_callback_memory_write_fn_t)(
     ompd_address_space_context_t
         *context, /* IN: debugger handle for the target */
     ompd_thread_context_t
@@ -265,7 +243,7 @@ typedef ompd_rc_t (*ompd_tmemory_write_fn_t)(
     const void *buffer   /* IN: output buffer */
     );
 
-typedef ompd_rc_t (*ompd_target_host_fn_t)(
+typedef ompd_rc_t (*ompd_callback_device_host_fn_t)(
     ompd_address_space_context_t *address_space_context, /* IN */
     const void *input,                                   /* IN */
     int unit_size,                                       /* IN */
@@ -278,7 +256,7 @@ typedef ompd_rc_t (*ompd_target_host_fn_t)(
  * This is used by the OMPD library to have the debugger print a string.
  * The OMPD should not print directly.
  */
-typedef ompd_rc_t (*ompd_print_string_fn_t)(
+typedef ompd_rc_t (*ompd_callback_print_string_fn_t)(
     const char *str /* IN: message to print */
     );
 
@@ -287,22 +265,20 @@ typedef ompd_rc_t (*ompd_print_string_fn_t)(
  */
 typedef struct ompd_callbacks_t {
   /* Debugger interface */
-  ompd_dmemory_alloc_fn_t dmemory_alloc;
-  ompd_dmemory_free_fn_t dmemory_free;
-  ompd_print_string_fn_t print_string;
+  ompd_callback_memory_alloc_fn_t memory_alloc;
+  ompd_callback_memory_free_fn_t memory_free;
+  ompd_callback_print_string_fn_t print_string;
 
   /* Target interface */
-  ompd_tsizeof_prim_fn_t tsizeof_prim;
-  ompd_tsymbol_addr_fn_t tsymbol_addr;
-  ompd_tmemory_read_fn_t read_tmemory;
-  ompd_tmemory_write_fn_t write_tmemory;
+  ompd_callback_sizeof_fn_t sizeof_types;
+  ompd_callback_symbol_addr_fn_t symbol_addr_lookup;
+  ompd_callback_memory_read_fn_t read_memory;
+  ompd_callback_memory_write_fn_t write_memory;
 
-  ompd_target_host_fn_t target_to_host;
-  ompd_target_host_fn_t host_to_target;
+  ompd_callback_device_host_fn_t device_to_host;
+  ompd_callback_device_host_fn_t host_to_device;
 
-  ompd_get_thread_context_for_thread_id_fn_t get_thread_context_for_thread_id;
-  //  ompd_get_process_context_for_context_fn_t  get_containing_process_context;
-
+  ompd_callback_get_thread_context_for_thread_id_fn_t get_thread_context_for_thread_id;
 } ompd_callbacks_t;
 
 /******************************************************************************

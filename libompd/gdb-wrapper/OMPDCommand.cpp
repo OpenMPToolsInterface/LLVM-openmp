@@ -25,7 +25,7 @@
 using namespace ompd_gdb;
 using namespace std;
 
-const char * ompd_state_names[256];
+const char * ompd_state_names[512];
 extern OMPDHostContextPool * host_contextPool;
 
 /* --- OMPDCommandFactory --------------------------------------------------- */
@@ -35,7 +35,7 @@ OMPDCommandFactory::OMPDCommandFactory()
   functions = OMPDFunctionsPtr(new OMPDFunctions);
 
 #define ompd_state_macro(state, code) ompd_state_names[code] = #state;
-    FOREACH_OMPD_STATE(ompd_state_macro)
+    FOREACH_OMP_STATE(ompd_state_macro)
 #undef ompd_state_macro
 
   // Load OMPD DLL and get a handle

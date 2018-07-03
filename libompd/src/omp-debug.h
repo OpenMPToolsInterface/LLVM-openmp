@@ -48,25 +48,25 @@ class ompdAllocatable {
 public:
   static void *operator new(std::size_t sz) {
     void *res;
-    ompd_rc_t ret = callbacks->dmemory_alloc(sz, &res);
+    ompd_rc_t ret = callbacks->memory_alloc(sz, &res);
     if (ret == ompd_rc_ok)
       return res;
     throw std::bad_alloc();
   }
   static void *operator new[](std::size_t sz) {
     void *res;
-    ompd_rc_t ret = callbacks->dmemory_alloc(sz, &res);
+    ompd_rc_t ret = callbacks->memory_alloc(sz, &res);
     if (ret == ompd_rc_ok)
       return res;
     throw std::bad_alloc();
   }
   void operator delete(void *addr) throw() {
-    ompd_rc_t ret = callbacks->dmemory_free(addr);
+    ompd_rc_t ret = callbacks->memory_free(addr);
     if (ret != ompd_rc_ok)
       throw std::bad_alloc();
   }
   void operator delete[](void *addr) throw() {
-    ompd_rc_t ret = callbacks->dmemory_free(addr);
+    ompd_rc_t ret = callbacks->memory_free(addr);
     if (ret != ompd_rc_ok)
       throw std::bad_alloc();
   }

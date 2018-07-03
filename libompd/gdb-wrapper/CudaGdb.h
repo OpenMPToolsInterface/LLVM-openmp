@@ -13,6 +13,7 @@
 #include <vector>
 #include <map>
 #include "ompd.h"
+#include "../src/ompd-private.h"
 
 struct CudaThread {
   ompd_cudathread_coord_t coord;
