@@ -29,6 +29,8 @@ __device__ __shared__
 __device__ void ompd_init ( void )
 {
   getMyTopTaskDescriptor()->ompd_thread_info.state = omp_state_undefined;
+  getMyTopTaskDescriptor()->ompd_thread_info.blockIdx_x = blockIdx.x;
+  getMyTopTaskDescriptor()->ompd_thread_info.threadIdx_x = threadIdx.x;
 
   if (ompd_target_initialized)
     return;

@@ -206,8 +206,17 @@ int32_t nvptx_parallel_reduce_nowait(int32_t global_tid, int32_t num_vars,
       gpu_irregular_warp_reduce(reduce_data, shflFct, WarpsNeeded,
                                 BlockThreadId);
 
+#ifdef OMPD_SUPPORT
+  ompd_reset_device_thread_state();
+#endif /*OMPD_SUPPORT*/
+
     return BlockThreadId == 0;
   }
+
+#ifdef OMPD_SUPPORT
+  ompd_reset_device_thread_state();
+#endif /*OMPD_SUPPORT*/
+
   return BlockThreadId == 0;
 #else
   uint32_t Liveness = __BALLOT_SYNC(0xFFFFFFFF, true);
@@ -246,15 +255,15 @@ int32_t nvptx_parallel_reduce_nowait(int32_t global_tid, int32_t num_vars,
     return BlockThreadId == 0;
   }
 
+#ifdef OMPD_SUPPORT
+    ompd_reset_device_thread_state();
+#endif /*OMPD_SUPPORT*/
+
   // Get the OMP thread Id. This is different from BlockThreadId in the case of
   // an L2 parallel region.
   return GetOmpThreadId(BlockThreadId, isSPMDExecutionMode,
                         isRuntimeUninitialized) == 0;
 #endif // __CUDA_ARCH__ >= 700
-
-#ifdef OMPD_SUPPORT
-    ompd_reset_device_thread_state();
-#endif /*OMPD_SUPPORT*/
 }
 
 EXTERN

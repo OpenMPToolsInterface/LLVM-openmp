@@ -44,7 +44,12 @@ INLINE void ompd_reset_device_thread_state() {
 }
 
 typedef struct {
-  uint64_t state;
+  uint64_t state; // In the host runtime we use the OMPT state.
+                  // Here we need to have our own place to store it.
+  int blockIdx_x; // Libomptarget should only schedule task in one dimension.
+                  // To store a unique identifier for the current thread, we
+                  // simply store ThreadIdx.x and BlockIdx.x
+  int threadIdx_x;
 } ompd_nvptx_thread_info_t;
 
 #endif /* OMPD_SUPPORT */
