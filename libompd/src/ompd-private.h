@@ -52,6 +52,8 @@ typedef enum omp_state_t {
 #undef ompd_state_macro
 } omp_state_t;
 
+#define OMPD_LAST_OMP_STATE omp_state_overhead
+
 /**
  * Primitive types.
  */

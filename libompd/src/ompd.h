@@ -359,7 +359,7 @@ ompd_rc_t ompd_finalize(void);
  * and/or destroying threads during or after the call, rendering useless the
  * vector of handles returned.
  */
- 
+
 
 /**
  * Retrieve handles for OpenMP threads in a parallel region.
@@ -605,6 +605,14 @@ ompd_rc_t ompd_get_thread_num(
  * only difference between the OMPD and OMPT counterparts is that the OMPD
  * version must supply a thread handle to provide a context for this inquiry.
  */
+ompd_rc_t ompd_enumerate_states (
+    ompd_address_space_handle_t *address_space_handle,
+    ompd_word_t current_state,
+    ompd_word_t *next_state,
+    const char **next_state_name,
+    ompd_word_t *more_enums
+    );
+
 ompd_rc_t ompd_get_state(
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
     ompd_word_t *state,                  /* OUT: State of this thread */

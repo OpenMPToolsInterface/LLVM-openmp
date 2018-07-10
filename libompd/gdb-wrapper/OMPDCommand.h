@@ -86,6 +86,7 @@ macro(ompd_get_parallel_id) \
 macro(ompd_get_parallel_function) */\
 macro(ompd_get_thread_handle) \
 /*macro(ompd_get_osthread)*/ \
+macro(ompd_enumerate_states) \
 macro(ompd_get_state) \
 /*macro(ompd_get_max_threads) \
 macro(ompd_get_thread_num) \

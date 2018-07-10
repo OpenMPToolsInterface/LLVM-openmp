@@ -70,11 +70,6 @@ OMPDCommandFactory::OMPDCommandFactory()
 FOREACH_OMPD_API_FN(OMPD_FIND_API_FUNCTION)
 #undef OMPD_FIND_API_FUNCTION
 
-  //functions->test_CB_tsizeof_prim   =
-  //   (void (*)()) findFunctionInLibrary("test_CB_tsizeof_prim");
-  //functions->test_CB_dmemory_alloc  =
-  //   (void (*)()) findFunctionInLibrary("test_CB_dmemory_alloc");
-
   // Initialize OMPD library
   ompd_callbacks_t *table = getCallbacksTable();
   assert(table && "Invalid callbacks table");
@@ -95,11 +90,6 @@ FOREACH_OMPD_API_FN(OMPD_FIND_API_FUNCTION)
 OMPDCommandFactory::~OMPDCommandFactory()
 {
   ompd_rc_t ret;
-//   ret = functions->ompd_process_finalize(prochandle);
-//   if (ret != ompd_rc_ok)
-//   {
-//     out << "ERROR: could not finalize target process\n";
-//   }
   ret = functions->ompd_release_address_space_handle(addrhandle);
   if (ret != ompd_rc_ok)
   {
@@ -185,6 +175,17 @@ const char* OMPDTestCallbacks::toString() const
 
 void OMPDThreads::execute() const
 {
+  // get state names
+  map<ompd_word_t, const char*> host_state_names;
+  ompd_word_t more_states = 1;
+  ompd_word_t next_state = omp_state_undefined;
+  host_state_names[next_state] = "ompd_state_undefined";
+  while (more_states) {
+    const char *state_name;
+    functions->ompd_enumerate_states(addrhandle, next_state, &next_state, &state_name, &more_states);
+    host_state_names[next_state] = state_name;
+  }
+
   printf("\nHOST THREADS\n");
   printf("Debugger_handle    Thread_handle     System_thread\n");
   printf("--------------------------------------------------\n");
@@ -200,8 +201,8 @@ void OMPDThreads::execute() const
       ompd_word_t state;
       ompd_wait_id_t wait_id;
       ret = functions->ompd_get_state(thread_handle, &state, &wait_id);
-      printf("  %-12u     %p     0x%lx\t%i\t%lx\n", 
-          (unsigned int)i.first, thread_handle, i.second, state, wait_id);
+      printf("  %-12u     %p     0x%lx\t%s\t%lx\n",
+          (unsigned int)i.first, thread_handle, i.second, host_state_names[state], wait_id);
       functions->ompd_release_thread_handle(thread_handle);
     }
     else
@@ -217,10 +218,17 @@ void OMPDThreads::execute() const
   map<ompd_addr_t, ompd_address_space_handle_t*> address_spaces;
   ompd_word_t last_state = -1;
   ompd_cudathread_coord_t last_coords;
+  vector<ompd_thread_handle_t *> device_thread_handles;
+
+  // get cuda states
+  map<ompd_word_t, const char*> cuda_state_names;
+  more_states = 1;
+  next_state = omp_state_undefined;
+  cuda_state_names[next_state] = "omp_state_undefined";
 
   printf("\nCUDA THREADS\n");
-  printf("Cuda block    from Thread    to Thread    state\n");
-  printf("-------------------------------------------------\n");
+  printf("Cuda block  from Thread  to Thread  state\n");
+  printf("------------------------------------------\n");
 
   for(auto i: cuda.threads) {
     if (!device_initialized[i.coord.cudaContext]) {
@@ -232,7 +240,7 @@ void OMPDThreads::execute() const
       result = functions->ompd_device_initialize(
           addrhandle,
           cpool->getGlobalOmpdContext(),
-          ompd_device_kind_cuda, 
+          ompd_device_kind_cuda,
           sizeof(i.coord.cudaContext),
           &i.coord.cudaContext,
           &cpool->ompd_device_handle);
@@ -243,6 +251,13 @@ void OMPDThreads::execute() const
         }
 
         address_spaces[i.coord.cudaContext] = cpool->ompd_device_handle;
+        while (more_states) {
+          const char *state_name;
+          functions->ompd_enumerate_states(cpool->ompd_device_handle,
+                                           next_state, &next_state,
+                                           &state_name, &more_states);
+          cuda_state_names[next_state] = state_name;
+        }
     }
 
     ompd_thread_handle_t* thread_handle;
@@ -255,26 +270,44 @@ void OMPDThreads::execute() const
     if (ret == ompd_rc_ok)
     {
       ompd_word_t state;
+      device_thread_handles.push_back(thread_handle);
       functions->ompd_get_state(thread_handle, &state, NULL);
       if (last_state == -1) {
         last_state = state;
         last_coords = i.coord;
-        printf("(%li,0,0)    (%li,%li,%li)", i.coord.blockIdx.x, i.coord.threadIdx.x, i.coord.threadIdx.y, i.coord.threadIdx.z);
+        printf("(%li,0,0)  (%li,0,0)", i.coord.blockIdx.x, i.coord.threadIdx.x);
       } else if (state != last_state || i.coord.blockIdx.x != last_coords.blockIdx.x) {
-        printf("    (%li,%li,%li)    %li\n", last_coords.threadIdx.x, last_coords.threadIdx.y, last_coords.threadIdx.z, last_state);
+        printf("  (%li,0,0)  %s\n", last_coords.threadIdx.x, cuda_state_names[last_state]);
         last_coords = i.coord;
         last_state = state;
-        printf("(%li,0,0)      (%li,%li,%li)", i.coord.blockIdx.x, i.coord.threadIdx.x, i.coord.threadIdx.y, i.coord.threadIdx.z);
+        printf("(%li,0,0)  (%li,0,0)", i.coord.blockIdx.x, i.coord.threadIdx.x);
       } else { /* state == last_state*/
         last_coords = i.coord;
       }
-      functions->ompd_release_thread_handle(thread_handle);
       omp_cuda_threads++;
     }
   }
+  // Check for non-unique handles
+  for (auto i: device_thread_handles) {
+    for (auto j: device_thread_handles) {
+      int value;
+      if (i == j) {
+        continue;
+      }
+      ompd_rc_t ret = functions->ompd_thread_handle_compare(i, j, &value);
+      if (!value) {
+        printf("FOUND NON-UNIQUE THREAD HANDLES FOR DIFFERENT THREADS\n");
+      }
+    }
+  }
+
+  // release thread handles
+  for (auto i: device_thread_handles) {
+    functions->ompd_release_thread_handle(i);
+  }
 
   if (last_state != -1) {
-    printf("    (%i,%i,%i)    %i\n", last_coords.threadIdx.x, last_coords.threadIdx.y, last_coords.threadIdx.z, last_state);
+    printf("  (%li,0,0)  %s\n", last_coords.threadIdx.x, cuda_state_names[last_state]);
   }
 
   if (cuda.threads.size() != 0) {
@@ -329,7 +362,7 @@ const char* OMPDLevels::toString() const
 
 
 void OMPDCallback::execute() const
-{ 
+{
   ompd_rc_t ret;
 
   if (extraArgs.empty() || extraArgs[0] == "help")
@@ -337,7 +370,7 @@ void OMPDCallback::execute() const
     hout << "callbacks available: read_tmemory, ttype, ttype_sizeof, ttype_offset, tsymbol_addr" << endl
          << "Use \"odb callback <callback_name>\" to get more help on the usage" << endl;
     return;
-  }     
+  }
 
 /*ompd_rc_t CB_read_tmemory (
     ompd_context_t *context,
@@ -390,7 +423,7 @@ const char* OMPDCallback ::toString() const
 }
 
 void OMPDApi::execute() const
-{ 
+{
   ompd_rc_t ret;
 
   if (extraArgs.empty() || extraArgs[0] == "help")
@@ -398,7 +431,7 @@ void OMPDApi::execute() const
     hout << "API functions available: read_tmemory, ttype, ttype_sizeof, ttype_offset, tsymbol_addr" << endl
          << "Use \"odb api <function_name>\" to get more help on the usage" << endl;
     return;
-  }     
+  }
 
 //ompd_rc_t ompd_get_threads (
 //    ompd_context_t *context,    /* IN: debugger handle for the target */
@@ -416,8 +449,8 @@ void OMPDApi::execute() const
     }
     ompd_thread_handle_t ** thread_handle_array;
     int num_handles;
-    
-  
+
+
     ret = functions->ompd_get_threads (
           addrhandle, &thread_handle_array, &num_handles);
     if (ret != ompd_rc_ok)
@@ -425,7 +458,7 @@ void OMPDApi::execute() const
     sout << num_handles << " OpenMP threads:" << endl;
     for (int i=0; i<num_handles; i++){
       sout << "0x" << hex << thread_handle_array[i] << ", ";
-    }    
+    }
     sout << endl << "";
 #endif
     hout << "The 'odb api threads' command has been temporarily removed for the migration to a new ompd standard\n";
@@ -461,12 +494,12 @@ vector<ompd_parallel_handle_t*> odbGetParallelRegions(OMPDFunctionsPtr functions
   ompd_parallel_handle_t * parallel_handle;
   vector<ompd_parallel_handle_t*> parallel_handles;
   ret = functions->ompd_get_current_parallel_handle(
-          th, &parallel_handle);  
+          th, &parallel_handle);
   while(ret == ompd_rc_ok)
   {
     parallel_handles.push_back(parallel_handle);
     ret = functions->ompd_get_enclosing_parallel_handle(
-          parallel_handle, &parallel_handle);  
+          parallel_handle, &parallel_handle);
   }
   return parallel_handles;
 }
@@ -552,7 +585,7 @@ vector<ompd_task_handle_t*> odbGetTaskRegions(OMPDFunctionsPtr functions, ompd_t
   ompd_task_handle_t *task_handle;
   vector<ompd_task_handle_t*> task_handles;
   ret = functions->ompd_get_current_task_handle(
-          th, &task_handle);  
+          th, &task_handle);
   while(ret == ompd_rc_ok)
   {
     task_handles.push_back(task_handle);
@@ -577,7 +610,7 @@ vector<ompd_task_handle_t*> odbGetImplicitTasks(OMPDFunctionsPtr functions, ompd
 #if 0
   ompd_task_handle_t* task_handles;
   /*ret = */functions->ompd_get_task_in_parallel(
-          ph, &task_handles, &num_tasks);  
+          ph, &task_handles, &num_tasks);
   for(int i=0; i<num_tasks; i++)
   {
     return_handles.push_back(task_handles[i]);
@@ -588,14 +621,14 @@ vector<ompd_task_handle_t*> odbGetImplicitTasks(OMPDFunctionsPtr functions, ompd
 }
 
 void OMPDTest::execute() const
-{ 
+{
 //  ompd_rc_t ret;
 
   if (extraArgs.empty() || extraArgs[0] == "help")
   {
     hout << "Test suites available: threads, parallel, tasks" << endl;
     return;
-  }     
+  }
 
   if (extraArgs[0] == "threads")
   {
@@ -611,7 +644,7 @@ void OMPDTest::execute() const
     {
       auto parallel_h = odbGetParallelRegions(functions, thr_h);
       auto task_h = odbGetTaskRegions(functions, thr_h);
-      
+
       sout << "Thread handle: 0x" << hex << thr_h << endl << "Parallel: ";
       for(auto ph: parallel_h)
       {

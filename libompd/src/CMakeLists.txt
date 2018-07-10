@@ -1,7 +1,7 @@
 project (libompd)
 
 message( "LIBOMP_INCLUDE_DIR = ${LIBOMP_INCLUDE_DIR}" )
-add_library (ompd SHARED TargetValue.cpp omp-debug.cpp)
+add_library (ompd SHARED TargetValue.cpp omp-debug.cpp omp-state.cpp)
 
 add_dependencies(ompd omp) # ensure generated import library is created first
 

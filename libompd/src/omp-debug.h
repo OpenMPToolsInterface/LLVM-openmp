@@ -32,7 +32,6 @@ extern "C" {
 #define STR(x) STR_HELPER(x)
 
 #include "ompd.h"
-#include "ompd-private.h"
 
 /******************************************************************************
  * General helper functions
@@ -42,7 +41,7 @@ ompd_rc_t initTypeSizes(ompd_address_space_context_t *context);
 #ifdef __cplusplus
 }
 
-static const ompd_callbacks_t *callbacks = NULL;
+extern const ompd_callbacks_t *callbacks;
 
 class ompdAllocatable {
 public:
@@ -91,6 +90,7 @@ typedef struct _ompd_device_handle_s : public ompdAllocatable {
 
 typedef struct _ompd_thread_handle_s : public ompdAllocatable {
   ompd_address_space_handle_t *ah;
+  ompd_thread_context_t *thread_context;
   ompd_address_t th; /* target handle */
 } ompd_thread_handle_t;
 
