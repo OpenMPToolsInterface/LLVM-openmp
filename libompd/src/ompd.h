@@ -56,32 +56,6 @@ typedef struct ompd_address_t {
   ompd_addr_t address; /* target address in the segment */
 } ompd_address_t;
 
-#define OMPD_SEGMENT_UNSPECIFIED ((ompd_seg_t)0)
-#define OMPD_SEGMENT_TEXT ((ompd_seg_t)1)
-#define OMPD_SEGMENT_DATA ((ompd_seg_t)2)
-
-/**
- * The following definitions match with ptx information stored in DWARF
- */
-#define OMPD_SEGMENT_CUDA_PTX_UNSPECIFIED ((ompd_seg_t)0)
-#define OMPD_SEGMENT_CUDA_PTX_CODE ((ompd_seg_t)1)
-#define OMPD_SEGMENT_CUDA_PTX_REG ((ompd_seg_t)2)
-#define OMPD_SEGMENT_CUDA_PTX_SREG ((ompd_seg_t)3)
-#define OMPD_SEGMENT_CUDA_PTX_CONST ((ompd_seg_t)4)
-#define OMPD_SEGMENT_CUDA_PTX_GLOBAL ((ompd_seg_t)5)
-#define OMPD_SEGMENT_CUDA_PTX_LOCAL ((ompd_seg_t)6)
-#define OMPD_SEGMENT_CUDA_PTX_PARAM ((ompd_seg_t)7)
-#define OMPD_SEGMENT_CUDA_PTX_SHARED ((ompd_seg_t)8)
-#define OMPD_SEGMENT_CUDA_PTX_SURF ((ompd_seg_t)9)
-#define OMPD_SEGMENT_CUDA_PTX_TEX ((ompd_seg_t)10)
-#define OMPD_SEGMENT_CUDA_PTX_TEXSAMPLER ((ompd_seg_t)11)
-#define OMPD_SEGMENT_CUDA_PTX_GENERIC ((ompd_seg_t)12)
-#define OMPD_SEGMENT_CUDA_PTX_IPARAM ((ompd_seg_t)13)
-#define OMPD_SEGMENT_CUDA_PTX_OPARAM ((ompd_seg_t)14)
-#define OMPD_SEGMENT_CUDA_PTX_FRAME ((ompd_seg_t)15)
-#define OMPD_SEGMENT_CUDA_PTX_MAX ((ompd_seg_t)16)
-
-
 typedef uint64_t ompd_device_identifier_t;
 
 typedef enum ompd_device_kind_t {
@@ -131,6 +105,21 @@ typedef enum ompd_thread_id_kind_t {
   ompd_thread_id_winthread = 2,
   ompd_thread_id_cudalogical = 3
 } ompd_thread_id_kind_t;
+
+/**
+ * Scope for ICVs
+ */
+typedef enum ompd_scope_t {
+  ompd_scope_global = 1,
+  ompd_scope_address_space = 2,
+  ompd_scope_thread = 3,
+  ompd_scope_parallel = 4,
+  ompd_scope_implicit_task = 5,
+  ompd_scope_task = 6
+} ompd_scope_t;
+
+typedef uint64_t ompd_icv_id_t;
+const uint64_t ompd_icv_undefined = 0;
 
 /**
  * Return codes.
@@ -492,70 +481,6 @@ ompd_rc_t ompd_task_handle_compare(ompd_task_handle_t *task_handle_1,
                                    ompd_task_handle_t *task_handle_2,
                                    int *cmp_value);
 
-/* --- 5o Process and Thread Settings ----------------------------------------
- */
-
-/**
- * The functions ompd_get_num_procs and ompd_get_thread_limit are third-party
- * versions of the OpenMP runtime functions omp_get_num_procs and
- * omp_get_thread_limit.
- */
-
-ompd_rc_t
-ompd_get_num_procs(ompd_address_space_handle_t
-                       *addr_handle, /* IN: handle for the address space */
-                   ompd_word_t *val  /* OUT: number of processes */
-                   );
-
-ompd_rc_t
-ompd_get_thread_limit(ompd_address_space_handle_t
-                          *addr_handle, /* IN: handle for the address space */
-                      ompd_word_t *val  /* OUT: max number of threads */
-                      );
-
-/* --- 6 Parallel Region Inqueries ------------------------------------------ */
-/* --- 6.1 Settings --------------------------------------------------------- */
-
-/**
- * Determine the number of threads associated with a parallel region.
- */
-ompd_rc_t ompd_get_num_threads(
-    ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_word_t *val                         /* OUT: number of threads */
-    );
-
-/**
- * Determine the nesting depth of a particular parallel region instance.
- */
-ompd_rc_t ompd_get_level(
-    ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_word_t *val                         /* OUT: nesting level */
-    );
-
-/**
- * Determine the number of enclosing active parallel regions.
- *
- * ompd_get_active_level returns the number of nested, active parallel regions
- * enclosing the parallel region specified by its handle.
- */
-ompd_rc_t ompd_get_active_level(
-    ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_word_t *val                         /* OUT: active nesting level */
-    );
-
-/* --- 6.2 OMPT Parallel Region Inquiry Analogues ------------------------- */
-
-/**
- * The functions ompd_get_parallel_id and ompd_get_parallel_function are
- * third-party variants of their OMPT counterparts. The only difference between
- * the OMPD and OMPT versions is that the OMPD must supply a parallel region
- * handle to provide a context for these inquiries.
- */
-ompd_rc_t ompd_get_parallel_data(
-    ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_address_t *data                     /* OUT: OpenMP parallel id */
-    );
-
 /* --- 7 Thread Inquiry ----------------------------------------------------- */
 /* --- 7.1 Operating System Thread Inquiry ---------------------------------- */
 
@@ -584,16 +509,6 @@ ompd_rc_t ompd_get_thread_id(
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
     ompd_thread_id_kind_t kind, ompd_size_t sizeof_thread_id, void *thread_id);
 
-ompd_rc_t ompd_get_thread_data(
-    ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
-    ompd_address_t *data                 /* OUT: OpenMP thread data */
-    );
-
-ompd_rc_t ompd_get_thread_num(
-    ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
-    ompd_word_t *val /* OUT: number of the thread within the team */
-    );
-
 /* --- 7.2 OMPT Thread State Inquiry Analogue ------------------------------- */
 
 /**
@@ -620,64 +535,6 @@ ompd_rc_t ompd_get_state(
     );
 
 /* --- 8 Task Inquiry ------------------------------------------------------- */
-
-
-/* --- 8.2 Task Settings ---------------------------------------------------- */
-
-/**
- * Retrieve information from OpenMP tasks. These inquiry functions have no
- * counterparts in the OMPT interface as a first-party tool can call OpenMP
- * runtime inquiry functions directly. The only difference between the OMPD
- * inquiry operations and their counterparts in the OpenMP runtime is that the
- * OMPD version must supply a task handle to provide a context for each inquiry.
- */
-
-ompd_rc_t ompd_get_max_threads(
-    ompd_task_handle_t *task_handle, /* IN: OpenMP task handle*/
-    ompd_word_t *val                 /* OUT: max number of threads */
-    );
-
-ompd_rc_t
-ompd_in_parallel(ompd_task_handle_t *task_handle, /* IN: OpenMP task handle*/
-                 ompd_word_t *val /* OUT: Is OpenMP in parallel? */
-                 );
-
-ompd_rc_t
-ompd_in_final(ompd_task_handle_t *task_handle, /* IN: OpenMP task handle*/
-              ompd_word_t *val                 /* OUT: Is OpenMP in final? */
-              );
-
-ompd_rc_t
-ompd_get_dynamic(ompd_task_handle_t *task_handle, /* IN: OpenMP task handle*/
-                 ompd_word_t *val                 /* OUT: ? */
-                 );
-
-ompd_rc_t
-ompd_get_nested(ompd_task_handle_t *task_handle, /* IN: OpenMP task handle */
-                ompd_word_t *val                 /* OUT: Is this task nested? */
-                );
-
-ompd_rc_t ompd_get_max_active_levels(
-    ompd_task_handle_t *task_handle, /* IN: OpenMP task handle */
-    ompd_word_t *val                 /* OUT: max active levels */
-    );
-
-ompd_rc_t
-ompd_get_schedule(ompd_task_handle_t *task_handle, /* IN: OpenMP task handle*/
-                  ompd_word_t *kind,    /* OUT: Kind of OpenMP schedule*/
-                  ompd_word_t *modifier /* OUT: Schedunling modifier */
-                  );
-
-ompd_rc_t
-ompd_get_proc_bind(ompd_task_handle_t *task_handle, /* IN: OpenMP task handle*/
-                   ompd_word_t *bind /* OUT: Kind of proc-binding */
-                   );
-
-ompd_rc_t
-ompd_is_implicit(ompd_task_handle_t *task_handle, /* IN: OpenMP task handle*/
-                 ompd_word_t *val /* OUT: implicit=1, explicit=0 */
-                 );
-
 /* --- 8.3 OMPT Task Inquiry Analogues -------------------------------------- */
 
 /**
@@ -710,11 +567,6 @@ ompd_rc_t ompd_get_task_frame(
     ompd_address_t *sp_reentry       /* OUT: previous frame is user code */
     );
 
-ompd_rc_t
-ompd_get_task_data(ompd_task_handle_t *task_handle, /* IN: OpenMP task handle */
-                   ompd_address_t *task_data        /* OUT: OpenMP task ID */
-                   );
-
 /* --- 13 Display Control Variables ----------------------------------------- */
 
 /**
@@ -738,6 +590,21 @@ ompd_get_display_control_vars(ompd_address_space_handle_t *handle,   /* IN */
 ompd_rc_t ompd_release_display_control_vars(
     const char *const **control_var_values /* IN */
     );
+
+/* --- Internal Control Variables ------------------------------------------- */
+
+ompd_rc_t
+ompd_enumerate_icvs(ompd_address_space_handle_t *handle, ompd_icv_id_t current,
+                    ompd_icv_id_t *next_id, const char **next_icv_name,
+                    ompd_scope_t *next_scope, int *more);
+
+ompd_rc_t
+ompd_get_icv_from_scope(void *handle, ompd_scope_t scope, ompd_icv_id_t icv_id,
+                        ompd_word_t *icv_value);
+
+ompd_rc_t
+ompd_get_icv_string_from_scope(void *handle, ompd_scope_t scope,
+                               ompd_icv_id_t icv_id, const char **icv_string);
 
 #ifdef __cplusplus
 }
