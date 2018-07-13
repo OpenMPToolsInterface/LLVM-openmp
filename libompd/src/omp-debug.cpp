@@ -60,7 +60,7 @@ ompd_process_initialize(ompd_address_space_context_t
   if (!addrhandle)
     return ompd_rc_error;
   (*addrhandle)->context = context;
-  (*addrhandle)->kind = ompd_device_kind_host;
+  (*addrhandle)->kind = OMP_DEVICE_KIND_HOST;
 
   return ompd_rc_ok;
 }
@@ -149,7 +149,7 @@ ompd_rc_t ompd_device_initialize(
       if (!device_handle)
         return ompd_rc_error;
       (*device_handle)->context = device_context;
-      (*device_handle)->kind = ompd_device_kind_cuda;
+      (*device_handle)->kind = OMP_DEVICE_KIND_CUDA;
       (*device_handle)->id = (uint64_t)id;
       return ompd_rc_ok;
     }
@@ -248,7 +248,7 @@ ompd_rc_t ompd_get_current_parallel_handle(
 
   ompd_rc_t ret;
 
-  if (thread_handle->ah->kind == ompd_device_kind_cuda) {
+  if (thread_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
     ompd_address_t taddr;
     TValue ph = TValue(context, thread_context,
                        "omptarget_nvptx_threadPrivateContext",
@@ -677,7 +677,7 @@ ompd_rc_t ompd_get_parallel_data(
 ompd_rc_t
 ompd_get_thread_handle(ompd_address_space_handle_t
                            *addr_handle, /* IN: handle for the address space */
-                       ompd_thread_id_kind_t kind,
+                       ompd_thread_id_t kind,
                        ompd_size_t sizeof_thread_id, const void *thread_id,
                        ompd_thread_handle_t **thread_handle) {
   if (!addr_handle)
@@ -697,7 +697,7 @@ ompd_get_thread_handle(ompd_address_space_handle_t
 
   int tId;
 
-  if (kind == ompd_thread_id_cudalogical) {
+  if (kind == OMPD_THREAD_ID_CUDALOGICAL) {
     ompd_cudathread_coord_t *p = (ompd_cudathread_coord_t *)thread_id;
 
     // omptarget_nvptx_threadPrivateContext->topTaskDescr[p->threadIdx.x]->items.threadId
@@ -785,8 +785,8 @@ ompd_get_thread_handle(ompd_address_space_handle_t
 
 ompd_rc_t ompd_get_thread_id(
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
-    ompd_thread_id_kind_t kind, ompd_size_t sizeof_thread_id, void *thread_id) {
-  if (kind != ompd_thread_id_pthread && kind != ompd_thread_id_cudalogical)
+    ompd_thread_id_t kind, ompd_size_t sizeof_thread_id, void *thread_id) {
+  if (kind != OMPD_THREAD_ID_PTHREAD && kind != OMPD_THREAD_ID_CUDALOGICAL)
     return ompd_rc_bad_input;
   if (!thread_handle)
     return ompd_rc_stale_handle;
@@ -797,7 +797,7 @@ ompd_rc_t ompd_get_thread_id(
     return ompd_rc_stale_handle;
   ompd_rc_t ret;
 
-  if (kind != ompd_thread_id_cudalogical) {
+  if (kind != OMPD_THREAD_ID_CUDALOGICAL) {
     ret = ompd_rc_unsupported;
   } else {
     ompd_size_t size;
@@ -844,7 +844,7 @@ ompd_rc_t ompd_get_state(
   ompd_rc_t ret;
   assert(callbacks && "Callback table not initialized!");
 
-  if (thread_handle->ah->kind == ompd_device_kind_cuda) {
+  if (thread_handle->ah->kind == OMP_DEVICE_KIND_HOST) {
     if (wait_id)
       *wait_id = 0; //TODO: (mr) implement wait_ids in nvptx device rtl
     ret  = TValue(context, thread_handle->th)

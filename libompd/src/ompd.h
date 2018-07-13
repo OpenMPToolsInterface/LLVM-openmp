@@ -56,12 +56,9 @@ typedef struct ompd_address_t {
   ompd_addr_t address; /* target address in the segment */
 } ompd_address_t;
 
-typedef uint64_t ompd_device_identifier_t;
+typedef uint64_t omp_device_t;
 
-typedef enum ompd_device_kind_t {
-  ompd_device_kind_host = 1,
-  ompd_device_kind_cuda = 2
-} ompd_device_kind_t;
+typedef uint64_t ompd_thread_id_t;
 
 /**
  * Context handle.
@@ -89,22 +86,6 @@ typedef struct _ompd_thread_handle_s ompd_thread_handle_t;
 typedef struct _ompd_parallel_handle_s ompd_parallel_handle_t;
 typedef struct _ompd_task_handle_s ompd_task_handle_t;
 typedef struct _ompd_address_space_handle_s ompd_address_space_handle_t;
-
-/**
- * Other handles.
- */
-#define OMPD_THREAD_ID_PTHREAD 0
-#define OMPD_THREAD_ID_LWP 1
-#define OMPD_THREAD_ID_WINTHREAD 2
-#define OMPD_THREAD_ID_CUDALOGICAL 3
-#define OMPD_THREAD_ID_MAX 4
-
-typedef enum ompd_thread_id_kind_t {
-  ompd_thread_id_pthread = 0,
-  ompd_thread_id_lwp = 1,
-  ompd_thread_id_winthread = 2,
-  ompd_thread_id_cudalogical = 3
-} ompd_thread_id_kind_t;
 
 /**
  * Scope for ICVs
@@ -181,7 +162,7 @@ typedef ompd_rc_t (*ompd_callback_memory_free_fn_t)(
  * Get thread specific context.
  */
 typedef ompd_rc_t (*ompd_callback_get_thread_context_for_thread_id_fn_t)(
-    ompd_address_space_context_t *context, ompd_thread_id_kind_t kind,
+    ompd_address_space_context_t *context, ompd_thread_id_t kind,
     ompd_size_t sizeof_thread_id, const void *thread_id,
     ompd_thread_context_t **thread_context);
 
@@ -338,19 +319,6 @@ ompd_rc_t ompd_finalize(void);
 /* --- 4.1 Thread Handles --------------------------------------------------- */
 
 /**
- * Retrieve handles for all OpenMP threads.
- *
- * The ompd_get_threads operation enables the debugger to obtain handles for all
- * OpenMP threads. A successful invocation of ompd_get_threads returns a pointer
- * to a vector of handles in thread_handle_array and returns the number of
- * handles in num_handles. This call yields meaningful results only if all
- * OpenMP threads are stopped; otherwise, the OpenMP runtime may be creating
- * and/or destroying threads during or after the call, rendering useless the
- * vector of handles returned.
- */
-
-
-/**
  * Retrieve handles for OpenMP threads in a parallel region.
  *
  * The ompd_get_thread_in_parallel operation enables the debugger to obtain
@@ -495,7 +463,7 @@ ompd_rc_t ompd_task_handle_compare(ompd_task_handle_t *task_handle_1,
 ompd_rc_t ompd_get_thread_handle(
     ompd_address_space_handle_t
         *addr_handle, /* IN: handle for the address space */
-    ompd_thread_id_kind_t kind,
+    ompd_thread_id_t kind,
     ompd_size_t sizeof_thread_id, const void *thread_id,
     ompd_thread_handle_t **thread_handle /* OUT: OpenMP thread handle*/
     );
@@ -507,7 +475,7 @@ ompd_rc_t ompd_get_thread_handle(
  */
 ompd_rc_t ompd_get_thread_id(
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
-    ompd_thread_id_kind_t kind, ompd_size_t sizeof_thread_id, void *thread_id);
+    ompd_thread_id_t kind, ompd_size_t sizeof_thread_id, void *thread_id);
 
 /* --- 7.2 OMPT Thread State Inquiry Analogue ------------------------------- */
 

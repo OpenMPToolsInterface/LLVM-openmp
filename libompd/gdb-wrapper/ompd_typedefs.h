@@ -185,3 +185,18 @@ typedef ompd_rc_t (*ompd_get_state_fn_t) (
     ompd_wait_id_t *wait_id                 /* OUT: Wait ID */
   );
 
+typedef ompd_rc_t (*ompd_enumerate_icvs_fn_t) (
+    ompd_address_space_handle_t *handle,
+    ompd_icv_id_t current,
+    ompd_icv_id_t *next_id,
+    const char **next_icv_name,
+    ompd_scope_t *next_scope,
+    int *more
+  );
+
+typedef ompd_rc_t (*ompd_get_icv_from_scope_fn_t) (
+    void *handle,
+    ompd_scope_t scope,
+    ompd_icv_id_t icv_id,
+    ompd_word_t *icv_value
+  );

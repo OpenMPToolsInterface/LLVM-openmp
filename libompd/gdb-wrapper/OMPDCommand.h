@@ -28,6 +28,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <map>
 #include "ompd.h"
 #include "ompd_typedefs.h"
 //#include "ompd_test.h"
@@ -100,6 +101,8 @@ macro(ompd_get_proc_bind)*/ \
 macro(ompd_get_task_frame) \
 /*macro(ompd_get_task_id) */\
 macro(ompd_get_api_version) \
+macro(ompd_enumerate_icvs) \
+macro(ompd_get_icv_from_scope) \
 /*macro(ompd_get_version_string) \*/
 
 
@@ -136,6 +139,20 @@ FOREACH_OMPD_API_FN(OMPD_API_FUNCTION_POINTER_MEMBER)
 
 typedef std::shared_ptr<OMPDFunctions> OMPDFunctionsPtr;
 
+class OMPDIcvs
+{
+private:
+  OMPDFunctionsPtr functions;
+  std::map<std::string, std::pair<ompd_icv_id_t, ompd_scope_t>> availableIcvs;
+public:
+  OMPDIcvs(OMPDFunctionsPtr functions,
+           ompd_address_space_handle_t *addrhandle);
+  ompd_rc_t get(ompd_parallel_handle_t *handle, const char *name,
+                ompd_word_t *value);
+};
+
+typedef std::shared_ptr<OMPDIcvs> OMPDIcvsPtr;
+
 class OMPDCommand;
 
 class OMPDCommandFactory
@@ -143,6 +160,7 @@ class OMPDCommandFactory
 private:
   void * findFunctionInLibrary(const char *fun) const;
   OMPDFunctionsPtr functions = nullptr;
+  OMPDIcvsPtr icvs = nullptr;
 //   ompd_process_handle_t* prochandle = nullptr;
   ompd_address_space_handle_t* addrhandle = nullptr;
   OutputString out;
@@ -278,6 +296,26 @@ protected:
   OMPDTest(const OMPDFunctionsPtr &f, ompd_address_space_handle_t* ah, const std::vector<std::string>& args) : OMPDCommand(f, ah, args){};
 
   friend OMPDCommandFactory;
+};
+
+class OMPDParallelRegions : public OMPDCommand
+{
+  typedef std::map<ompd_parallel_handle_t *, std::vector<ompd_thread_handle_t *>> ParallelMap;
+public:
+  ~OMPDParallelRegions() {};
+  void execute() const;
+  const char *toString() const;
+protected:
+  OMPDParallelRegions(const OMPDFunctionsPtr &f,
+                      ompd_address_space_handle_t *ah, const OMPDIcvsPtr &icvs,
+                      const std::vector<std::string>& args)
+    : OMPDCommand(f, ah, args), icvs(icvs) {};
+
+  friend OMPDCommandFactory;
+private:
+  OMPDIcvsPtr icvs;
+  ompd_parallel_handle_t *parallel_handle_in_map(ompd_parallel_handle_t *handle,
+      std::map<ompd_parallel_handle_t *, std::vector<ompd_thread_handle_t *>>) const;
 };
 
 }

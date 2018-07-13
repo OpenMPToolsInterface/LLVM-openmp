@@ -79,8 +79,8 @@ typedef struct _ompd_process_handle_s : public ompdAllocatable {
 
 typedef struct _ompd_address_space_handle_s : public ompdAllocatable {
   ompd_address_space_context_t *context;
-  ompd_device_kind_t kind;
-  ompd_device_identifier_t id;
+  omp_device_t kind;
+  uint64_t id;
 } ompd_address_space_handle_t;
 
 typedef struct _ompd_device_handle_s : public ompdAllocatable {

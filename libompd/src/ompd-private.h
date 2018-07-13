@@ -93,25 +93,6 @@ typedef enum ompd_target_prim_types_t {
   ompd_type_max
 } ompd_target_prim_types_t;
 
-/**
- * Logical coordinates of OMP target device threads
- */
-typedef struct ompd_dim3_t {
-  ompd_word_t x;
-  ompd_word_t y;
-  ompd_word_t z;
-} ompd_dim3_t;
+#include "ompd_types.h"
 
-typedef struct ompd_cudathread_coord_t {
-  ompd_addr_t cudaDevId;
-  ompd_addr_t cudaContext;
-  ompd_addr_t warpSize;
-  ompd_addr_t gridId;
-  ompd_addr_t kernelId; // TODO (MJM) - for some reason, cuda-gdb doesn't work
-                        // with grids too well.
-  ompd_dim3_t gridDim;
-  ompd_dim3_t blockDim;
-  ompd_dim3_t blockIdx;
-  ompd_dim3_t threadIdx;
-} ompd_cudathread_coord_t;
 #endif /*SRC_OMPD_PRIVATE_H*/

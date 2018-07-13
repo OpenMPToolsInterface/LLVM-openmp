@@ -31,7 +31,7 @@ ompd_rc_t ompd_enumerate_states(
     ompd_word_t current_state, ompd_word_t *next_state,
     const char **next_state_name, ompd_word_t *more_enums) {
   ompd_rc_t ret;
-  if (address_space_handle->kind == ompd_device_kind_cuda) {
+  if (address_space_handle->kind == OMP_DEVICE_KIND_CUDA) {
     // We only support a small number of states for cuda devices
     *more_enums = 1;
     switch (current_state) {

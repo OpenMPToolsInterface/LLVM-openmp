@@ -25,18 +25,54 @@
 using namespace ompd_gdb;
 using namespace std;
 
-const char * ompd_state_names[512];
 extern OMPDHostContextPool * host_contextPool;
+
+/* --- OMPDIcvs ------------------------------------------------------------- */
+
+OMPDIcvs::OMPDIcvs(OMPDFunctionsPtr functions,
+                   ompd_address_space_handle_t *addrhandle)
+    : functions(functions) {
+  ompd_icv_id_t next_icv_id = ompd_icv_undefined;
+  int more = 1;
+  const char *next_icv_name_str;
+  ompd_scope_t next_scope;
+  ompd_rc_t ret = ompd_rc_ok;
+  while (more && ret == ompd_rc_ok) {
+    ret = functions->ompd_enumerate_icvs(addrhandle,
+                                         next_icv_id,
+                                         &next_icv_id,
+                                         &next_icv_name_str,
+                                         &next_scope,
+                                         &more);
+    if (ret == ompd_rc_ok) {
+      availableIcvs[next_icv_name_str] =
+          std::pair<ompd_icv_id_t, ompd_scope_t>(next_icv_id, next_scope);
+    }
+  }
+}
+
+
+ompd_rc_t OMPDIcvs::get(ompd_parallel_handle_t *handle, const char *name,
+                        ompd_word_t *value) {
+  ompd_icv_id_t icv;
+  ompd_scope_t scope;
+
+  auto &p = availableIcvs.at(name);
+  icv = p.first;
+  scope = p.second;
+
+  if (scope != ompd_scope_parallel) {
+    return ompd_rc_bad_input;
+  }
+
+  return functions->ompd_get_icv_from_scope((void *)handle, scope, icv, value);
+}
 
 /* --- OMPDCommandFactory --------------------------------------------------- */
 
 OMPDCommandFactory::OMPDCommandFactory()
 {
   functions = OMPDFunctionsPtr(new OMPDFunctions);
-
-#define ompd_state_macro(state, code) ompd_state_names[code] = #state;
-    FOREACH_OMP_STATE(ompd_state_macro)
-#undef ompd_state_macro
 
   // Load OMPD DLL and get a handle
 #ifdef ODB_LINUX
@@ -85,6 +121,8 @@ FOREACH_OMPD_API_FN(OMPD_FIND_API_FUNCTION)
   {
     out << "ERROR: could not initialize target process\n";
   }
+
+  icvs = OMPDIcvsPtr(new OMPDIcvs(functions, addrhandle));
 }
 
 OMPDCommandFactory::~OMPDCommandFactory()
@@ -128,7 +166,8 @@ OMPDCommand* OMPDCommandFactory::create(const char *str, const vector<string>& e
     return new OMPDApi(functions, addrhandle, extraArgs);
   else if (strcmp(str, "testapi") == 0)
     return new OMPDTest(functions, addrhandle, extraArgs);
-
+  else if (strcmp(str, "parallel") == 0)
+    return new OMPDParallelRegions(functions, addrhandle, icvs, extraArgs);
   return new OMPDNull;
 }
 
@@ -687,4 +726,78 @@ void OMPDTest::execute() const
 const char* OMPDTest::toString() const
 {
   return "odb api";
+}
+
+void OMPDParallelRegions::execute() const
+{
+  ompd_rc_t ret;
+  vector<ompd_thread_handle_t*> host_thread_handles;
+  // get all thread handles
+  auto thread_ids = getThreadIDsFromDebugger();
+  for(auto i: thread_ids) {
+    ompd_thread_handle_t* thread_handle;
+    ret = functions->ompd_get_thread_handle(
+        addrhandle, ompd_thread_id_pthread, sizeof(i.second),
+        &(i.second), &thread_handle);
+    if (ret == ompd_rc_ok)
+    {
+      host_thread_handles.push_back(thread_handle);
+    }
+  }
+
+  // get parallel handles for thread handles
+  ParallelMap host_parallel_handles;
+  for (auto t: host_thread_handles) {
+    ompd_parallel_handle_t *parallel_handle;
+    ret = functions->ompd_get_current_parallel_handle(t, &parallel_handle);
+    if (ret != ompd_rc_ok) {
+      continue;
+    }
+    ompd_parallel_handle_t *key = parallel_handle_in_map(parallel_handle,
+        host_parallel_handles);
+    if (key) {
+      host_parallel_handles[key].push_back(t);
+      functions->ompd_release_parallel_handle(parallel_handle);
+    } else {
+      host_parallel_handles[parallel_handle].push_back(t);
+    }
+  }
+
+  printf("HOST PARALLEL REGIONS\n");
+  printf("Parallel Handle   Num Threads   ICV Num Threads   ICV level   ICV active level\n");
+  printf("------------------------------------------------------------------------------\n");
+  for (auto &p: host_parallel_handles) {
+    ompd_word_t icv_num_threads, icv_level, icv_active_level;
+    icvs->get(p.first, "ompd-team-size-var", &icv_num_threads);
+    icvs->get(p.first, "levels-var", &icv_level);
+    icvs->get(p.first, "active-levels-var", &icv_active_level);
+    printf("%-15p   %-10zu   %-15llu   %-9llu   %llu\n", p.first, p.second.size(), icv_num_threads, icv_level, icv_active_level);
+  }
+
+  for (auto t: host_thread_handles) {
+    functions->ompd_release_thread_handle(t);
+  }
+  for (auto &p: host_parallel_handles) {
+    functions->ompd_release_parallel_handle(p.first);
+  }
+}
+
+const char *OMPDParallelRegions::toString() const
+{
+  return "odb parallel";
+}
+
+
+ompd_parallel_handle_t *OMPDParallelRegions::parallel_handle_in_map(ompd_parallel_handle_t *handle,
+    std::map<ompd_parallel_handle_t *, std::vector<ompd_thread_handle_t *>> parallel_handles) const
+{
+  for (ParallelMap::const_iterator iter = parallel_handles.cbegin();
+          iter != parallel_handles.cend(); iter++) {
+    int cmp;
+    functions->ompd_parallel_handle_compare(iter->first, handle, &cmp);
+    if (!cmp) {
+      return iter->first;
+    }
+  }
+  return NULL;
 }
