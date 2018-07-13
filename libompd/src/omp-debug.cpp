@@ -12,7 +12,6 @@
  */
 
 #define NDEBUG 1
-w
 
 #include "omp-debug.h"
 #include "omp.h"
@@ -249,12 +248,12 @@ ompd_rc_t ompd_get_current_parallel_handle(
 
   ompd_rc_t ret;
 
-  if (thread_handle->ah->kind == ompd_thread_id_cudalogical) {
+  if (thread_handle->ah->kind == ompd_device_kind_cuda) {
     ompd_address_t taddr;
     TValue ph = TValue(context, thread_context,
                        "omptarget_nvptx_threadPrivateContext",
-                       OMPD_SEGMENT_CUDA_PTX_SHARED)
-    ret = ph.getAddress(&taddr)
+                       OMPD_SEGMENT_CUDA_PTX_SHARED);
+    ret = ph.getAddress(&taddr);
     if (ret != ompd_rc_ok)
       return ret;
 
@@ -788,8 +787,6 @@ ompd_rc_t ompd_get_thread_id(
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
     ompd_thread_id_kind_t kind, ompd_size_t sizeof_thread_id, void *thread_id) {
   if (kind != ompd_thread_id_pthread && kind != ompd_thread_id_cudalogical)
-    return ompd_rc_bad_input;
-  if (thread_handle->ah->kind != kind)
     return ompd_rc_bad_input;
   if (!thread_handle)
     return ompd_rc_stale_handle;

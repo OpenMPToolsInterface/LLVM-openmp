@@ -3,7 +3,7 @@
 #include "omp-debug.h"
 #include <cstring>
 
-const char *get_ompd_state_name(ompd_word_t state) {
+static const char *get_ompd_state_name(ompd_word_t state) {
   switch (state) {
 #define ompd_state_macro(state, code) \
     case code: return #state ;
@@ -13,7 +13,7 @@ const char *get_ompd_state_name(ompd_word_t state) {
   }
 }
 
-const char *get_ompd_cuda_state_name(ompd_word_t state) {
+static const char *get_ompd_cuda_state_name(ompd_word_t state) {
   switch (state) {
     case omp_state_work_serial:
       return "omp_state_work_serial";
