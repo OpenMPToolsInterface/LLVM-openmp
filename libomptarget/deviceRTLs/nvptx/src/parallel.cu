@@ -412,6 +412,9 @@ EXTERN void __kmpc_serialized_parallel(kmp_Indent *loc, uint32_t global_tid) {
   // set new task descriptor as top
   omptarget_nvptx_threadPrivateContext->SetTopLevelTaskDescr(threadId,
                                                              newTaskDescr);
+#ifdef OMPD_SUPPORT
+  ompd_set_device_thread_state(omp_state_work_serial);
+#endif /*OMPD_SUPPORT*/
 }
 
 EXTERN void __kmpc_end_serialized_parallel(kmp_Indent *loc,
@@ -426,6 +429,9 @@ EXTERN void __kmpc_end_serialized_parallel(kmp_Indent *loc,
       threadId, currTaskDescr->GetPrevTaskDescr());
   // free
   SafeFree(currTaskDescr, (char *)"new seq parallel task");
+#ifdef OMPD_SUPPORT
+  ompd_set_device_thread_state(omp_state_work_parallel);
+#endif /*OMPD_SUPPORT*/
 }
 
 EXTERN uint16_t __kmpc_parallel_level(kmp_Indent *loc, uint32_t global_tid) {
