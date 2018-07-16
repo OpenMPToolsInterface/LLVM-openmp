@@ -66,9 +66,9 @@ ompd_process_initialize(ompd_address_space_context_t
 }
 
 ompd_rc_t
-ompd_get_openmp_version(ompd_address_space_handle_t
+ompd_get_omp_version(ompd_address_space_handle_t
                             *addr_handle, /* IN: handle for the address space */
-                        ompd_word_t *version) {
+                     ompd_word_t *version) {
   if (!addr_handle)
     return ompd_rc_stale_handle;
   ompd_address_space_context_t *context = addr_handle->context;
@@ -85,7 +85,7 @@ ompd_get_openmp_version(ompd_address_space_handle_t
   return ret;
 }
 
-ompd_rc_t ompd_get_openmp_version_string(
+ompd_rc_t ompd_get_omp_version_string(
     ompd_address_space_handle_t
         *addr_handle, /* IN: handle for the address space */
     const char **string) {

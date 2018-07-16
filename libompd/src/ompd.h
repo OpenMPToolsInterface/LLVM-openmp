@@ -56,8 +56,8 @@ typedef struct ompd_address_t {
   ompd_addr_t address; /* target address in the segment */
 } ompd_address_t;
 
+/* types for device and thread id KIND, not for the actual thread/device id */
 typedef uint64_t omp_device_t;
-
 typedef uint64_t ompd_thread_id_t;
 
 /**
@@ -255,12 +255,12 @@ typedef struct ompd_callbacks_t {
  * Call signatures from the debugger to the OMPD DLL.
  */
 
-/* --- 4 Initialization ----------------------------------------------------- */
+/* --- 4.1 Initialization --------------------------------------------------- */
 
 /**
  * The OMPD function ompd_get_version_string returns a descriptive string
  * describing an implementation of the OMPD library. The function
- * ompd_get_version_compatibility returns an integer code used to indicate the
+ * ompd_get_api_version returns an integer code used to indicate the
  * revision of the OMPD specification supported by an implementation of OMPD.
  */
 
@@ -281,27 +281,16 @@ ompd_initialize(ompd_word_t version,
                 const ompd_callbacks_t *table /* IN: callbacks table */
               );
 
+ompd_rc_t ompd_finalize(void);
+
+/* --- 4.2 Per Process Initialization and Finalization ---------------------- */
+
 ompd_rc_t
 ompd_process_initialize(ompd_address_space_context_t
                             *context, /* IN: debugger handle for the target */
                         ompd_address_space_handle_t *
                             *addrhandle /* OUT: ompd handle for the target */
                         );
-
-ompd_rc_t
-ompd_get_openmp_version(ompd_address_space_handle_t
-                            *addr_handle, /* IN: handle for the address space */
-                        ompd_word_t *version);
-
-ompd_rc_t ompd_get_openmp_version_string(
-    ompd_address_space_handle_t
-        *addr_handle, /* IN: handle for the address space */
-    const char **string);
-
-ompd_rc_t ompd_release_address_space_handle(
-    ompd_address_space_handle_t
-        *addr_handle /* IN: handle for the address space */
-    );
 
 ompd_rc_t ompd_device_initialize(
     ompd_address_space_handle_t *addr_handle,    /* IN: handle for the address space */
@@ -312,11 +301,24 @@ ompd_rc_t ompd_device_initialize(
     ompd_address_space_handle_t **device_handle
     );
 
-ompd_rc_t ompd_finalize(void);
+ompd_rc_t ompd_release_address_space_handle(
+    ompd_address_space_handle_t
+        *addr_handle /* IN: handle for the address space */
+    );
 
-/* --- 4 Handle Management -------------------------------------------------- */
+/* --- 4.4 Address Space Information ---------------------------------------- */
 
-/* --- 4.1 Thread Handles --------------------------------------------------- */
+ompd_rc_t
+ompd_get_omp_version(ompd_address_space_handle_t
+                            *addr_handle, /* IN: handle for the address space */
+                        ompd_word_t *version);
+
+ompd_rc_t ompd_get_omp_version_string(
+    ompd_address_space_handle_t
+        *addr_handle, /* IN: handle for the address space */
+    const char **string);
+
+/* --- 4.5 Thread Handles --------------------------------------------------- */
 
 /**
  * Retrieve handles for OpenMP threads in a parallel region.
@@ -336,13 +338,38 @@ ompd_rc_t ompd_get_thread_in_parallel(
     ompd_thread_handle_t **thread_handle /* OUT: handle */
     );
 
+/**
+ * Obtain an OpenMP thread handle and the internal OS thread handle for the
+ * selected (context) thread.
+ * If the function returns ompd_rc_ok then the operating system thread
+ * corresponds to an OpenMP thread and the thread_handle is initialized. The
+ * value of thread_handle ans os_thread is meaningful only to the OpenMP runtime
+ * system.
+ */
+ompd_rc_t ompd_get_thread_handle(
+    ompd_address_space_handle_t
+        *addr_handle, /* IN: handle for the address space */
+    ompd_thread_id_t kind,
+    ompd_size_t sizeof_thread_id, const void *thread_id,
+    ompd_thread_handle_t **thread_handle /* OUT: OpenMP thread handle*/
+    );
+
 ompd_rc_t ompd_release_thread_handle(ompd_thread_handle_t *thread_handle);
 
 ompd_rc_t ompd_thread_handle_compare(ompd_thread_handle_t *thread_handle_1,
                                      ompd_thread_handle_t *thread_handle_2,
                                      int *cmp_value);
 
-/* --- 4.2 Parallel Region Handles------------------------------------------- */
+/**
+ * Obtain the OS thread handle for an OpenMP thread handle.
+ * this might change over time in case virtual openmp threads migrate between
+ * OS threads.
+ */
+ompd_rc_t ompd_get_thread_id(
+    ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
+    ompd_thread_id_t kind, ompd_size_t sizeof_thread_id, void *thread_id);
+
+/* --- 4.6 Parallel Region Handles------------------------------------------- */
 
 /**
  * Retrieve the handle for the innermost patallel region for an OpenMP thread.
@@ -395,7 +422,7 @@ ompd_parallel_handle_compare(ompd_parallel_handle_t *parallel_handle_1,
                              ompd_parallel_handle_t *parallel_handle_2,
                              int *cmp_value);
 
-/* --- 4.3 Task Handles ----------------------------------------------------- */
+/* --- 4.7 Task Handles ----------------------------------------------------- */
 
 /**
  * Retrieve the handle for the innermost task for an OpenMP thread.
@@ -449,61 +476,11 @@ ompd_rc_t ompd_task_handle_compare(ompd_task_handle_t *task_handle_1,
                                    ompd_task_handle_t *task_handle_2,
                                    int *cmp_value);
 
-/* --- 7 Thread Inquiry ----------------------------------------------------- */
-/* --- 7.1 Operating System Thread Inquiry ---------------------------------- */
-
-/**
- * Obtain an OpenMP thread handle and the internal OS thread handle for the
- * selected (context) thread.
- * If the function returns ompd_rc_ok then the operating system thread
- * corresponds to an OpenMP thread and the thread_handle is initialized. The
- * value of thread_handle ans os_thread is meaningful only to the OpenMP runtime
- * system.
- */
-ompd_rc_t ompd_get_thread_handle(
-    ompd_address_space_handle_t
-        *addr_handle, /* IN: handle for the address space */
-    ompd_thread_id_t kind,
-    ompd_size_t sizeof_thread_id, const void *thread_id,
-    ompd_thread_handle_t **thread_handle /* OUT: OpenMP thread handle*/
-    );
-
-/**
- * Obtain the OS thread handle for an OpenMP thread handle.
- * this might change over time in case virtual openmp threads migrate between
- * OS threads.
- */
-ompd_rc_t ompd_get_thread_id(
-    ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
-    ompd_thread_id_t kind, ompd_size_t sizeof_thread_id, void *thread_id);
-
-/* --- 7.2 OMPT Thread State Inquiry Analogue ------------------------------- */
-
-/**
- * Get the state of a thread. This can use OMPT state data structure to define
- * different states of threads (e.g., idle, working, or barrier, etc) and what
- * entity cased this state (e.g., address of a lock);
- *
-   * The function ompd_get_state is a third-party version of ompt_get_state. The
- * only difference between the OMPD and OMPT counterparts is that the OMPD
- * version must supply a thread handle to provide a context for this inquiry.
- */
-ompd_rc_t ompd_enumerate_states (
-    ompd_address_space_handle_t *address_space_handle,
-    ompd_word_t current_state,
-    ompd_word_t *next_state,
-    const char **next_state_name,
-    ompd_word_t *more_enums
-    );
-
-ompd_rc_t ompd_get_state(
-    ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
-    ompd_word_t *state,                  /* OUT: State of this thread */
-    ompd_wait_id_t *wait_id              /* OUT: Wait ID */
-    );
-
-/* --- 8 Task Inquiry ------------------------------------------------------- */
-/* --- 8.3 OMPT Task Inquiry Analogues -------------------------------------- */
+/*
+ompd_rc_t ompd_get_task_function(
+    ompd_task_handle_t *task_handle,
+    ompd_address_t *entry_point);
+*/
 
 /**
  * The functions defined here are third-party versions of ompt_get_task_frame
@@ -535,7 +512,31 @@ ompd_rc_t ompd_get_task_frame(
     ompd_address_t *sp_reentry       /* OUT: previous frame is user code */
     );
 
-/* --- 13 Display Control Variables ----------------------------------------- */
+
+/**
+ * Get the state of a thread. This can use OMPT state data structure to define
+ * different states of threads (e.g., idle, working, or barrier, etc) and what
+ * entity cased this state (e.g., address of a lock);
+ *
+   * The function ompd_get_state is a third-party version of ompt_get_state. The
+ * only difference between the OMPD and OMPT counterparts is that the OMPD
+ * version must supply a thread handle to provide a context for this inquiry.
+ */
+ompd_rc_t ompd_enumerate_states (
+    ompd_address_space_handle_t *address_space_handle,
+    ompd_word_t current_state,
+    ompd_word_t *next_state,
+    const char **next_state_name,
+    ompd_word_t *more_enums
+    );
+
+ompd_rc_t ompd_get_state(
+    ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
+    ompd_word_t *state,                  /* OUT: State of this thread */
+    ompd_wait_id_t *wait_id              /* OUT: Wait ID */
+    );
+
+/* --- 4.8 Display Control Variables ---------------------------------------- */
 
 /**
  * Using the ompd_display_control_vars function, the debugger can extract a
@@ -559,7 +560,7 @@ ompd_rc_t ompd_release_display_control_vars(
     const char *const **control_var_values /* IN */
     );
 
-/* --- Internal Control Variables ------------------------------------------- */
+/* --- 4.9 Internal Control Variables --------------------------------------- */
 
 ompd_rc_t
 ompd_enumerate_icvs(ompd_address_space_handle_t *handle, ompd_icv_id_t current,
