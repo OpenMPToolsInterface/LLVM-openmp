@@ -1500,7 +1500,7 @@ int __kmp_fork_call(ident_t *loc, int gtid,
 
 #if OMPT_SUPPORT
     if (ompt_enabled.enabled) {
-      if (ompt_enabled.ompt_callback_parallel_begin) {
+      if (ompt_enabled.ompt_callback_parallel_begin && ap) {
         int team_size = master_set_numthreads
                             ? master_set_numthreads
                             : get__nproc_2(parent_team, master_tid);
@@ -2583,7 +2583,7 @@ void __kmp_join_call(ident_t *loc, int gtid
   __kmp_release_bootstrap_lock(&__kmp_forkjoin_lock);
 
 #if OMPT_SUPPORT
-  if (ompt_enabled.enabled) {
+  if (ompt_enabled.enabled && !exit_teams) {
     __kmp_join_ompt(gtid, master_th, parent_team, parallel_data, fork_context,
                     codeptr);
   }
