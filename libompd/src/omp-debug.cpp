@@ -25,11 +25,10 @@
 
 const ompd_callbacks_t *callbacks = nullptr;
 ompd_device_type_sizes_t type_sizes;
-uint64_t ompd_state;
 
 /* --- OMPD functions ------------------------------------------------------- */
 
-/* --- 3 Initialization ----------------------------------------------------- */
+/* --- 1 Initialization ----------------------------------------------------- */
 
 ompd_rc_t ompd_initialize(ompd_word_t version, const ompd_callbacks_t *table) {
   ompd_rc_t ret = table ? ompd_rc_ok : ompd_rc_bad_input;
@@ -158,10 +157,7 @@ ompd_rc_t ompd_device_initialize(
   return ompd_rc_unavailable;
 }
 
-
-/* --- 4 Handle Management -------------------------------------------------- */
-
-/* --- 4.1 Thread Handles --------------------------------------------------- */
+/* --- 4.5 Thread Handles --------------------------------------------------- */
 
 /* thread_handle is of type (kmp_base_info_t) */
 
@@ -227,7 +223,7 @@ ompd_rc_t ompd_thread_handle_compare(ompd_thread_handle_t *thread_handle_1,
   return ompd_rc_ok;
 }
 
-/* --- 4.2 Parallel Region Handles------------------------------------------- */
+/* --- 4.6 Parallel Region Handles------------------------------------------- */
 
 /* parallel_handle is of type (kmp_base_team_t)*/
 
@@ -422,7 +418,7 @@ ompd_parallel_handle_compare(ompd_parallel_handle_t *parallel_handle_1,
   return ompd_rc_ok;
 }
 
-/* --- 4.3 Task Handles ----------------------------------------------------- */
+/* --- 4.7 Task Handles ----------------------------------------------------- */
 
 /* task_handle is of type (kmp_taskdata_t) */
 
@@ -1011,7 +1007,7 @@ ompd_rc_t ompd_get_task_function(
 }
 #endif
 
-/* --- 9 OMPD Version and Compatibility Information ------------------------- */
+/* --- --- OMPD Version and Compatibility Information ----------------------- */
 
 ompd_rc_t ompd_get_api_version(ompd_word_t *version) {
   *version = OMPD_VERSION;
@@ -1029,7 +1025,7 @@ ompd_get_api_version_string(const char **string /* OUT: OMPD version string */
   return ompd_rc_ok;
 }
 
-/* --- 12 Display Control Variables ----------------------------------------- */
+/* --- 4.8 Display Control Variables ---------------------------------------- */
 
 ompd_rc_t
 ompd_get_display_control_vars(ompd_address_space_handle_t *handle,
