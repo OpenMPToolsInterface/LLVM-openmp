@@ -840,7 +840,7 @@ ompd_rc_t ompd_get_state(
   ompd_rc_t ret;
   assert(callbacks && "Callback table not initialized!");
 
-  if (thread_handle->ah->kind == OMP_DEVICE_KIND_HOST) {
+  if (thread_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
     if (wait_id)
       *wait_id = 0; //TODO: (mr) implement wait_ids in nvptx device rtl
     ret  = TValue(context, thread_handle->th)
