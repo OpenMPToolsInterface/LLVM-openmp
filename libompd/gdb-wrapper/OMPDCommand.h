@@ -58,52 +58,26 @@ macro(ompd_device_initialize) \
 macro(ompd_release_address_space_handle) \
 macro(ompd_initialize) \
 macro(ompd_finalize) \
-/*macro(ompd_get_threads) */\
 macro(ompd_get_thread_in_parallel) \
 macro(ompd_release_thread_handle) \
 macro(ompd_thread_handle_compare) \
 macro(ompd_get_thread_id) \
-/*macro(ompd_get_top_parallel_region)*/ \
 macro(ompd_get_current_parallel_handle) \
 macro(ompd_get_enclosing_parallel_handle) \
-/*macro(ompd_get_task_enclosing_parallel_handle) */\
 macro(ompd_release_parallel_handle) \
 macro(ompd_parallel_handle_compare) \
-/*macro(ompd_get_top_task_region) \
-macro(ompd_get_ancestor_task_region) \
-macro(ompd_get_implicit_task_in_parallel) */\
 macro(ompd_get_current_task_handle) \
 macro(ompd_get_generating_task_handle) \
-/*macro(ompd_get_scheduling_task_handle)*/ \
 macro(ompd_get_task_in_parallel) \
 macro(ompd_release_task_handle) \
 macro(ompd_task_handle_compare) \
-/*macro(ompd_get_num_procs) \
-macro(ompd_get_thread_limit) \
-macro(ompd_get_num_threads) \
-macro(ompd_get_level) \
-macro(ompd_get_active_level) \
-macro(ompd_get_parallel_id) \
-macro(ompd_get_parallel_function) */\
 macro(ompd_get_thread_handle) \
-/*macro(ompd_get_osthread)*/ \
 macro(ompd_enumerate_states) \
 macro(ompd_get_state) \
-/*macro(ompd_get_max_threads) \
-macro(ompd_get_thread_num) \
-macro(ompd_in_parallel) \
-macro(ompd_in_final) \
-macro(ompd_get_dynamic) \
-macro(ompd_get_nested) \
-macro(ompd_get_max_active_levels) \
-macro(ompd_get_schedule) \
-macro(ompd_get_proc_bind)*/ \
 macro(ompd_get_task_frame) \
-/*macro(ompd_get_task_id) */\
 macro(ompd_get_api_version) \
 macro(ompd_enumerate_icvs) \
 macro(ompd_get_icv_from_scope) \
-/*macro(ompd_get_version_string) \*/
 
 
 namespace ompd_gdb {
@@ -128,12 +102,6 @@ typedef struct
 #define OMPD_API_FUNCTION_POINTER_MEMBER(FN) FN##_fn_t FN = nullptr;
 FOREACH_OMPD_API_FN(OMPD_API_FUNCTION_POINTER_MEMBER)
 #undef OMPD_API_FUNCTION_POINTER_MEMBER
-
-/*  ompd_rc_t (*ompd_initialize) (ompd_callbacks_t *) = nullptr;
-  ompd_get_thread_handle_fn_t ompd_get_thread_handle = nullptr;
-  ompd_nesting_level_fn_t ompd_nesting_level = nullptr;
-  ompd_read_tmemory_fn_t ompd_read_tmemory = nullptr;
-*/
 
 } OMPDFunctions;
 
@@ -252,12 +220,14 @@ protected:
 
 class OMPDLevels : public OMPDCommand
 {
+  OMPDIcvsPtr icvs;
 public:
   ~OMPDLevels(){};
   void execute() const;
   const char* toString() const;
 protected:
-  OMPDLevels(const OMPDFunctionsPtr &f, ompd_address_space_handle_t* ah, const std::vector<std::string>& args) : OMPDCommand(f, ah, args){};
+  OMPDLevels(const OMPDFunctionsPtr &f, ompd_address_space_handle_t* ah, const OMPDIcvsPtr &icvs, const std::vector<std::string>& args)
+      : OMPDCommand(f, ah, args), icvs(icvs) {};
 
   friend OMPDCommandFactory;
 };

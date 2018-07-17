@@ -159,7 +159,7 @@ OMPDCommand* OMPDCommandFactory::create(const char *str, const vector<string>& e
   else if (strcmp(str, "threads") == 0)
     return new OMPDThreads(functions, addrhandle, extraArgs);
   else if (strcmp(str, "levels") == 0)
-    return new OMPDLevels(functions, addrhandle, extraArgs);
+    return new OMPDLevels(functions, addrhandle, icvs, extraArgs);
   else if (strcmp(str, "callback") == 0)
     return new OMPDCallback(functions, addrhandle, extraArgs);
   else if (strcmp(str, "api") == 0)
@@ -365,30 +365,28 @@ const char* OMPDThreads::toString() const
 
 void OMPDLevels::execute() const
 {
-/*  ompd_size_t num_os_threads;
-  ompd_rc_t ret = CB_num_os_threads(contextPool->getGlobalOmpdContext(), &num_os_threads);
-  assert(ret==ompd_rc_ok && "Error calling OMPD!");
-  ompd_osthread_t* osThreads =  (ompd_osthread_t*)
-      malloc(sizeof(ompd_osthread_t)*num_os_threads);
-  ret = CB_get_os_threads (contextPool->getGlobalOmpdContext(),  &num_os_threads, &osThreads);
-  assert(ret==ompd_rc_ok && "Error calling OMPD!");
-
+  ompd_rc_t ret;
   printf("\n");
   printf("Thread_handle     Nesting_level\n");
   printf("-------------------------------\n");
-  for (size_t i=0; i < num_os_threads; ++i)
+  for (auto i: getThreadIDsFromDebugger())
   {
-    ompd_thread_handle_t thread_handle;
+    ompd_thread_handle_t *thread_handle;
+    ompd_parallel_handle_t *parallel_handle;
     ret = functions->ompd_get_thread_handle(
-            contextPool->getGlobalOmpdContext(), &(osThreads[i]), &thread_handle);
+        addrhandle, ompd_thread_id_pthread, sizeof(i.second) ,&(i.second), &thread_handle);
+    if (ret != ompd_rc_ok) {
+      continue;
+    }
+    ret = functions->ompd_get_current_parallel_handle(thread_handle,
+                                                      &parallel_handle);
     if (ret == ompd_rc_ok)
     {
-      ompd_tword_t level=0;
-      ret = functions->ompd_nesting_level(
-          contextPool->getGlobalOmpdContext(), &thread_handle, &level);
-      printf("%-12u      %ld\n", (unsigned int)thread_handle, level);
+      ompd_word_t level=0;
+      icvs->get(parallel_handle, "levels-var", &level);
+      printf("%-12p      %ld\n", thread_handle, level);
     }
-  }*/
+  }
 }
 
 const char* OMPDLevels::toString() const
@@ -731,35 +729,21 @@ const char* OMPDTest::toString() const
 void OMPDParallelRegions::execute() const
 {
   ompd_rc_t ret;
-  vector<ompd_thread_handle_t*> host_thread_handles;
-  // get all thread handles
-  auto thread_ids = getThreadIDsFromDebugger();
-  for(auto i: thread_ids) {
-    ompd_thread_handle_t* thread_handle;
-    ret = functions->ompd_get_thread_handle(
-        addrhandle, ompd_thread_id_pthread, sizeof(i.second),
-        &(i.second), &thread_handle);
-    if (ret == ompd_rc_ok)
-    {
-      host_thread_handles.push_back(thread_handle);
-    }
-  }
+  auto host_thread_handles = odbGetThreadHandles(addrhandle, functions);
 
   // get parallel handles for thread handles
   ParallelMap host_parallel_handles;
   for (auto t: host_thread_handles) {
-    ompd_parallel_handle_t *parallel_handle;
-    ret = functions->ompd_get_current_parallel_handle(t, &parallel_handle);
-    if (ret != ompd_rc_ok) {
-      continue;
-    }
-    ompd_parallel_handle_t *key = parallel_handle_in_map(parallel_handle,
-        host_parallel_handles);
-    if (key) {
-      host_parallel_handles[key].push_back(t);
-      functions->ompd_release_parallel_handle(parallel_handle);
-    } else {
-      host_parallel_handles[parallel_handle].push_back(t);
+    for (auto parallel_handle: odbGetParallelRegions(functions, t))
+    {
+      ompd_parallel_handle_t *key = parallel_handle_in_map(
+          parallel_handle, host_parallel_handles);
+      if (key) {
+        host_parallel_handles[key].push_back(t);
+        functions->ompd_release_parallel_handle(parallel_handle);
+      } else {
+        host_parallel_handles[parallel_handle].push_back(t);
+      }
     }
   }
 
@@ -771,7 +755,7 @@ void OMPDParallelRegions::execute() const
     icvs->get(p.first, "ompd-team-size-var", &icv_num_threads);
     icvs->get(p.first, "levels-var", &icv_level);
     icvs->get(p.first, "active-levels-var", &icv_active_level);
-    printf("%-15p   %-10zu   %-15llu   %-9llu   %llu\n", p.first, p.second.size(), icv_num_threads, icv_level, icv_active_level);
+    printf("%-15p   %-10zu   %-15ld   %-9ld   %ld\n", p.first, p.second.size(), icv_num_threads, icv_level, icv_active_level);
   }
 
   for (auto t: host_thread_handles) {
