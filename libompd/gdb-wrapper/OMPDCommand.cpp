@@ -732,18 +732,19 @@ void OMPDParallelRegions::execute() const
   auto host_thread_handles = odbGetThreadHandles(addrhandle, functions);
 
   // get parallel handles for thread handles
-  ParallelMap host_parallel_handles;
+  //ParallelMap host_parallel_handles;
+  auto cmp_fn = [this](const ompd_parallel_handle_t *a, const ompd_parallel_handle_t *b){
+                     int cmp = 0;
+                     this->functions->ompd_parallel_handle_compare((ompd_parallel_handle_t*)a, (ompd_parallel_handle_t*)b, &cmp);
+                     return cmp < 0;
+                   };
+  std::map<ompd_parallel_handle_t *,
+                   std::vector<ompd_thread_handle_t *>,
+                   decltype(cmp_fn)> host_parallel_handles(cmp_fn);
   for (auto t: host_thread_handles) {
     for (auto parallel_handle: odbGetParallelRegions(functions, t))
     {
-      ompd_parallel_handle_t *key = parallel_handle_in_map(
-          parallel_handle, host_parallel_handles);
-      if (key) {
-        host_parallel_handles[key].push_back(t);
-        functions->ompd_release_parallel_handle(parallel_handle);
-      } else {
-        host_parallel_handles[parallel_handle].push_back(t);
-      }
+      host_parallel_handles[parallel_handle].push_back(t);
     }
   }
 
@@ -769,19 +770,4 @@ void OMPDParallelRegions::execute() const
 const char *OMPDParallelRegions::toString() const
 {
   return "odb parallel";
-}
-
-
-ompd_parallel_handle_t *OMPDParallelRegions::parallel_handle_in_map(ompd_parallel_handle_t *handle,
-    std::map<ompd_parallel_handle_t *, std::vector<ompd_thread_handle_t *>> parallel_handles) const
-{
-  for (ParallelMap::const_iterator iter = parallel_handles.cbegin();
-          iter != parallel_handles.cend(); iter++) {
-    int cmp;
-    functions->ompd_parallel_handle_compare(iter->first, handle, &cmp);
-    if (!cmp) {
-      return iter->first;
-    }
-  }
-  return NULL;
 }

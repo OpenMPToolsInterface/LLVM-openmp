@@ -270,7 +270,6 @@ protected:
 
 class OMPDParallelRegions : public OMPDCommand
 {
-  typedef std::map<ompd_parallel_handle_t *, std::vector<ompd_thread_handle_t *>> ParallelMap;
 public:
   ~OMPDParallelRegions() {};
   void execute() const;
@@ -279,13 +278,11 @@ protected:
   OMPDParallelRegions(const OMPDFunctionsPtr &f,
                       ompd_address_space_handle_t *ah, const OMPDIcvsPtr &icvs,
                       const std::vector<std::string>& args)
-    : OMPDCommand(f, ah, args), icvs(icvs) {};
+    : OMPDCommand(f, ah, args), icvs(icvs) {}
 
   friend OMPDCommandFactory;
 private:
   OMPDIcvsPtr icvs;
-  ompd_parallel_handle_t *parallel_handle_in_map(ompd_parallel_handle_t *handle,
-      std::map<ompd_parallel_handle_t *, std::vector<ompd_thread_handle_t *>>) const;
 };
 
 }
