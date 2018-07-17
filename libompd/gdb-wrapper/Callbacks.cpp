@@ -77,14 +77,14 @@ ompd_rc_t CB_dmemory_free (
 
 ompd_rc_t CB_thread_context (
     ompd_address_space_context_t *context,
-    ompd_thread_id_kind_t          kind,
+    ompd_thread_id_t             kind,
     ompd_size_t                   sizeof_osthread,
     const void*                   osthread,
     ompd_thread_context_t **tcontext
     )
 {
   ompd_rc_t ret = context ? ompd_rc_ok : ompd_rc_stale_handle;
-  if (kind == ompd_thread_id_cudalogical) {
+  if (kind == OMPD_THREAD_ID_CUDALOGICAL) {
     *tcontext = ((OMPDContext*)context)->getContextForThread((CudaThread*)osthread);
   }
   else {

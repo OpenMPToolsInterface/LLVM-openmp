@@ -1,12 +1,14 @@
 #include "ompd.h"
 
-/* this should be somewhere else*/
-typedef uint64_t omp_device_t;
-typedef ompd_thread_id_kind_t ompd_thread_id_t;
 
 /*  4.3.4.1
  * Global initialization and finalization
  */
+
+// TODO: (mr) I dont have time to change every thread id kind, so this is some compat stuff
+#define ompd_thread_id_pthread OMPD_THREAD_ID_PTHREAD
+#define ompd_thread_id_cudalogical OMPD_THREAD_ID_CUDALOGICAL
+#define ompd_device_kind_cuda OMP_DEVICE_KIND_CUDA
 
 typedef ompd_rc_t (*ompd_initialize_fn_t) (
   ompd_word_t api_version,
