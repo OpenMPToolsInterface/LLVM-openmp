@@ -23,13 +23,13 @@ OMPD_FOREACH_SIZEOF(ompd_declare_sizeof)
 #undef ompd_declare_sizeof
 
 const char * * ompd_dll_locations=NULL;
-  const char * ompd_my_dll_locations[2] = {"libompd_intel.so",NULL};
-  uint64_t ompd_state=0;
+const char * ompd_my_dll_locations[2] = {"libompd.so",NULL};
+uint64_t ompd_state=0;
 
-  int ompd_rtl_version = 7;
+int ompd_rtl_version = 7;
 
-  void ompd_init()
-  {
+void ompd_init()
+{
     
   static int ompd_initialized = 0;
 

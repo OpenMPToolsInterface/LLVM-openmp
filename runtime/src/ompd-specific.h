@@ -69,6 +69,8 @@ OMPD_ACCESS(kmp_taskdata_t,       td_icvs) \
 OMPD_ACCESS(kmp_taskdata_t,       td_parent) \
 OMPD_ACCESS(kmp_taskdata_t,       td_team) \
 \
+OMPD_ACCESS(kmp_task_t,           routine) \
+\
 OMPD_ACCESS(kmp_team_p,           t) \
 \
 OMPD_ACCESS(ompt_task_info_t,     frame) \
@@ -113,6 +115,7 @@ typedef uint64_t ompd_cuda_context_ptr_t;
 #define OMPD_FOREACH_SIZEOF(OMPD_SIZEOF) \
 OMPD_SIZEOF(kmp_info_t) \
 OMPD_SIZEOF(kmp_taskdata_t) \
+OMPD_SIZEOF(kmp_task_t) \
 OMPD_SIZEOF(kmp_tasking_flags_t) \
 OMPD_SIZEOF(kmp_thread_t) \
 OMPD_SIZEOF(ompt_data_t) \

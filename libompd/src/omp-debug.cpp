@@ -960,7 +960,7 @@ ompd_get_task_data(ompd_task_handle_t *task_handle, /* IN: OpenMP task handle*/
   return ret;
 }
 
-#if 0 // the runtime currently does not have task function information
+#if 1 // the runtime currently does not have task function information
 ompd_rc_t ompd_get_task_function(
     ompd_task_handle_t *task_handle, /* IN: OpenMP task handle */
     ompd_address_t *task_addr /* OUT: first instruction in the task region */
@@ -992,17 +992,15 @@ ompd_rc_t ompd_get_task_function(
   task_addr->segment = OMPD_SEGMENT_UNSPECIFIED;
   TValue taskInfo;
   if(task_handle->lwt.address!=0)
-    taskInfo = TValue(context, task_handle->lwt).
-          cast("ompt_lw_taskteam_t",0);		/*lwt*/
+    return ompd_rc_bad_input; // We need to decide what we do here. 
   else
-    taskInfo = TValue(context, task_handle->th).
-          cast("kmp_taskdata_t",0);		/*t*/
-  ret = taskInfo.
-        access("ompt_task_info").             /*td->ompt_task_info*/
-        cast("ompt_task_info_t").
-        access("function").                /*td->ompt_task_info.function*/
-        castBase().
-        getValue(task_addr->address);
+    ret = TValue(context, task_handle->th).
+          cast("kmp_taskdata_t",0).		/*t*/
+          getArrayElement(1).                   /* see kmp.h: #define KMP_TASKDATA_TO_TASK(taskdata) (kmp_task_t *)(taskdata + 1) */
+          cast("kmp_task_t",0).                 /* (kmp_task_t *) */
+          access("routine").             /*td->ompt_task_info*/
+          castBase().    
+          getValue(task_addr->address);
   return ret;
 }
 #endif
