@@ -907,7 +907,7 @@ ompd_rc_t ompd_get_task_frame(
                      .access("ompt_task_info") // td->ompt_task_info
                      .cast("ompt_task_info_t")
                      .access("frame") // td->ompd_task_info.frame
-                     .cast("ompt_frame_t", 0);
+                     .cast("omp_frame_t", 0);
   sp_reentry->segment = OMPD_SEGMENT_UNSPECIFIED;
   ompd_rc_t ret =
       frame

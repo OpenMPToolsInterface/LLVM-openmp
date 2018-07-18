@@ -36,7 +36,7 @@
 
 /*
  * The macro is used to create code to register all implemented ompd
- * API functions with the CommandFactory 
+ * API functions with the CommandFactory
  * For new implemented API function just add a new OMPD_DO line
  */
 
@@ -64,6 +64,7 @@ macro(ompd_thread_handle_compare) \
 macro(ompd_get_thread_id) \
 macro(ompd_get_current_parallel_handle) \
 macro(ompd_get_enclosing_parallel_handle) \
+macro(ompd_get_task_parallel_handle) \
 macro(ompd_release_parallel_handle) \
 macro(ompd_parallel_handle_compare) \
 macro(ompd_get_current_task_handle) \
@@ -120,6 +121,32 @@ public:
 };
 
 typedef std::shared_ptr<OMPDIcvs> OMPDIcvsPtr;
+
+class OMPDParallelHandleCmp
+{
+  OMPDFunctionsPtr functions;
+public:
+  OMPDParallelHandleCmp(const OMPDFunctionsPtr &f)
+    : functions(f) {}
+  bool operator()(ompd_parallel_handle_t *a, ompd_parallel_handle_t *b) {
+    int cmp = 0;
+    functions->ompd_parallel_handle_compare(a, b, &cmp);
+    return cmp < 0;
+  }
+};
+
+class OMPDTaskHandleCmp
+{
+  OMPDFunctionsPtr functions;
+public:
+  OMPDTaskHandleCmp(const OMPDFunctionsPtr &f)
+    : functions(f) {}
+  bool operator()(ompd_task_handle_t *a, ompd_task_handle_t *b) {
+    int cmp = 0;
+    functions->ompd_task_handle_compare(a, b, &cmp);
+    return cmp < 0;
+  }
+};
 
 class OMPDCommand;
 
@@ -280,6 +307,22 @@ protected:
                       const std::vector<std::string>& args)
     : OMPDCommand(f, ah, args), icvs(icvs) {}
 
+  friend OMPDCommandFactory;
+private:
+  OMPDIcvsPtr icvs;
+};
+
+class OMPDTasks : public OMPDCommand
+{
+public:
+  ~OMPDTasks() {}
+  void execute() const;
+  const char *toString() const;
+protected:
+  OMPDTasks(const OMPDFunctionsPtr &f,
+            ompd_address_space_handle_t *ah, const OMPDIcvsPtr &icvs,
+            const std::vector<std::string>& args)
+    : OMPDCommand(f, ah, args), icvs(icvs) {}
   friend OMPDCommandFactory;
 private:
   OMPDIcvsPtr icvs;

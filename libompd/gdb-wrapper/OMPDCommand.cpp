@@ -168,6 +168,8 @@ OMPDCommand* OMPDCommandFactory::create(const char *str, const vector<string>& e
     return new OMPDTest(functions, addrhandle, extraArgs);
   else if (strcmp(str, "parallel") == 0)
     return new OMPDParallelRegions(functions, addrhandle, icvs, extraArgs);
+  else if (strcmp(str, "tasks") == 0)
+    return new OMPDTasks(functions, addrhandle, icvs, extraArgs);
   return new OMPDNull;
 }
 
@@ -731,16 +733,10 @@ void OMPDParallelRegions::execute() const
   ompd_rc_t ret;
   auto host_thread_handles = odbGetThreadHandles(addrhandle, functions);
 
-  // get parallel handles for thread handles
-  //ParallelMap host_parallel_handles;
-  auto cmp_fn = [this](const ompd_parallel_handle_t *a, const ompd_parallel_handle_t *b){
-                     int cmp = 0;
-                     this->functions->ompd_parallel_handle_compare((ompd_parallel_handle_t*)a, (ompd_parallel_handle_t*)b, &cmp);
-                     return cmp < 0;
-                   };
+  OMPDParallelHandleCmp parallel_cmp_op(functions);
   std::map<ompd_parallel_handle_t *,
-                   std::vector<ompd_thread_handle_t *>,
-                   decltype(cmp_fn)> host_parallel_handles(cmp_fn);
+           std::vector<ompd_thread_handle_t *>,
+           OMPDParallelHandleCmp> host_parallel_handles(parallel_cmp_op);
   for (auto t: host_thread_handles) {
     for (auto parallel_handle: odbGetParallelRegions(functions, t))
     {
@@ -770,4 +766,51 @@ void OMPDParallelRegions::execute() const
 const char *OMPDParallelRegions::toString() const
 {
   return "odb parallel";
+}
+
+void OMPDTasks::execute() const
+{
+  ompd_rc_t ret;
+  auto host_thread_handles = odbGetThreadHandles(addrhandle, functions);
+  OMPDTaskHandleCmp task_cmp_op(functions);
+  std::map<ompd_task_handle_t *,
+           std::vector<ompd_thread_handle_t *>,
+           OMPDTaskHandleCmp> host_task_handles(task_cmp_op);
+  for (auto t: host_thread_handles) {
+    for (auto task_handle: odbGetTaskRegions(functions, t)) {
+      host_task_handles[task_handle].push_back(t);
+    }
+  }
+
+  printf("HOST TASKS\n");
+  printf("Task Handle   Assoc. Threads   ICV Level   Enter Frame   Exit Frame\n");
+  printf("-------------------------------------------------------------------\n");
+  for (auto th: host_task_handles) {
+    ompd_parallel_handle_t *ph;
+    ret = functions->ompd_get_task_parallel_handle(th.first, &ph);
+    if (ret != ompd_rc_ok) {
+      printf("could not get parallel handle for nesting\n");
+      continue;
+    }
+
+    ompd_word_t icv_level;
+    icvs->get(ph, "levels-var", &icv_level);
+    ompd_address_t enter_frame;
+    ompd_address_t exit_frame;
+    ret = functions->ompd_get_task_frame(th.first, &enter_frame, &exit_frame);
+    printf("%-11p   %-14zu   %-9ld   %-11p   %-10p\n", th.first, th.second.size(), icv_level, (void*)enter_frame.address, (void*)exit_frame.address);
+  }
+
+  for (auto task: host_task_handles) {
+    functions->ompd_release_task_handle(task.first);
+  }
+
+  for (auto thread: host_thread_handles) {
+    functions->ompd_release_thread_handle(thread);
+  }
+}
+
+const char *OMPDTasks::toString() const
+{
+  return "odb tasks";
 }
