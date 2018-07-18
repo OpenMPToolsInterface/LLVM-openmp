@@ -3967,9 +3967,35 @@ void __kmpc_doacross_wait(ident_t *loc, int gtid, long long *vec) {
   shft = iter_number % 32; // use 32-bit granularity
   iter_number >>= 5; // divided by 32
   flag = 1 << shft;
+
+#if OMPT_SUPPORT && OMPT_OPTIONAL
+  if (ompt_enabled.ompt_callback_mutex_acquire) {
+    ompt_callbacks.ompt_callback(ompt_callback_mutex_acquire)(
+      ompt_mutex_doacross, 0, ompt_mutex_impl_unknown, (omp_wait_id_t)pr_buf->th_doacross_flags+iter_number,
+      OMPT_GET_RETURN_ADDRESS(0));
+  }
+
+  if (ompt_enabled.ompt_callback_dependences) {
+    ompt_dependence_t dep;
+    dep.variable.value = 0;
+    dep.dependence_type = ompt_dependence_type_sink;
+    ompt_callbacks.ompt_callback(ompt_callback_dependences)(
+        &(OMPT_CUR_TASK_INFO(__kmp_threads[gtid])->task_data),
+        &dep, 1);
+  }
+#endif
+
   while ((flag & pr_buf->th_doacross_flags[iter_number]) == 0) {
     KMP_YIELD(TRUE);
   }
+
+#if OMPT_SUPPORT && OMPT_OPTIONAL
+  if (ompt_enabled.ompt_callback_mutex_acquired) {
+    ompt_callbacks.ompt_callback(ompt_callback_mutex_acquired)(
+      ompt_mutex_doacross, (omp_wait_id_t)pr_buf->th_doacross_flags+iter_number, OMPT_GET_RETURN_ADDRESS(0));
+  }
+#endif
+
   KMP_MB();
   KA_TRACE(20,
            ("__kmpc_doacross_wait() exit: T#%d wait for iter %lld completed\n",

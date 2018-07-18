@@ -214,6 +214,9 @@ on_ompt_callback_mutex_acquire(
     case ompt_mutex_ordered:
       printf("%" PRIu64 ": ompt_event_wait_ordered: wait_id=%" PRIu64 ", hint=%" PRIu32 ", impl=%" PRIu32 ", codeptr_ra=%p \n", ompt_get_thread_data()->value, wait_id, hint, impl, codeptr_ra);
       break;
+    case ompt_mutex_doacross:
+      printf("%" PRIu64 ": ompt_event_wait_doacross: wait_id=%" PRIu64 ", hint=%" PRIu32 ", impl=%" PRIu32 ", codeptr_ra=%p \n", ompt_get_thread_data()->value, wait_id, hint, impl, codeptr_ra);
+      break;
     default:
       break;
   }
@@ -242,6 +245,9 @@ on_ompt_callback_mutex_acquired(
     case ompt_mutex_ordered:
       printf("%" PRIu64 ": ompt_event_acquired_ordered: wait_id=%" PRIu64 ", codeptr_ra=%p \n", ompt_get_thread_data()->value, wait_id, codeptr_ra);
       break;
+    case ompt_mutex_doacross:
+      printf("%" PRIu64 ": ompt_event_acquired_doacross: wait_id=%" PRIu64 ", codeptr_ra=%p \n", ompt_get_thread_data()->value, wait_id, codeptr_ra);
+      break;
     default:
       break;
   }
@@ -269,6 +275,9 @@ on_ompt_callback_mutex_released(
       break;
     case ompt_mutex_ordered:
       printf("%" PRIu64 ": ompt_event_release_ordered: wait_id=%" PRIu64 ", codeptr_ra=%p \n", ompt_get_thread_data()->value, wait_id, codeptr_ra);
+      break;
+    case ompt_mutex_doacross:
+      printf("%" PRIu64 ": ompt_event_release_doacross: wait_id=%" PRIu64 ", codeptr_ra=%p \n", ompt_get_thread_data()->value, wait_id, codeptr_ra);
       break;
     default:
       break;
@@ -642,9 +651,9 @@ on_ompt_callback_task_schedule(
 }
 
 static void
-on_ompt_callback_task_dependences(
+on_ompt_callback_dependences(
   ompt_data_t *task_data,
-  const ompt_task_dependence_t *deps,
+  const ompt_dependence_t *deps,
   int ndeps)
 {
   printf("%" PRIu64 ": ompt_event_task_dependences: task_id=%" PRIu64 ", deps=%p, ndeps=%d\n", ompt_get_thread_data()->value, task_data->value, (void *)deps, ndeps);
@@ -739,7 +748,7 @@ int ompt_initialize(
   register_callback(ompt_callback_parallel_end);
   register_callback(ompt_callback_task_create);
   register_callback(ompt_callback_task_schedule);
-  register_callback(ompt_callback_task_dependences);
+  register_callback(ompt_callback_dependences);
   register_callback(ompt_callback_task_dependence);
   register_callback(ompt_callback_thread_begin);
   register_callback(ompt_callback_thread_end);

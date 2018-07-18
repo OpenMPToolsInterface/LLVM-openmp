@@ -129,7 +129,7 @@
                                                                                                                          \
     macro (ompt_callback_mutex_released,    ompt_callback_mutex_t,             17) /* mutex released                  */ \
                                                                                                                          \
-    macro (ompt_callback_task_dependences,  ompt_callback_task_dependences_t,  18) /* report task dependences         */ \
+    macro (ompt_callback_dependences,       ompt_callback_dependences_t,       18) /* report dependences              */ \
     macro (ompt_callback_task_dependence,   ompt_callback_task_dependence_t,   19) /* report task dependence          */ \
                                                                                                                          \
     macro (ompt_callback_work,              ompt_callback_work_t,              20) /* task at work begin or end       */ \
@@ -192,17 +192,20 @@ typedef struct omp_frame_t {
  * dependences types
  *---------------------*/
 
-typedef enum ompt_task_dependence_flag_t {
+typedef enum ompt_dependence_type_t {
     // a two bit field for the dependence type
-    ompt_task_dependence_type_out   = 1,
-    ompt_task_dependence_type_in    = 2,
-    ompt_task_dependence_type_inout = 3,
-} ompt_task_dependence_flag_t;
+    ompt_dependence_type_in   = 1,
+    ompt_dependence_type_out    = 2,
+    ompt_dependence_type_inout = 3,
+    ompt_dependence_type_mutexinoutset = 3,
+    ompt_dependence_type_source = 3,
+    ompt_dependence_type_sink = 3,
+} ompt_dependence_type_t;
 
-typedef struct ompt_task_dependence_t {
-    void *variable_addr;
-    unsigned int dependence_flags;
-} ompt_task_dependence_t;
+typedef struct ompt_dependence_t {
+    ompt_data_t variable;
+    ompt_dependence_type_t dependence_type;
+} ompt_dependence_t;
 
 
 /*****************************************************************************
@@ -358,9 +361,9 @@ typedef void (*ompt_callback_task_create_t) (
 );
 
 /* task dependences */
-typedef void (*ompt_callback_task_dependences_t) (
+typedef void (*ompt_callback_dependences_t) (
     ompt_data_t *task_data,               /* data of task                        */
-    const ompt_task_dependence_t *deps,   /* dependences of task                 */
+    const ompt_dependence_t *deps,   /* dependences of task                 */
     int ndeps                             /* dependences count of task           */
 );
 
@@ -460,7 +463,8 @@ typedef enum ompt_mutex_kind_t {
     ompt_mutex_nest_lock = 0x12,
     ompt_mutex_critical  = 0x13,
     ompt_mutex_atomic    = 0x14,
-    ompt_mutex_ordered   = 0x20
+    ompt_mutex_ordered   = 0x20,
+    ompt_mutex_doacross  = 0x21
 } ompt_mutex_kind_t;
 
 typedef void (*ompt_callback_mutex_acquire_t) (

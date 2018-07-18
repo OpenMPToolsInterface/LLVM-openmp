@@ -59,7 +59,7 @@ typedef struct {
   int thread_num;
 #if OMP_40_ENABLED
   int ndeps;
-  ompt_task_dependence_t *deps;
+  ompt_dependence_t *deps;
 #endif /* OMP_40_ENABLED */
 } ompt_task_info_t;
 
