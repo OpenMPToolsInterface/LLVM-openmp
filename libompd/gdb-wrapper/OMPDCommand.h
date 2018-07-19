@@ -75,6 +75,7 @@ macro(ompd_task_handle_compare) \
 macro(ompd_get_thread_handle) \
 macro(ompd_enumerate_states) \
 macro(ompd_get_state) \
+macro(ompd_get_task_function) \
 macro(ompd_get_task_frame) \
 macro(ompd_get_api_version) \
 macro(ompd_enumerate_icvs) \

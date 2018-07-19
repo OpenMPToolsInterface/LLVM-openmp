@@ -783,8 +783,8 @@ void OMPDTasks::execute() const
   }
 
   printf("HOST TASKS\n");
-  printf("Task Handle   Assoc. Threads   ICV Level   Enter Frame   Exit Frame\n");
-  printf("-------------------------------------------------------------------\n");
+  printf("Task Handle   Assoc. Threads   ICV Level   Enter Frame   Exit Frame   Task function\n");
+  printf("-----------------------------------------------------------------------------------\n");
   for (auto th: host_task_handles) {
     ompd_parallel_handle_t *ph;
     ret = functions->ompd_get_task_parallel_handle(th.first, &ph);
@@ -795,10 +795,23 @@ void OMPDTasks::execute() const
 
     ompd_word_t icv_level;
     icvs->get(ph, "levels-var", &icv_level);
+    
     ompd_address_t enter_frame;
     ompd_address_t exit_frame;
     ret = functions->ompd_get_task_frame(th.first, &enter_frame, &exit_frame);
-    printf("%-11p   %-14zu   %-9ld   %-11p   %-10p\n", th.first, th.second.size(), icv_level, (void*)enter_frame.address, (void*)exit_frame.address);
+    if (ret != ompd_rc_ok) {
+      printf("could not get task frame\n");
+      continue;
+    }
+    
+    ompd_address_t task_function;
+    ret = functions->ompd_get_task_function(th.first, &task_function);
+    if (ret != ompd_rc_ok) {
+      printf("could not get task entry point\n");
+    }
+    printf("%-11p   %-14zu   %-9ld   %-11p   %-10p   %p\n", th.first,
+        th.second.size(), icv_level, (void*)enter_frame.address,
+        (void*)exit_frame.address, (void*)task_function.address);
   }
 
   for (auto task: host_task_handles) {

@@ -367,7 +367,12 @@ ompd_rc_t TValue::check(const char *bitfieldName, ompd_word_t *isSet) const {
 TValue TValue::getArrayElement(int elemNumber) const {
   if (gotError())
     return *this;
-  TValue ret = dereference();
+  TValue ret;
+  if (pointerLevel > 0) { 
+    ret = dereference();
+  } else {
+    ret = *this;
+  }
   if (ret.pointerLevel == 0) {
     ompd_size_t size;
     ret.errorState.errorCode = type->getSize(&size);

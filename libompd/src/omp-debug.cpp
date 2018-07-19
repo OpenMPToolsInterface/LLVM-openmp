@@ -973,8 +973,10 @@ ompd_rc_t ompd_get_task_function(
   ompd_address_space_context_t *context = task_handle->ah->context;
   if (!context)
     return ompd_rc_stale_handle;
+#if 0
   if (!ompd_state)
     return ompd_rc_needs_state_tracking;
+#endif
 
   assert(callbacks && "Callback table not initialized!");
 

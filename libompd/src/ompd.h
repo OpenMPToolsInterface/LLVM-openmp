@@ -476,11 +476,11 @@ ompd_rc_t ompd_task_handle_compare(ompd_task_handle_t *task_handle_1,
                                    ompd_task_handle_t *task_handle_2,
                                    int *cmp_value);
 
-/*
+
 ompd_rc_t ompd_get_task_function(
     ompd_task_handle_t *task_handle,
     ompd_address_t *entry_point);
-*/
+
 
 /**
  * The functions defined here are third-party versions of ompt_get_task_frame
