@@ -795,7 +795,7 @@ void OMPDTasks::execute() const
 
     ompd_word_t icv_level;
     icvs->get(ph, "levels-var", &icv_level);
-    
+
     ompd_address_t enter_frame;
     ompd_address_t exit_frame;
     ret = functions->ompd_get_task_frame(th.first, &enter_frame, &exit_frame);
@@ -803,7 +803,7 @@ void OMPDTasks::execute() const
       printf("could not get task frame\n");
       continue;
     }
-    
+
     ompd_address_t task_function;
     ret = functions->ompd_get_task_function(th.first, &task_function);
     if (ret != ompd_rc_ok) {
