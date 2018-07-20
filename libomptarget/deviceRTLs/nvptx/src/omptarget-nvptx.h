@@ -1,31 +1,31 @@
 //===---- omptarget-nvptx.h - NVPTX OpenMP GPU initialization ---- CUDA -*-===//
 //
-  //                     The LLVM Compiler Infrastructure
-  //
-  // This file is dual licensed under the MIT and the University of Illinois Open
-  // Source Licenses. See LICENSE.txt for details.
-  //
-  //===----------------------------------------------------------------------===//
-  //
-  // This file contains the declarations of all library macros, types,
-  // and functions.
-  //
-  //===----------------------------------------------------------------------===//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is dual licensed under the MIT and the University of Illinois Open
+// Source Licenses. See LICENSE.txt for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file contains the declarations of all library macros, types,
+// and functions.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef __OMPTARGET_NVPTX_H
 #define __OMPTARGET_NVPTX_H
 
-  // std includes
+// std includes
 #include <stdint.h>
 #include <stdlib.h>
 
 #include <inttypes.h>
 
-  // cuda includes
+// cuda includes
 #include <cuda.h>
 #include <math.h>
 
-  // local includes
+// local includes
 #include "counter_group.h"
 #include "debug.h"     // debug
 #include "interface.h" // interfaces with omp, compiler, and user
@@ -36,11 +36,11 @@
 
 #define OMPTARGET_NVPTX_VERSION 1.1
 
-  // used by the library for the interface with the app
+// used by the library for the interface with the app
 #define DISPATCH_FINISHED 0
 #define DISPATCH_NOTFINISHED 1
 
-  // used by dynamic scheduling
+// used by dynamic scheduling
 #define FINISHED 0
 #define NOT_FINISHED 1
 #define LAST_CHUNK 2
@@ -48,9 +48,9 @@
 #define BARRIER_COUNTER 0
 #define ORDERED_COUNTER 1
 
-  // Macros for Cuda intrinsics
-  // In Cuda 9.0, the *_sync() version takes an extra argument 'mask'.
-  // Also, __ballot(1) in Cuda 8.0 is replaced with __activemask().
+// Macros for Cuda intrinsics
+// In Cuda 9.0, the *_sync() version takes an extra argument 'mask'.
+// Also, __ballot(1) in Cuda 8.0 is replaced with __activemask().
 #if defined(CUDART_VERSION) && CUDART_VERSION >= 9000
 #define __SHFL_SYNC(mask, var, srcLane) __shfl_sync((mask), (var), (srcLane))
 #define __SHFL_DOWN_SYNC(mask, var, delta, width)                              \
@@ -65,7 +65,7 @@
 #define __ACTIVEMASK() __ballot(1)
 #endif
 
-  // arguments needed for L0 parallelism only.
+// arguments needed for L0 parallelism only.
 class omptarget_nvptx_SharedArgs {
 #if OMPD_SUPPORT
   friend void __device__ ompd_init( void );
