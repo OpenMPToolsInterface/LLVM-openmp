@@ -260,6 +260,7 @@ ompd_rc_t ompd_get_current_parallel_handle(
 
     (*parallel_handle)->ah = thread_handle->ah;
     (*parallel_handle)->th = taddr;
+    (*parallel_handle)->cuda_kernel_info = thread_handle->cuda_kernel_info;
   } else {
     ompd_address_t taddr, lwt;
 
@@ -723,13 +724,23 @@ ompd_get_thread_handle(ompd_address_space_handle_t
     if (tId != p->threadIdx.x)
       return ompd_rc_stale_handle;
 
-    ret = callbacks->memory_alloc(sizeof(ompd_thread_handle_t),
-                                   (void **)(thread_handle));
+    // allocate both the thread handle and the cuda kernel info in one go
+    ret = callbacks->memory_alloc(sizeof(ompd_thread_handle_t) +
+                                  sizeof(ompd_cuda_thread_kernel_info_t),
+                                  (void **)(thread_handle));
     if (ret != ompd_rc_ok)
       return ret;
 
     (*thread_handle)->ah = addr_handle;
     (*thread_handle)->th = taddr;
+    (*thread_handle)->cuda_kernel_info =
+        (ompd_cuda_thread_kernel_info_t*)((*thread_handle) + 1);
+
+    (*thread_handle)->cuda_kernel_info->cudaDevId = p->cudaDevId;
+    (*thread_handle)->cuda_kernel_info->cudaContext = p->cudaContext;
+    (*thread_handle)->cuda_kernel_info->warpSize = p->warpSize;
+    (*thread_handle)->cuda_kernel_info->gridId = p->gridId;
+    (*thread_handle)->cuda_kernel_info->kernelId = p->kernelId;
   } else {
     ret = TValue(context, tcontext, "__kmp_gtid")
               .castBase("__kmp_gtid")
@@ -755,6 +766,7 @@ ompd_get_thread_handle(ompd_address_space_handle_t
       return ret;
     (*thread_handle)->ah = addr_handle;
     (*thread_handle)->th = taddr;
+    (*thread_handle)->cuda_kernel_info = NULL;
 
 #ifndef NDEBUG
     if (ret != ompd_rc_ok)

@@ -71,6 +71,16 @@ public:
   }
 };
 
+// Information shared by all threads in a kernel
+// Used to map thread handles to native cuda thread ids
+typedef struct _ompd_cuda_thread_kernel_info_s : public ompdAllocatable {
+  ompd_addr_t cudaDevId;
+  ompd_addr_t cudaContext;
+  ompd_addr_t warpSize;
+  ompd_addr_t gridId;
+  ompd_addr_t kernelId;
+} ompd_cuda_thread_kernel_info_t;
+
 typedef struct _ompd_address_space_context_s ompd_address_space_context_t;
 
 typedef struct _ompd_process_handle_s : public ompdAllocatable {
@@ -92,18 +102,27 @@ typedef struct _ompd_thread_handle_s : public ompdAllocatable {
   ompd_address_space_handle_t *ah;
   ompd_thread_context_t *thread_context;
   ompd_address_t th; /* target handle */
+  ompd_cuda_thread_kernel_info_t *cuda_kernel_info; /* only valid for cuda */
 } ompd_thread_handle_t;
 
 typedef struct _ompd_parallel_handle_s : public ompdAllocatable {
   ompd_address_space_handle_t *ah;
   ompd_address_t th;  /* target handle */
   ompd_address_t lwt; /* lwt handle */
+  ompd_cuda_thread_kernel_info_t *cuda_kernel_info; /* copied from the thread
+                                                       used to retrieve this
+                                                       parallel region handle
+                                                     */
 } ompd_parallel_handle_t;
 
 typedef struct _ompd_task_handle_s : public ompdAllocatable {
   ompd_address_space_handle_t *ah;
   ompd_address_t th;  /* target handle */
   ompd_address_t lwt; /* lwt handle */
+  ompd_cuda_thread_kernel_info_t *cuda_kernel_info; /* copied from the thread
+                                                       used to retrieve this
+                                                       parallel region handle
+                                                     */
 } ompd_task_handle_t;
 
 #endif
