@@ -88,7 +88,7 @@ public:
 
     T inputUb = ub;
     ub = lb + chunk - 1; // Clang uses i <= ub
-    last = ub == inputUb;
+    last = lb <= inputUb && inputUb <= ub;
     stride = loopSize; // make sure we only do 1 chunk per warp
   }
 
@@ -245,12 +245,17 @@ public:
 
     // Process schedule.
     if (tnum == 1 || tripCount <= 1 || OrderedSchedule(schedule)) {
+      if (OrderedSchedule(schedule)) {
+        if (isSPMDMode())
+          __syncthreads();
+        else
+          __kmpc_barrier(loc, threadId);
+      }
       PRINT(LD_LOOP,
             "go sequential as tnum=%ld, trip count %lld, ordered sched=%d\n",
             (long)tnum, P64(tripCount), schedule);
       schedule = kmp_sched_static_chunk;
       chunk = tripCount; // one thread gets the whole loop
-
     } else if (schedule == kmp_sched_runtime) {
       // process runtime
       omp_sched_t rtSched = currTaskDescr->GetRuntimeSched();
@@ -339,11 +344,11 @@ public:
       else
         __kmpc_barrier(loc, threadId);
       // save sched state
+      int teamId = GetOmpTeamId();
       omptarget_nvptx_threadPrivateContext->ScheduleType(tid) = schedule;
       if (GetThreadIdInBlock() == 0) {
         if (chunk < 1)
           chunk = 1;
-        int teamId = GetOmpTeamId();
         omptarget_nvptx_threadPrivateContext->Chunk(teamId) = chunk;
         omptarget_nvptx_threadPrivateContext->LoopUpperBound(teamId) = ub;
         omptarget_nvptx_threadPrivateContext->NextLowerBound(teamId) = lb;
