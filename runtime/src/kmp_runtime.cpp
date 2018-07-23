@@ -3813,7 +3813,7 @@ int __kmp_register_root(int initial_thread) {
 #if OMPT_SUPPORT
   if (!initial_thread && ompt_enabled.enabled) {
 
-    ompt_thread_t *root_thread = ompt_get_thread();
+    kmp_info_t *root_thread = ompt_get_thread();
 
     ompt_set_thread_state(root_thread, omp_state_overhead);
 
