@@ -34,14 +34,12 @@ add_executable (odb-bin ${cppfiles} odb.cpp)
 set_target_properties (odb-bin PROPERTIES OUTPUT_NAME odb)
 add_library (odb ${cppfiles})
 
-if (ODB_LINUX)
-target_link_libraries (odb-bin dl) 
-target_link_libraries (odb dl) 
-endif (ODB_LINUX)
+target_link_libraries (odb-bin dl)
+target_link_libraries (odb dl)
 
 include_directories (
 	${CMAKE_CURRENT_SOURCE_DIR}
-#	${CMAKE_CURRENT_SOURCE_DIR}/../src/
+	${CMAKE_CURRENT_SOURCE_DIR}/../src/
     ${CMAKE_BINARY_DIR}/include
 )
 
