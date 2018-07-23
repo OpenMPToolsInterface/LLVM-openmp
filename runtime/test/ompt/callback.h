@@ -14,7 +14,7 @@
 // Used to detect architecture
 #include "../../src/kmp_platform.h"
 
-static const char* ompt_thread_type_t_values[] = {
+static const char* ompt_thread_t_values[] = {
   NULL,
   "ompt_thread_initial",
   "ompt_thread_worker",
@@ -31,7 +31,7 @@ static const char* ompt_task_status_t_values[] = {
 static const char* ompt_cancel_flag_t_values[] = {
   "ompt_cancel_parallel",
   "ompt_cancel_sections",
-  "ompt_cancel_do",
+  "ompt_cancel_loop",
   "ompt_cancel_taskgroup",
   "ompt_cancel_activated",
   "ompt_cancel_detected",
@@ -194,7 +194,7 @@ ompt_label_##id:
 
 static void
 on_ompt_callback_mutex_acquire(
-  ompt_mutex_kind_t kind,
+  ompt_mutex_t kind,
   unsigned int hint,
   unsigned int impl,
   omp_wait_id_t wait_id,
@@ -224,7 +224,7 @@ on_ompt_callback_mutex_acquire(
 
 static void
 on_ompt_callback_mutex_acquired(
-  ompt_mutex_kind_t kind,
+  ompt_mutex_t kind,
   omp_wait_id_t wait_id,
   const void *codeptr_ra)
 {
@@ -252,7 +252,7 @@ on_ompt_callback_mutex_acquired(
 
 static void
 on_ompt_callback_mutex_released(
-  ompt_mutex_kind_t kind,
+  ompt_mutex_t kind,
   omp_wait_id_t wait_id,
   const void *codeptr_ra)
 {
@@ -297,7 +297,7 @@ on_ompt_callback_nest_lock(
 
 static void
 on_ompt_callback_sync_region(
-  ompt_sync_region_kind_t kind,
+  ompt_sync_region_t kind,
   ompt_scope_endpoint_t endpoint,
   ompt_data_t *parallel_data,
   ompt_data_t *task_data,
@@ -339,7 +339,7 @@ on_ompt_callback_sync_region(
 
 static void
 on_ompt_callback_sync_region_wait(
-  ompt_sync_region_kind_t kind,
+  ompt_sync_region_t kind,
   ompt_scope_endpoint_t endpoint,
   ompt_data_t *parallel_data,
   ompt_data_t *task_data,
@@ -398,7 +398,7 @@ on_ompt_callback_cancel(
     first_flag_value = ompt_cancel_flag_t_values[0];
   else if(flags & ompt_cancel_sections)
     first_flag_value = ompt_cancel_flag_t_values[1];
-  else if(flags & ompt_cancel_do)
+  else if(flags & ompt_cancel_loop)
     first_flag_value = ompt_cancel_flag_t_values[2];
   else if(flags & ompt_cancel_taskgroup)
     first_flag_value = ompt_cancel_flag_t_values[3];
@@ -452,7 +452,7 @@ on_ompt_callback_implicit_task(
 
 static void
 on_ompt_callback_lock_init(
-  ompt_mutex_kind_t kind,
+  ompt_mutex_t kind,
   unsigned int hint,
   unsigned int impl,
   omp_wait_id_t wait_id,
@@ -473,7 +473,7 @@ on_ompt_callback_lock_init(
 
 static void
 on_ompt_callback_lock_destroy(
-  ompt_mutex_kind_t kind,
+  ompt_mutex_t kind,
   omp_wait_id_t wait_id,
   const void *codeptr_ra)
 {
@@ -492,7 +492,7 @@ on_ompt_callback_lock_destroy(
 
 static void
 on_ompt_callback_work(
-  ompt_work_type_t wstype,
+  ompt_work_t wstype,
   ompt_scope_endpoint_t endpoint,
   ompt_data_t *parallel_data,
   ompt_data_t *task_data,
@@ -663,13 +663,13 @@ on_ompt_callback_task_dependence(
 
 static void
 on_ompt_callback_thread_begin(
-  ompt_thread_type_t thread_type,
+  ompt_thread_t thread_type,
   ompt_data_t *thread_data)
 {
   if(thread_data->ptr)
     printf("%s\n", "0: thread_data initially not null");
   thread_data->value = ompt_get_unique_id();
-  printf("%" PRIu64 ": ompt_event_thread_begin: thread_type=%s=%d, thread_id=%" PRIu64 "\n", ompt_get_thread_data()->value, ompt_thread_type_t_values[thread_type], thread_type, thread_data->value);
+  printf("%" PRIu64 ": ompt_event_thread_begin: thread_type=%s=%d, thread_id=%" PRIu64 "\n", ompt_get_thread_data()->value, ompt_thread_t_values[thread_type], thread_type, thread_data->value);
 }
 
 static void

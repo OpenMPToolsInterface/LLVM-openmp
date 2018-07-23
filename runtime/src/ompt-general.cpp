@@ -351,7 +351,7 @@ void ompt_post_init() {
       return;
     }
 
-    ompt_thread_t *root_thread = ompt_get_thread();
+    kmp_info_t *root_thread = ompt_get_thread();
 
     ompt_set_thread_state(root_thread, omp_state_overhead);
 
