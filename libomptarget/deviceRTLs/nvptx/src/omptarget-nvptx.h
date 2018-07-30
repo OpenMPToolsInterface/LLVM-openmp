@@ -67,9 +67,6 @@
 
 // arguments needed for L0 parallelism only.
 class omptarget_nvptx_SharedArgs {
-#if OMPD_SUPPORT
-  friend void __device__ ompd_init( void );
-#endif /* OMPD_SUPPORT */
 public:
   // All these methods must be called by the master thread only.
   INLINE void Init() {
@@ -156,7 +153,10 @@ extern __device__ __shared__ DataSharingStateTy DataSharingState;
 class omptarget_nvptx_TaskDescr {
 #if OMPD_SUPPORT
   friend void __device__ ompd_init( void );
-  friend void __device__ ompd_set_device_thread_state(omp_state_t state);
+  friend INLINE void ompd_init_thread(
+      omptarget_nvptx_TaskDescr *currTaskDescr);
+  friend __device__ void  ompd_set_device_specific_thread_state(
+      omptarget_nvptx_TaskDescr *taskDescr, omp_state_t state);
 #endif /* OMPD_SUPPORT */
 public:
   // methods for flags
@@ -258,6 +258,9 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 
 class omptarget_nvptx_TeamDescr {
+#ifdef OMPD_SUPPORT
+  friend void __device__ ompd_init( void );
+#endif /*OMPD_SUPPORT*/
 public:
   // access to data
   INLINE omptarget_nvptx_TaskDescr *LevelZeroTaskDescr() {

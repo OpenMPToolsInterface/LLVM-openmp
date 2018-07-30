@@ -304,6 +304,12 @@ EXTERN void __kmpc_kernel_prepare_parallel(void *WorkFn,
   ASSERT0(LT_FUSSY, GetThreadIdInBlock() == GetMasterThreadID(),
           "only team master can create parallel");
 
+#ifdef OMPD_SUPPORT
+  // Move the previous thread into undefined state (will be reset in __kmpc_kernel_end_parallel)
+  // TODO (mr) find a better place to do this
+  ompd_set_device_thread_state(omp_state_undefined);
+#endif /*OMPD_SUPPORT*/
+
   // set number of threads on work descriptor
   // this is different from the number of cuda threads required for the parallel
   // region
@@ -359,7 +365,7 @@ EXTERN bool __kmpc_kernel_parallel(void **WorkFn,
 
     isActive = true;
 #ifdef OMPD_SUPPORT
-    ompd_set_device_thread_state(omp_state_work_parallel);
+    ompd_init_thread_parallel();
 #endif /*OMPD_SUPPORT*/
   }
 
@@ -413,7 +419,7 @@ EXTERN void __kmpc_serialized_parallel(kmp_Indent *loc, uint32_t global_tid) {
   omptarget_nvptx_threadPrivateContext->SetTopLevelTaskDescr(threadId,
                                                              newTaskDescr);
 #ifdef OMPD_SUPPORT
-  ompd_set_device_thread_state(omp_state_work_serial);
+  ompd_init_thread_parallel(); // we are still in a prallel region
 #endif /*OMPD_SUPPORT*/
 }
 
@@ -429,9 +435,6 @@ EXTERN void __kmpc_end_serialized_parallel(kmp_Indent *loc,
       threadId, currTaskDescr->GetPrevTaskDescr());
   // free
   SafeFree(currTaskDescr, (char *)"new seq parallel task");
-#ifdef OMPD_SUPPORT
-  ompd_set_device_thread_state(omp_state_work_parallel);
-#endif /*OMPD_SUPPORT*/
 }
 
 EXTERN uint16_t __kmpc_parallel_level(kmp_Indent *loc, uint32_t global_tid) {

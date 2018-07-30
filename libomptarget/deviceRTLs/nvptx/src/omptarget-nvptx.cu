@@ -94,6 +94,7 @@ EXTERN void __kmpc_kernel_init(int ThreadLimit, int16_t RequiresOMPRuntime) {
   currTaskDescr->ThreadLimit() = ThreadLimit;
 #ifdef OMPD_SUPPORT
   ompd_init();
+  ompd_init_thread_master();
 #endif /*OMPD_SUPPORT*/
 }
 
@@ -141,6 +142,9 @@ EXTERN void __kmpc_spmd_kernel_init(int ThreadLimit, int16_t RequiresOMPRuntime,
     currTeamDescr.InitTeamDescr();
     // init counters (copy start to init)
     workDescr.CounterGroup().Reset();
+#ifdef OMPD_SUPPORT
+    ompd_init();
+#endif /*OMPD_SUPPORT*/
   }
   __syncthreads();
 
@@ -177,8 +181,9 @@ EXTERN void __kmpc_spmd_kernel_init(int ThreadLimit, int16_t RequiresOMPRuntime,
     DataSharingState.StackPtr[WID] = (void *)&RootS->Data[0];
   }
 #ifdef OMPD_SUPPORT
-  ompd_init();
-#endif /*OMPD_SUPPORT*/
+  ompd_init_thread_parallel(); // __kmpc_kernel_parallel() is not called in
+                               // spmd mode
+#endif
 }
 
 EXTERN void __kmpc_spmd_kernel_deinit() {

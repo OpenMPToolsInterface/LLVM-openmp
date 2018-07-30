@@ -28,10 +28,6 @@ __device__ __shared__
 
 __device__ void ompd_init ( void )
 {
-  getMyTopTaskDescriptor()->ompd_thread_info.state = omp_state_undefined;
-  getMyTopTaskDescriptor()->ompd_thread_info.blockIdx_x = blockIdx.x;
-  getMyTopTaskDescriptor()->ompd_thread_info.threadIdx_x = threadIdx.x;
-
   if (ompd_target_initialized)
     return;
 
@@ -56,8 +52,30 @@ __device__ void ompd_init ( void )
   ompd_target_initialized = 1;
 }
 
-__device__ void ompd_set_device_thread_state(omp_state_t state) {
-  getMyTopTaskDescriptor()->ompd_thread_info.state = state;
+INLINE void ompd_init_thread(omptarget_nvptx_TaskDescr *currTaskDescr) {
+  currTaskDescr->ompd_thread_info.blockIdx_x = blockIdx.x;
+  currTaskDescr->ompd_thread_info.threadIdx_x = threadIdx.x;
+}
+
+__device__ void ompd_set_device_specific_thread_state(
+    omptarget_nvptx_TaskDescr *taskDescr, omp_state_t state) {
+    taskDescr->ompd_thread_info.state = state;
+}
+
+__device__ void  ompd_set_device_thread_state(omp_state_t state) {
+  ompd_set_device_specific_thread_state(getMyTopTaskDescriptor(), state);
+}
+
+__device__ void ompd_init_thread_parallel() {
+  omptarget_nvptx_TaskDescr *currTaskDescr = getMyTopTaskDescriptor();
+  ompd_init_thread(currTaskDescr);
+  ompd_set_device_specific_thread_state(currTaskDescr, omp_state_work_parallel);
+}
+
+__device__ void ompd_init_thread_master() {
+  omptarget_nvptx_TaskDescr *currTaskDescr = getMyTopTaskDescriptor();
+  ompd_init_thread(currTaskDescr);
+  ompd_set_device_specific_thread_state(currTaskDescr, omp_state_work_serial);
 }
 
 __device__ void ompd_bp_parallel_begin (){ asm (""); }
