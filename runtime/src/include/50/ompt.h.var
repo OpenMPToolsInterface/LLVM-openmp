@@ -193,13 +193,13 @@ typedef struct omp_frame_t {
  *---------------------*/
 
 typedef enum ompt_dependence_type_t {
-    // a two bit field for the dependence type
+    // enum for the dependence types
     ompt_dependence_type_in   = 1,
     ompt_dependence_type_out    = 2,
     ompt_dependence_type_inout = 3,
-    ompt_dependence_type_mutexinoutset = 3,
-    ompt_dependence_type_source = 3,
-    ompt_dependence_type_sink = 3,
+    ompt_dependence_type_mutexinoutset = 4,
+    ompt_dependence_type_source = 5,
+    ompt_dependence_type_sink = 6,
 } ompt_dependence_type_t;
 
 typedef struct ompt_dependence_t {

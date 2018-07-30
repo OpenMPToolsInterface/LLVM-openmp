@@ -22,32 +22,54 @@ int main()
 
   // CHECK: 0: NULL_POINTER=[[NULL:.*$]]
 
-  // CHECK: {{^}}[[THREAD_ID1:[0-9]+]]: ompt_event_wait_doacross:
-  // CHECK-SAME: wait_id=[[WAIT_ID1:[0-9]+]], hint=0, impl=0, codeptr_ra=
-  // CHECK: {{^}}[[THREAD_ID1]]: ompt_event_task_dependences:
-  // CHECK-SAME: task_id={{[0-9]+}}, deps=0x{{[0-f]+}}, ndeps=1
-  // CHECK: {{^}}[[THREAD_ID1]]: ompt_event_acquired_doacross:
-  // CHECK-SAME: wait_id=[[WAIT_ID1]], codeptr_ra=
+  // CHECK: {{^}}[[MASTER:[0-9]+]]: ompt_event_task_dependences:
+  // CHECK-SAME: task_id={{[0-9]+}}, deps=[0:type_source, ], ndeps=1
+  // CHECK: {{^}}[[MASTER]]: ompt_event_release_doacross:
+  // CHECK-SAME: wait_id=[[WAIT_ID1:[0-9]+]]
   
-  // CHECK: {{^}}[[THREAD_ID2:[0-9]+]]: ompt_event_wait_doacross: 
+  // CHECK: {{^}}[[MASTER]]: ompt_event_wait_doacross: 
   // CHECK-SAME: wait_id=[[WAIT_ID2:[0-9]+]], hint=0, impl=0, codeptr_ra=
-  // CHECK: {{^}}[[THREAD_ID2]]: ompt_event_task_dependences: 
-  // CHECK-SAME: task_id={{[0-9]+}}, deps=0x{{[0-f]+}}, ndeps=1
-  // CHECK: {{^}}[[THREAD_ID2]]: ompt_event_acquired_doacross: 
+  // CHECK: {{^}}[[MASTER]]: ompt_event_task_dependences: 
+  // CHECK-SAME: task_id={{[0-9]+}}, deps=[0:type_sink, ], ndeps=1
+  // CHECK: {{^}}[[MASTER]]: ompt_event_acquired_doacross: 
   // CHECK-SAME: wait_id=[[WAIT_ID2]], codeptr_ra=
+  // CHECK: {{^}}[[MASTER:[0-9]+]]: ompt_event_task_dependences:
+  // CHECK-SAME: task_id={{[0-9]+}}, deps=[1:type_source, ], ndeps=1
+  // CHECK: {{^}}[[MASTER]]: ompt_event_release_doacross:
+  // CHECK-SAME: wait_id=[[WAIT_ID2]]
 
-  // CHECK: {{^}}[[THREAD_ID3:[0-9]+]]: ompt_event_wait_doacross: 
+  // CHECK: {{^}}[[WORKER:[0-9]+]]: ompt_event_wait_doacross: 
   // CHECK-SAME: wait_id=[[WAIT_ID3:[0-9]+]], hint=0, impl=0, codeptr_ra=
-  // CHECK: {{^}}[[THREAD_ID3]]: ompt_event_task_dependences: 
-  // CHECK-SAME: task_id={{[0-9]+}}, deps=0x{{[0-f]+}}, ndeps=1
-  // CHECK: {{^}}[[THREAD_ID3]]: ompt_event_acquired_doacross: 
+  // CHECK: {{^}}[[WORKER]]: ompt_event_task_dependences: 
+  // CHECK-SAME: task_id={{[0-9]+}}, deps=[0:type_sink, ], ndeps=1
+  // CHECK: {{^}}[[WORKER]]: ompt_event_acquired_doacross: 
   // CHECK-SAME: wait_id=[[WAIT_ID3]], codeptr_ra=
+  // CHECK: {{^}}[[WORKER:[0-9]+]]: ompt_event_wait_doacross: 
+  // CHECK-SAME: wait_id=[[WAIT_ID3:[0-9]+]], hint=0, impl=0, codeptr_ra=
+  // CHECK: {{^}}[[WORKER]]: ompt_event_task_dependences: 
+  // CHECK-SAME: task_id={{[0-9]+}}, deps=[1:type_sink, ], ndeps=1
+  // CHECK: {{^}}[[WORKER]]: ompt_event_acquired_doacross: 
+  // CHECK-SAME: wait_id=[[WAIT_ID3]], codeptr_ra=
+  // CHECK: {{^}}[[WORKER]]: ompt_event_task_dependences:
+  // CHECK-SAME: task_id={{[0-9]+}}, deps=[2:type_source, ], ndeps=1
+  // CHECK: {{^}}[[WORKER]]: ompt_event_release_doacross:
+  // CHECK-SAME: wait_id=[[WAIT_ID3]]
 
-  // CHECK: {{^}}[[THREAD_ID4:[0-9]+]]: ompt_event_wait_doacross: 
+  // CHECK: {{^}}[[WORKER]]: ompt_event_wait_doacross: 
   // CHECK-SAME: wait_id=[[WAIT_ID4:[0-9]+]], hint=0, impl=0, codeptr_ra=
-  // CHECK: {{^}}[[THREAD_ID4]]: ompt_event_task_dependences: 
-  // CHECK-SAME: task_id={{[0-9]+}}, deps=0x{{[0-f]+}}, ndeps=1
-  // CHECK: {{^}}[[THREAD_ID4]]: ompt_event_acquired_doacross: 
+  // CHECK: {{^}}[[WORKER]]: ompt_event_task_dependences: 
+  // CHECK-SAME: task_id={{[0-9]+}}, deps=[1:type_sink, ], ndeps=1
+  // CHECK: {{^}}[[WORKER]]: ompt_event_acquired_doacross: 
   // CHECK-SAME: wait_id=[[WAIT_ID4]], codeptr_ra=
+  // CHECK: {{^}}[[WORKER]]: ompt_event_wait_doacross: 
+  // CHECK-SAME: wait_id=[[WAIT_ID4:[0-9]+]], hint=0, impl=0, codeptr_ra=
+  // CHECK: {{^}}[[WORKER]]: ompt_event_task_dependences: 
+  // CHECK-SAME: task_id={{[0-9]+}}, deps=[2:type_sink, ], ndeps=1
+  // CHECK: {{^}}[[WORKER]]: ompt_event_acquired_doacross: 
+  // CHECK-SAME: wait_id=[[WAIT_ID4]], codeptr_ra=
+  // CHECK: {{^}}[[WORKER:[0-9]+]]: ompt_event_task_dependences:
+  // CHECK-SAME: task_id={{[0-9]+}}, deps=[3:type_source, ], ndeps=1
+  // CHECK: {{^}}[[WORKER]]: ompt_event_release_doacross:
+  // CHECK-SAME: wait_id=[[WAIT_ID4]]
   return 0;
 }

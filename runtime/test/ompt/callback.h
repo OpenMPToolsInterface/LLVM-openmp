@@ -656,7 +656,27 @@ on_ompt_callback_dependences(
   const ompt_dependence_t *deps,
   int ndeps)
 {
-  printf("%" PRIu64 ": ompt_event_task_dependences: task_id=%" PRIu64 ", deps=%p, ndeps=%d\n", ompt_get_thread_data()->value, task_data->value, (void *)deps, ndeps);
+  char buffer[2048];
+  char *progress = buffer;
+  int i;
+  for(i = 0; i < ndeps; i++)
+  {
+    char* type = "";
+    if(deps[i].dependence_type == ompt_dependence_type_in)
+      type = "type_in";
+    if(deps[i].dependence_type == ompt_dependence_type_out)
+      type = "type_out";
+    if(deps[i].dependence_type == ompt_dependence_type_inout)
+      type = "type_inout";
+    if(deps[i].dependence_type == ompt_dependence_type_mutexinoutset)
+      type = "type_mutexinoutset";
+    if(deps[i].dependence_type == ompt_dependence_type_source)
+      type = "type_source";
+    if(deps[i].dependence_type == ompt_dependence_type_sink)
+      type = "type_sink";
+    progress += sprintf(progress, "%ld:%s, ", deps[i].variable.value, type);
+  }
+  printf("%" PRIu64 ": ompt_event_task_dependences: task_id=%" PRIu64 ", deps=[%s], ndeps=%d\n", ompt_get_thread_data()->value, task_data->value, buffer, ndeps);
 }
 
 static void
