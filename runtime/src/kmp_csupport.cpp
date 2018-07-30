@@ -3982,14 +3982,14 @@ void __kmpc_doacross_wait(ident_t *loc, int gtid, long long *vec) {
 #if OMPT_SUPPORT && OMPT_OPTIONAL
   if (ompt_enabled.ompt_callback_mutex_acquire) {
     ompt_callbacks.ompt_callback(ompt_callback_mutex_acquire)(
-      ompt_mutex_doacross, 0, ompt_mutex_impl_unknown, (omp_wait_id_t)(pr_buf->th_doacross_flags+iter_number),
-      OMPT_GET_RETURN_ADDRESS(0));
+        ompt_mutex_doacross, 0, ompt_mutex_impl_unknown,
+        (omp_wait_id_t)(pr_buf->th_doacross_flags + iter_number),
+        OMPT_GET_RETURN_ADDRESS(0));
   }
 
   if (ompt_enabled.ompt_callback_dependences) {
     ompt_callbacks.ompt_callback(ompt_callback_dependences)(
-        &(OMPT_CUR_TASK_INFO(__kmp_threads[gtid])->task_data),
-        deps, num_dims);
+        &(OMPT_CUR_TASK_INFO(__kmp_threads[gtid])->task_data), deps, num_dims);
   }
 #endif
 
@@ -4000,7 +4000,9 @@ void __kmpc_doacross_wait(ident_t *loc, int gtid, long long *vec) {
 #if OMPT_SUPPORT && OMPT_OPTIONAL
   if (ompt_enabled.ompt_callback_mutex_acquired) {
     ompt_callbacks.ompt_callback(ompt_callback_mutex_acquired)(
-      ompt_mutex_doacross, (omp_wait_id_t)(pr_buf->th_doacross_flags+iter_number), OMPT_GET_RETURN_ADDRESS(0));
+        ompt_mutex_doacross,
+        (omp_wait_id_t)(pr_buf->th_doacross_flags + iter_number),
+        OMPT_GET_RETURN_ADDRESS(0));
   }
 #endif
 
@@ -4071,15 +4073,16 @@ void __kmpc_doacross_post(ident_t *loc, int gtid, long long *vec) {
   KMP_MB();
   if (ompt_enabled.ompt_callback_dependences) {
     ompt_callbacks.ompt_callback(ompt_callback_dependences)(
-        &(OMPT_CUR_TASK_INFO(__kmp_threads[gtid])->task_data),
-        deps, num_dims);
+        &(OMPT_CUR_TASK_INFO(__kmp_threads[gtid])->task_data), deps, num_dims);
   }
   if ((flag & pr_buf->th_doacross_flags[iter_number]) == 0)
     KMP_TEST_THEN_OR32(&pr_buf->th_doacross_flags[iter_number], flag);
 #if OMPT_SUPPORT && OMPT_OPTIONAL
   if (ompt_enabled.ompt_callback_mutex_released) {
     ompt_callbacks.ompt_callback(ompt_callback_mutex_released)(
-      ompt_mutex_doacross, (omp_wait_id_t)(pr_buf->th_doacross_flags+iter_number), OMPT_GET_RETURN_ADDRESS(0));
+        ompt_mutex_doacross,
+        (omp_wait_id_t)(pr_buf->th_doacross_flags + iter_number),
+        OMPT_GET_RETURN_ADDRESS(0));
   }
 #endif
   KA_TRACE(20, ("__kmpc_doacross_post() exit: T#%d iter %lld posted\n", gtid,

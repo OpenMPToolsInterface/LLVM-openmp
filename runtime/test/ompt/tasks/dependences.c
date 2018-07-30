@@ -33,12 +33,11 @@ int main()
 
   x++;
 
-
   // Check if libomp supports the callbacks for this test.
   // CHECK-NOT: {{^}}0: Could not register callback 'ompt_callback_task_create'
   // CHECK-NOT: {{^}}0: Could not register callback 'ompt_callback_dependences'
   // CHECK-NOT: {{^}}0: Could not register callback 'ompt_callback_task_dependence'
-  
+
   // CHECK: {{^}}0: NULL_POINTER=[[NULL:.*$]]
 
   // make sure initial data pointers are null
@@ -75,7 +74,6 @@ int main()
   // CHECK: {{^}}[[MASTER_ID]]: task level 0: parallel_id=[[PARALLEL_ID]]
   // CHECK-SAME: task_id=[[IMPLICIT_TASK_ID]], exit_frame=[[EXIT]]
   // CHECK-SAME: reenter_frame=[[NULL]]
-
 
   return 0;
 }
