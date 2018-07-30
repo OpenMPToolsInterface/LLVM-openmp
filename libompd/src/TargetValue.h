@@ -187,6 +187,10 @@ public:
    */
   TValue getArrayElement(int elemNumber) const;
   /**
+   * Get an element of a pointer arraz
+   */
+  TValue getPtrArrayElement(int elemNumber) const;
+  /**
    * Did we raise some error yet?
    */
   bool gotError() const { return errorState.errorCode != ompd_rc_ok; }

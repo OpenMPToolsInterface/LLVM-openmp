@@ -383,6 +383,16 @@ TValue TValue::getArrayElement(int elemNumber) const {
   return ret;
 }
 
+TValue TValue::getPtrArrayElement(int elemNumber) const {
+  if (gotError()) {
+    return *this;
+  }
+  assert(pointerLevel > 0 && "This only works on arrays of pointers");
+  TValue ret = *this;
+  ret.symbolAddr.address += elemNumber * type_sizes.sizeof_pointer;
+  return ret;
+}
+
 TBaseValue::TBaseValue(const TValue &_tvalue,
                        ompd_target_prim_types_t _baseType)
     : TValue(_tvalue), baseTypeSize(ompd_sizeof(_baseType)) {}

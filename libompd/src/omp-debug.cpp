@@ -697,7 +697,7 @@ ompd_get_thread_handle(ompd_address_space_handle_t
   if (kind == OMPD_THREAD_ID_CUDALOGICAL) {
     ompd_cudathread_coord_t *p = (ompd_cudathread_coord_t *)thread_id;
 
-    // omptarget_nvptx_threadPrivateContext->topTaskDescr[p->threadIdx.x]->items.threadId
+    // omptarget_nvptx_threadPrivateContext->topTaskDescr[p->threadIdx.x]
     TValue th = TValue(context, tcontext,
                        "omptarget_nvptx_threadPrivateContext",
                        OMPD_SEGMENT_CUDA_PTX_SHARED)
@@ -706,23 +706,52 @@ ompd_get_thread_handle(ompd_address_space_handle_t
                 .access("topTaskDescr")
                 .cast("omptarget_nvptx_TaskDescr", 1,
                       OMPD_SEGMENT_CUDA_PTX_GLOBAL)
-                .getArrayElement(p->threadIdx.x);
+                .getPtrArrayElement(p->threadIdx.x)
+                .dereference();
 
     ompd_address_t taddr;
     ret = th.getAddress(&taddr);
 
-    if (ret != ompd_rc_ok)
-      return ret;
+    if (ret != ompd_rc_ok) {
+      if (taddr.address == 0 && p->threadIdx.x % 32 == 0) {
+        // check for the master task/thread instead
+        // The master thread should never have the threadIdx.x of zero, so
+        // checking it this way should be safe
 
-    ret = th.access("items__threadId")
+        th = TValue(context, tcontext,
+                    "omptarget_nvptx_threadPrivateContext",
+                    OMPD_SEGMENT_CUDA_PTX_SHARED)
+            .cast("omptarget_nvptx_ThreadPrivateContext", 1,
+                   OMPD_SEGMENT_CUDA_PTX_SHARED)
+            .access("teamContext")
+            .cast("omptarget_nvptx_TeamDescr", 0,
+                  OMPD_SEGMENT_CUDA_PTX_SHARED)
+            .access("levelZeroTaskDescr");
+
+        ret = th.getAddress(&taddr);
+
+        if (ret != ompd_rc_ok)
+          return ret;
+      } else {
+        return ret;
+      }
+    }
+
+    // omptarget_nvptx_threadPrivateContext->topTaskDescr[p->threadIdx.x]
+    //                                     ->ompd_thread_info.threadIdx_x
+    ret = th.cast("omptarget_nvptx_TaskDescr", 0, OMPD_SEGMENT_CUDA_PTX_SHARED)
+            .access("ompd_thread_info")
+            .cast("ompd_nvptx_thread_info_t", 0, OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+            .access("threadIdx_x")
             .castBase(ompd_type_short)
             .getValue(tId);
 
     if (ret != ompd_rc_ok)
       return ret;
 
-    if (tId != p->threadIdx.x)
-      return ompd_rc_stale_handle;
+    if (tId != p->threadIdx.x) {
+        return ompd_rc_stale_handle;
+    }
 
     // allocate both the thread handle and the cuda kernel info in one go
     ret = callbacks->memory_alloc(sizeof(ompd_thread_handle_t) +
