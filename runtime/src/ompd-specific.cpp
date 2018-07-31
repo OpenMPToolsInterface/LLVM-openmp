@@ -22,8 +22,7 @@ OMPD_FOREACH_BITFIELD(ompd_declare_bitfield)
 OMPD_FOREACH_SIZEOF(ompd_declare_sizeof)
 #undef ompd_declare_sizeof
 
-const char * * ompd_dll_locations=NULL;
-const char * ompd_my_dll_locations[2] = {"libompd.so",NULL};
+volatile const char * * ompd_dll_locations=NULL;
 uint64_t ompd_state=0;
 
 int ompd_rtl_version = 7;
@@ -63,6 +62,9 @@ OMPD_FOREACH_ACCESS(ompd_init_sizeof_member)
 #define ompd_init_sizeof(t) ompd_sizeof__##t = sizeof(t); 
 OMPD_FOREACH_SIZEOF(ompd_init_sizeof)
 #undef ompd_init_sizeof
+
+  volatile static const char * ompd_my_dll_locations[2] = {"libompd.so",NULL};
+
 
   const char *ompd_env_var = getenv("OMP_OMPD");
   if (ompd_env_var && !strcmp(ompd_env_var, "on"))
