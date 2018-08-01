@@ -116,6 +116,16 @@ void ompd_bp_task_end ( void ){
      we might want to use a separate object file? */
   asm ("");
 }
+void ompd_bp_thread_begin ( void ){
+  /* naive way of implementing hard to opt-out empty function 
+     we might want to use a separate object file? */
+  asm ("");
+}
+void ompd_bp_thread_end ( void ){
+  /* naive way of implementing hard to opt-out empty function 
+     we might want to use a separate object file? */
+  asm ("");
+}
 
 
 #endif /* OMPD_SUPPORT */

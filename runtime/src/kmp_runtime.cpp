@@ -3843,6 +3843,10 @@ int __kmp_register_root(int initial_thread) {
     ompt_set_thread_state(root_thread, omp_state_work_serial);
   }
 #endif
+#if OMPD_SUPPORT
+    if ( ompd_state & OMPD_ENABLE_BP )
+        ompd_bp_thread_begin ();
+#endif
 
   KMP_MB();
   __kmp_release_bootstrap_lock(&__kmp_forkjoin_lock);
@@ -3925,6 +3929,11 @@ static int __kmp_reset_root(int gtid, kmp_root_t *root) {
            root->r.r_uber_thread->th.th_info.ds.ds_thread));
   __kmp_free_handle(root->r.r_uber_thread->th.th_info.ds.ds_thread);
 #endif /* KMP_OS_WINDOWS */
+
+#if OMPD_SUPPORT
+    if ( ompd_state & OMPD_ENABLE_BP )
+        ompd_bp_thread_end ();
+#endif
 
 #if OMPT_SUPPORT
   if (ompt_enabled.ompt_callback_thread_end) {
@@ -5605,6 +5614,11 @@ void *__kmp_launch_thread(kmp_info_t *this_thr) {
   }
 #endif
 
+#if OMPD_SUPPORT
+    if ( ompd_state & OMPD_ENABLE_BP )
+        ompd_bp_thread_begin ();
+#endif
+
 #if OMPT_SUPPORT
   if (ompt_enabled.enabled) {
     this_thr->th.ompt_thread_info.state = omp_state_idle;
@@ -5672,6 +5686,11 @@ void *__kmp_launch_thread(kmp_info_t *this_thr) {
     }
   }
   TCR_SYNC_PTR((intptr_t)__kmp_global.g.g_done);
+
+#if OMPD_SUPPORT
+    if ( ompd_state & OMPD_ENABLE_BP )
+        ompd_bp_thread_end ();
+#endif
 
 #if OMPT_SUPPORT
   if (ompt_enabled.ompt_callback_thread_end) {

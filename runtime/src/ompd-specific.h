@@ -18,6 +18,8 @@ void ompd_bp_parallel_begin ( void );
 void ompd_bp_parallel_end ( void );
 void ompd_bp_task_begin ( void );
 void ompd_bp_task_end ( void );
+void ompd_bp_thread_begin ( void );
+void ompd_bp_thread_end ( void );
 #ifdef  __cplusplus
 } /* extern "C" */
 #endif
