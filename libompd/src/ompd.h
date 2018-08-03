@@ -266,7 +266,7 @@ typedef struct ompd_target_type_sizes_t {
   uint8_t sizeof_long;
   uint8_t sizeof_long_long;
   uint8_t sizeof_pointer;
-} ompd_device_type_sizes_t;
+} ompd_target_type_sizes_t;
 
 /******************************************************************************
  * Debugger callback signatures.

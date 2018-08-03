@@ -70,7 +70,11 @@ ompd_process_initialize(ompd_address_space_context_t
             .getValue(ompd_state);
   if (ret != ompd_rc_ok)
     return ret;
-  *addrhandle = new ompd_address_space_handle_t;
+  ret = callbacks->dmemory_alloc(sizeof(ompd_address_space_handle_t),
+                                 (void **)(addrhandle));
+  if (ret != ompd_rc_ok)
+    return ret;
+//  *addrhandle = new ompd_address_space_handle_t;
   if (!addrhandle)
     return ompd_rc_error;
   (*addrhandle)->context = context;
@@ -117,8 +121,9 @@ ompd_rc_t ompd_release_address_space_handle(
   if (!addr_handle)
     return ompd_rc_bad_input;
 
-  delete addr_handle;
-  return ompd_rc_ok;
+  ompd_rc_t ret = callbacks->dmemory_free((void *)(addr_handle));
+//  delete addr_handle;
+  return ret;
 }
 
 #if 0  // no device support yet
@@ -166,7 +171,11 @@ ompd_rc_t ompd_device_initialize (
       continue;
 
     if (cuda_ctx == id) {
-      *addrhandle = new ompd_address_space_handle_t;
+      ret = callbacks->dmemory_alloc(sizeof(ompd_address_space_handle_t),
+                                     (void **)(addrhandle));
+      if (ret != ompd_rc_ok)
+        return ret;
+//      *addrhandle = new ompd_address_space_handle_t;
       if (!addrhandle)
         return ompd_rc_error;
       (*addrhandle)->context = context;

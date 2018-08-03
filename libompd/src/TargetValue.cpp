@@ -9,7 +9,7 @@ const ompd_callbacks_t *TValue::callbacks = NULL;
 ompd_target_type_sizes_t TValue::type_sizes;
 
 inline int ompd_sizeof(ompd_target_prim_types_t t) {
-  return (((int *)&TValue::type_sizes)[(int)t]);
+  return (((char *)&TValue::type_sizes)[(int)t]);
 }
 
 TType &TTypeFactory::getType(ompd_address_space_context_t *context,
