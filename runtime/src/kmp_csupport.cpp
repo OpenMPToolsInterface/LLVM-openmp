@@ -3971,7 +3971,7 @@ void __kmpc_doacross_wait(ident_t *loc, int gtid, long long *vec) {
     }
     iter_number = iter + ln * iter_number;
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-    deps[i].variable.value = iter_number;
+    deps[i].variable.value = iter;
     deps[i].dependence_type = ompt_dependence_type_sink;
 #endif
   }
@@ -4020,9 +4020,6 @@ void __kmpc_doacross_post(ident_t *loc, int gtid, long long *vec) {
   kmp_team_t *team = th->th.th_team;
   kmp_disp_t *pr_buf;
   kmp_int64 lo, st;
-#if OMPT_SUPPORT && OMPT_OPTIONAL
-  ompt_dependence_t deps[num_dims];
-#endif
 
   KA_TRACE(20, ("__kmpc_doacross_post() enter: called T#%d\n", gtid));
   if (team->t.t_serialized) {
@@ -4037,6 +4034,9 @@ void __kmpc_doacross_post(ident_t *loc, int gtid, long long *vec) {
   num_dims = pr_buf->th_doacross_info[0];
   lo = pr_buf->th_doacross_info[2];
   st = pr_buf->th_doacross_info[4];
+#if OMPT_SUPPORT && OMPT_OPTIONAL
+  ompt_dependence_t deps[num_dims];
+#endif
   if (st == 1) { // most common case
     iter_number = vec[0] - lo;
   } else if (st > 0) {
@@ -4063,7 +4063,7 @@ void __kmpc_doacross_post(ident_t *loc, int gtid, long long *vec) {
     iter_number = iter + ln * iter_number;
     }
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-    deps[i].variable.value = iter_number;
+    deps[i].variable.value = iter;
     deps[i].dependence_type = ompt_dependence_type_source;
 #endif
   }

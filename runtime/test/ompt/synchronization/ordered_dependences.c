@@ -9,14 +9,16 @@ int main()
   int a[2][2];
   int i,j;
 #pragma omp parallel num_threads(2)
-#pragma omp for ordered(2) schedule(static, 2)
+#pragma omp for ordered(2)
   for (i = 0; i < 2; i++)
     for (j = 0; j < 2; j++)
     {
       a[i][j] = a[i][j] + 1;
+      printf("%d, %d\n", i, j);
 #pragma omp ordered depend(sink:i-1,j) depend(sink:i,j-1)
       if (i>0 && j>0)
         a[i][j] = a[i-1][j] + a[i][j-1] + 1;
+      printf("%d, %d\n", i, j);
 #pragma omp ordered depend(source)
     }
 
