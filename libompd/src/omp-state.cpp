@@ -3,6 +3,10 @@
 #include "omp-debug.h"
 #include <cstring>
 
+void __ompd_init_states(const ompd_callbacks_t *table) {
+  callbacks = table;
+}
+
 static const char *get_ompd_state_name(ompd_word_t state) {
   switch (state) {
 #define ompd_state_macro(state, code) \

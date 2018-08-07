@@ -527,6 +527,54 @@ vector<ompd_thread_handle_t*> odbGetThreadHandles(ompd_address_space_handle_t* a
   return thread_handles;
 }
 
+vector<ompd_thread_handle_t*> odbGetCudaThreadHandles(ompd_address_space_handle_t* addrhandle, OMPDFunctionsPtr functions)
+{
+  ompd_rc_t ret;
+
+  CudaGdb cuda;
+  vector<OMPDCudaContextPool*> cuda_ContextPools;
+  map<uint64_t, bool> device_initialized;
+  map<ompd_addr_t, ompd_address_space_handle_t*> address_spaces;
+  vector<ompd_thread_handle_t *> device_thread_handles;
+
+  for(auto i: cuda.threads) {
+    if (!device_initialized[i.coord.cudaContext]) {
+      OMPDCudaContextPool* cpool;
+      cpool = new OMPDCudaContextPool(&i);
+      ompd_rc_t result;
+
+      device_initialized[i.coord.cudaContext] = true;
+      result = functions->ompd_device_initialize(
+          addrhandle,
+          cpool->getGlobalOmpdContext(),
+          ompd_device_kind_cuda,
+          sizeof(i.coord.cudaContext),
+          &i.coord.cudaContext,
+          &cpool->ompd_device_handle);
+
+      if (result != ompd_rc_ok)
+      {
+        continue;
+      }
+
+      address_spaces[i.coord.cudaContext] = cpool->ompd_device_handle;
+    }
+    ompd_thread_handle_t* thread_handle;
+    ompd_rc_t ret = functions->ompd_get_thread_handle(
+                                    address_spaces[i.coord.cudaContext],
+                                    ompd_thread_id_cudalogical,
+                                    sizeof(i.coord), &i.coord,
+                                    &thread_handle);
+
+    if (ret == ompd_rc_ok)
+    {
+      device_thread_handles.push_back(thread_handle);
+    }
+  }
+
+  return device_thread_handles;
+}
+
 vector<ompd_parallel_handle_t*> odbGetParallelRegions(OMPDFunctionsPtr functions, ompd_thread_handle_t* &th)
 {
   ompd_rc_t ret;
@@ -731,6 +779,10 @@ const char* OMPDTest::toString() const
 void OMPDParallelRegions::execute() const
 {
   ompd_rc_t ret;
+
+  //
+  // For the host runtime
+  //
   auto host_thread_handles = odbGetThreadHandles(addrhandle, functions);
 
   OMPDParallelHandleCmp parallel_cmp_op(functions);
@@ -759,6 +811,33 @@ void OMPDParallelRegions::execute() const
     functions->ompd_release_thread_handle(t);
   }
   for (auto &p: host_parallel_handles) {
+    functions->ompd_release_parallel_handle(p.first);
+  }
+
+  //
+  // For Cuda devices
+  //
+  auto cuda_thread_handles = odbGetCudaThreadHandles(addrhandle, functions);
+  std::map<ompd_parallel_handle_t *,
+           std::vector<ompd_thread_handle_t *>,
+           OMPDParallelHandleCmp> cuda_parallel_handles(parallel_cmp_op);
+  for (auto t: cuda_thread_handles) {
+    for (auto p: odbGetParallelRegions(functions, t)) {
+      cuda_parallel_handles[p].push_back(t);
+    }
+  }
+
+  printf("DEVICE PARALLEL REGIONS\n");
+  printf("Parallel Handle    Num Threads \n");
+  printf("------------------------------ \n");
+  for (auto &p: cuda_parallel_handles) {
+    printf("%-15p   %-10zu\n", p.first, p.second.size());
+  }
+
+  for (auto t: cuda_thread_handles) {
+    functions->ompd_release_thread_handle(t);
+  }
+  for (auto &p: cuda_parallel_handles) {
     functions->ompd_release_parallel_handle(p.first);
   }
 }

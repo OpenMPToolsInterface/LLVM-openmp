@@ -7,15 +7,15 @@
 
 __device__ __shared__ static int ompd_target_initialized;
 
-#define ompd_target_declare_access(t,m) __device__ __shared__ uint64_t ompd_access__##t##__##m; 
+#define ompd_target_declare_access(t,m) __device__ __shared__ uint64_t ompd_access__##t##__##m;
 OMPD_FOREACH_ACCESS(ompd_target_declare_access)
 #undef ompd_target_declare_access
 
-#define ompd_target_declare_sizeof_member(t,m) __device__ __shared__ uint64_t ompd_sizeof__##t##__##m; 
+#define ompd_target_declare_sizeof_member(t,m) __device__ __shared__ uint64_t ompd_sizeof__##t##__##m;
     OMPD_FOREACH_ACCESS(ompd_target_declare_sizeof_member)
 #undef ompd_target_declare_sizeof_member
 
-#define ompd_target_declare_sizeof(t) __device__ __shared__ uint64_t ompd_sizeof__##t; 
+#define ompd_target_declare_sizeof(t) __device__ __shared__ uint64_t ompd_sizeof__##t;
     OMPD_FOREACH_SIZEOF(ompd_target_declare_sizeof)
 #undef ompd_target_declare_sizeof
 
@@ -31,23 +31,35 @@ __device__ void ompd_init ( void )
   if (ompd_target_initialized)
     return;
 
-#define ompd_target_init_access(t,m) ompd_access__##t##__##m = (uint64_t)&(((t*)0)->m); 
+#define ompd_target_init_access(t,m) ompd_access__##t##__##m = (uint64_t)&(((t*)0)->m);
   OMPD_FOREACH_ACCESS(ompd_target_init_access)
 #undef ompd_target_init_access
 
-  ompd_access__omptarget_nvptx_TaskDescr__items__threadId = 
+  ompd_access__omptarget_nvptx_TaskDescr__items__threadId =
           (uint64_t)&(((omptarget_nvptx_TaskDescr*)0)->items.threadId);
 
-#define ompd_target_init_sizeof_member(t,m) ompd_sizeof__##t##__##m = sizeof(((t*)0)->m); 
+#define ompd_target_init_sizeof_member(t,m) ompd_sizeof__##t##__##m = sizeof(((t*)0)->m);
   OMPD_FOREACH_ACCESS(ompd_target_init_sizeof_member)
 #undef ompd_target_init_sizeof_member
 
   ompd_sizeof__omptarget_nvptx_TaskDescr__items__threadId =
     (uint64_t)sizeof(((omptarget_nvptx_TaskDescr*)0)->items.threadId);
 
-#define ompd_target_init_sizeof(t) ompd_sizeof__##t = sizeof(t); 
+#define ompd_target_init_sizeof(t) ompd_sizeof__##t = sizeof(t);
   OMPD_FOREACH_SIZEOF(ompd_target_init_sizeof)
 #undef ompd_target_init_sizeof
+
+  omptarget_nvptx_threadPrivateContext->ompd_levelZeroParallelInfo.level = 0;
+  if (isSPMDMode()) {
+    omptarget_nvptx_threadPrivateContext->teamContext.levelZeroTaskDescr
+        .ompd_thread_info.enclosed_parallel.parallel_tasks =
+            &omptarget_nvptx_threadPrivateContext->levelOneTaskDescr[0];
+  } else {
+    // generic mode
+    omptarget_nvptx_threadPrivateContext->ompd_levelZeroParallelInfo
+        .parallel_tasks = &omptarget_nvptx_threadPrivateContext->teamContext
+            .levelZeroTaskDescr;
+  }
 
   ompd_target_initialized = 1;
 }

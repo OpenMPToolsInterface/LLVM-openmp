@@ -14,6 +14,9 @@
     macro (implicit_var, "ompd-implicit-var", ompd_scope_task)              \
     macro (team_size_var, "ompd-team-size-var", ompd_scope_parallel)        \
 
+void __ompd_init_icvs(const ompd_callbacks_t *table) {
+  callbacks = table;
+}
 
 enum ompd_icv {
   ompd_icv_undefined_marker = 0, // ompd_icv_undefined is already defined in ompd.h

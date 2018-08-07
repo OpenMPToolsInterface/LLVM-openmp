@@ -35,13 +35,15 @@ extern "C" {
 
 /******************************************************************************
  * General helper functions
- */
-ompd_rc_t initTypeSizes(ompd_address_space_context_t *context);
+   */
+  ompd_rc_t initTypeSizes(ompd_address_space_context_t *context);
 
 #ifdef __cplusplus
-}
+  }
 
-extern const ompd_callbacks_t *callbacks;
+
+static const ompd_callbacks_t *callbacks = nullptr;
+
 
 class ompdAllocatable {
 public:
@@ -126,5 +128,9 @@ typedef struct _ompd_task_handle_s : public ompdAllocatable {
 } ompd_task_handle_t;
 
 #endif
+
+// TODO (mr) this is ugly, but better then a global symbol (?)
+void __ompd_init_icvs(const ompd_callbacks_t *table);
+void __ompd_init_states(const ompd_callbacks_t *table);
 
 #endif /* SRC_OMP_DEBUG_H_ */

@@ -305,6 +305,13 @@ EXTERN void __kmpc_kernel_prepare_parallel(void *WorkFn,
           "only team master can create parallel");
 
 #ifdef OMPD_SUPPORT
+  // Set ompd info for first level parallel region (this info is stored in the
+  // master threads task info, so it can easily be accessed
+  ompd_nvptx_parallel_info_t &nextPar = currTaskDescr->ompd_ThreadInfo()
+                                                     ->enclosed_parallel;
+  nextPar.level = 1;
+  nextPar.parallel_tasks =
+      omptarget_nvptx_threadPrivateContext->Level1TaskDescr(0);
   // Move the previous thread into undefined state (will be reset in __kmpc_kernel_end_parallel)
   // TODO (mr) find a better place to do this
   ompd_set_device_thread_state(omp_state_undefined);
@@ -414,6 +421,18 @@ EXTERN void __kmpc_serialized_parallel(kmp_Indent *loc, uint32_t global_tid) {
   // - there is only one thread per team
   newTaskDescr->ThreadId() = 0;
   newTaskDescr->ThreadsInTeam() = 1;
+
+#ifdef OMPD_SUPPORT
+  // Set ompd parallel info for the next parallel region in the previous task
+  // descriptor
+  ompd_nvptx_parallel_info_t &newPar =
+      currTaskDescr->ompd_ThreadInfo()->enclosed_parallel;
+  newPar.level = currTaskDescr->GetPrevTaskDescr()
+                              ->ompd_ThreadInfo()
+                              ->enclosed_parallel
+                              .level + 1;
+  newPar.parallel_tasks = newTaskDescr;
+#endif
 
   // set new task descriptor as top
   omptarget_nvptx_threadPrivateContext->SetTopLevelTaskDescr(threadId,

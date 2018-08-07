@@ -200,6 +200,11 @@ public:
   INLINE void CopyFromWorkDescr(omptarget_nvptx_TaskDescr *workTaskDescr);
   INLINE void CopyConvergentParent(omptarget_nvptx_TaskDescr *parentTaskDescr,
                                    uint16_t tid, uint16_t tnum);
+#ifdef OMPD_SUPPORT
+  INLINE ompd_nvptx_thread_info_t *ompd_ThreadInfo() {
+    return &ompd_thread_info;
+  }
+#endif
 
 private:
   // bits for flags: (7 used, 1 free)
@@ -394,6 +399,10 @@ private:
   Counter eventsNum_or_stride[MAX_THREADS_PER_TEAM];
   // Queue to which this object must be returned.
   uint64_t SourceQueue;
+#ifdef OMPD_SUPPORT
+  // The implicit parallel region around the master task in generic mode
+  ompd_nvptx_parallel_info_t ompd_levelZeroParallelInfo;
+#endif
 };
 
 /// Device envrionment data

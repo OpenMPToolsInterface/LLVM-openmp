@@ -73,7 +73,17 @@ ompd_rc_t TType::getSize(ompd_size_t *size) {
            << ") \\" << std::endl;
       return ret;
     }
+
     symbolAddr.segment = descSegment;
+
+    // On cuda targets, ompd_sizeof_  and ompd_access_ symbols are alwazs in
+    // shared memory.
+    // This is a hack to ensure that we are not looking in global memory for
+    // it
+    // TODO (mr): Find a better solution
+    if (descSegment == OMPD_SEGMENT_CUDA_PTX_GLOBAL) {
+      symbolAddr.segment = OMPD_SEGMENT_CUDA_PTX_SHARED;
+    }
 
     ret = TValue::callbacks->read_memory(context, NULL, symbolAddr,
                                           1 * TValue::type_sizes.sizeof_long_long,
@@ -145,6 +155,15 @@ ompd_rc_t TType::getElementOffset(const char *fieldName, ompd_size_t *offset) {
     }
     symbolAddr.segment = descSegment;
 
+    // On cuda targets, ompd_sizeof_  and ompd_access_ symbols are alwazs in
+    // shared memory.
+    // This is a hack to ensure that we are not looking in global memory for
+    // it
+    // TODO (mr): Find a better solution
+    if (descSegment == OMPD_SEGMENT_CUDA_PTX_GLOBAL) {
+      symbolAddr.segment = OMPD_SEGMENT_CUDA_PTX_SHARED;
+    }
+
     ret = TValue::callbacks->read_memory(context, NULL, symbolAddr,
                                           1 * TValue::type_sizes.sizeof_long_long,
                                           &(tmpOffset));
@@ -181,6 +200,15 @@ ompd_rc_t TType::getElementSize(const char *fieldName, ompd_size_t *size) {
       return ret;
     }
     symbolAddr.segment = descSegment;
+
+    // On cuda targets, ompd_sizeof_  and ompd_access_ symbols are alwazs in
+    // shared memory.
+    // This is a hack to ensure that we are not looking in global memory for
+    // it
+    // TODO (mr): Find a better solution
+    if (descSegment == OMPD_SEGMENT_CUDA_PTX_GLOBAL) {
+      symbolAddr.segment = OMPD_SEGMENT_CUDA_PTX_SHARED;
+    }
 
     ret = TValue::callbacks->read_memory(context, NULL, symbolAddr,
                                           1 * TValue::type_sizes.sizeof_long_long,
