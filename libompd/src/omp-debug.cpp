@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 ompd_device_type_sizes_t type_sizes;
+uint64_t ompd_state;
 
 /* --- OMPD functions ------------------------------------------------------- */
 
@@ -61,6 +62,12 @@ ompd_process_initialize(ompd_address_space_context_t
     return ompd_rc_error;
   (*addrhandle)->context = context;
   (*addrhandle)->kind = OMP_DEVICE_KIND_HOST;
+
+  ret = TValue(context, "ompd_state")
+            .castBase(ompd_type_long_long)
+            .getValue(ompd_state);
+  if (ret != ompd_rc_ok)
+    return ret;
 
   return ompd_rc_ok;
 }
@@ -733,42 +740,6 @@ ompd_rc_t ompd_task_handle_compare(ompd_task_handle_t *task_handle_1,
   return ompd_rc_ok;
 }
 
-/* --- 6.2 OMPT Parallel Region Inquiry Analogues ------------------------- */
-
-ompd_rc_t ompd_get_parallel_data(
-    ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    ompd_address_t *data                     /* OUT: OpenMP parallel id */
-    ) {
-  if (!parallel_handle)
-    return ompd_rc_stale_handle;
-  if (!parallel_handle->ah)
-    return ompd_rc_stale_handle;
-  ompd_address_space_context_t *context = parallel_handle->ah->context;
-  if (!context)
-    return ompd_rc_stale_handle;
-#if 0
-    if (!ompd_state)
-      return ompd_rc_needs_state_tracking;
-#endif
-
-  assert(callbacks && "Callback table not initialized!");
-
-  TValue teamInfo;
-  if (parallel_handle->lwt.address != 0)
-    teamInfo = TValue(context, parallel_handle->lwt)
-                   .cast("ompt_lw_taskteam_t", 0); /*lwt*/
-  else
-    teamInfo =
-        TValue(context, parallel_handle->th).cast("kmp_base_team_t", 0); /*t*/
-  ompd_rc_t ret = teamInfo
-                      .access("ompt_team_info") /*t.ompt_team_info*/
-                      .cast("ompt_team_info_t", 0)
-                      .access("parallel_data") /*t.ompt_team_info.parallel_id*/
-                      .getAddress(data);
-  return ret;
-}
-
-
 /* --- 7 Thread Inquiry ----------------------------------------------------- */
 
 /* --- 7.1 Operating System Thread Inquiry ---------------------------------- */
@@ -975,10 +946,8 @@ ompd_rc_t ompd_get_state(
   ompd_address_space_context_t *context = thread_handle->ah->context;
   if (!context)
     return ompd_rc_stale_handle;
-#if 0
   if (!ompd_state)
     return ompd_rc_needs_state_tracking;
-#endif
 
   ompd_rc_t ret;
   assert(callbacks && "Callback table not initialized!");
@@ -1033,10 +1002,8 @@ ompd_rc_t ompd_get_task_frame(
   ompd_address_space_context_t *context = task_handle->ah->context;
   if (!context)
     return ompd_rc_stale_handle;
-#if 0
   if (!ompd_state)
     return ompd_rc_needs_state_tracking;
-#endif
 
   assert(callbacks && "Callback table not initialized!");
 
@@ -1070,39 +1037,6 @@ ompd_rc_t ompd_get_task_frame(
   return ret;
 }
 
-ompd_rc_t
-ompd_get_task_data(ompd_task_handle_t *task_handle, /* IN: OpenMP task handle*/
-                   ompd_address_t *task_data        /* OUT: OpenMP task ID */
-                   ) {
-  if (!task_handle)
-    return ompd_rc_stale_handle;
-  if (!task_handle->ah)
-    return ompd_rc_stale_handle;
-  ompd_address_space_context_t *context = task_handle->ah->context;
-  if (!context)
-    return ompd_rc_stale_handle;
-#if 0
-  if (!ompd_state)
-    return ompd_rc_needs_state_tracking;
-#endif
-
-  assert(callbacks && "Callback table not initialized!");
-
-  TValue taskInfo;
-  if (task_handle->lwt.address != 0)
-    taskInfo =
-        TValue(context, task_handle->lwt).cast("ompt_lw_taskteam_t", 0); /*lwt*/
-  else
-    taskInfo = TValue(context, task_handle->th).cast("kmp_taskdata_t", 0); /*t*/
-  ompd_rc_t ret = taskInfo
-                      .access("ompt_task_info") // td->ompt_task_info
-                      .cast("ompt_task_info_t")
-                      .access("task_data") // td->ompt_task_info.task_data
-                      .getAddress(task_data);
-
-  return ret;
-}
-
 #if 1 // the runtime currently does not have task function information
 ompd_rc_t ompd_get_task_function(
     ompd_task_handle_t *task_handle, /* IN: OpenMP task handle */
@@ -1116,10 +1050,8 @@ ompd_rc_t ompd_get_task_function(
   ompd_address_space_context_t *context = task_handle->ah->context;
   if (!context)
     return ompd_rc_stale_handle;
-#if 0
   if (!ompd_state)
     return ompd_rc_needs_state_tracking;
-#endif
 
   assert(callbacks && "Callback table not initialized!");
 
