@@ -1768,7 +1768,9 @@ void __kmpc_for_static_fini(ident_t *loc, kmp_int32 global_tid) {
         ompt_work_type = ompt_work_sections;
       } else if ((loc->flags & KMP_IDENT_WORK_DISTRIBUTE) != 0) {
         ompt_work_type = ompt_work_distribute;
-        // For the distribute loop, we need to fetch the team_info of the outer parallel region since the teams construct is implemented as nested teams
+        // For the distribute loop, we need to fetch the team_info of the outer
+        // parallel region since the teams construct is implemented as nested
+        // teams
         team_info = __ompt_get_teaminfo(1, NULL);
       } else {
         // use default set above.

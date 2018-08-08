@@ -1507,10 +1507,12 @@ int __kmp_fork_call(ident_t *loc, int gtid,
         ompt_callbacks.ompt_callback(ompt_callback_parallel_begin)(
             parent_task_data, ompt_frame, &ompt_parallel_data, team_size,
             OMPT_INVOKER(call_context), return_address);
-      }
-      else if (!ap) {
-        // When we start a parallel region inside of a teams construct, the OMPT parallel_data is taken from the parent is taken until the parallel_begin callback for this region is executed 
-        ompt_parallel_data.value = parent_team->t.ompt_team_info.parallel_data.value;
+      } else if (!ap) {
+        // When we start a parallel region inside of a teams construct, the OMPT
+        // parallel_data is taken from the parent is taken until the
+        // parallel_begin callback for this region is executed
+        ompt_parallel_data.value =
+            parent_team->t.ompt_team_info.parallel_data.value;
       }
       master_th->th.ompt_thread_info.state = omp_state_overhead;
     }
