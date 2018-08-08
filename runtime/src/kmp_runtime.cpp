@@ -1508,6 +1508,10 @@ int __kmp_fork_call(ident_t *loc, int gtid,
             parent_task_data, ompt_frame, &ompt_parallel_data, team_size,
             OMPT_INVOKER(call_context), return_address);
       }
+      else if (!ap) {
+        // When we start a parallel region inside of a teams construct, the OMPT parallel_data is taken from the parent is taken until the parallel_begin callback for this region is executed 
+        ompt_parallel_data.value = parent_team->t.ompt_team_info.parallel_data.value;
+      }
       master_th->th.ompt_thread_info.state = omp_state_overhead;
     }
 #endif
@@ -1608,6 +1612,9 @@ int __kmp_fork_call(ident_t *loc, int gtid,
       KMP_ATOMIC_INC(&root->r.r_in_parallel);
       parent_team->t.t_active_level++;
       parent_team->t.t_level++;
+#if OMPT_SUPPORT
+      parent_team->t.ompt_team_info.parallel_data = ompt_parallel_data;
+#endif
 
       /* Change number of threads in the team if requested */
       if (master_set_numthreads) { // The parallel has num_threads clause
