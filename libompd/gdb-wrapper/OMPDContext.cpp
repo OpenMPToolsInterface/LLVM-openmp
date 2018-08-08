@@ -139,7 +139,24 @@ ompd_thread_context_t * OMPDHostContext::getContextForThread(gdb_thread_id& thr_
 
 bool OMPDCudaContext::setThisGdbContext()
 {
-  bool ret = false;
+  bool ret = true;
+  stringstream device_command;
+  stringstream coord_command;
+  device_command << "cuda device " << this->cudathread->coord.cudaDevId;
+  coord_command << "cuda grid " << this->cudathread->coord.gridId
+                << " block " << this->cudathread->coord.blockIdx.x
+                << " thread " << this->cudathread->coord.threadIdx.x;
+  OMPDContextPool::gdb->writeInput(device_command.str().c_str());
+  string gdbOut = OMPDContextPool::gdb->readOutput();
+  if (gdbOut.find("cannot be satisfied") != 0)
+    ret = false;
+
+  OMPDContextPool::gdb->writeInput(coord_command.str().c_str());
+  gdbOut = OMPDContextPool::gdb->readOutput();
+  if (gdbOut.find("cannot be satisfied") != 0)
+    ret = false;
+
+#if 0
   stringstream command;
   command 
 #ifdef HACK_FOR_CUDA_GDB
@@ -154,6 +171,7 @@ bool OMPDCudaContext::setThisGdbContext()
   string gdbOut = OMPDContextPool::gdb->readOutput();
   if (gdbOut.find("not known")==0)
     ret = true;
+#endif
   return ret;
 }
 
