@@ -64,9 +64,6 @@ void ompd_init()
   OMPD_FOREACH_SIZEOF(ompd_init_sizeof)
 #undef ompd_init_sizeof
 
-  ompd_dll_locations=ompd_my_dll_locations;
-  ompd_dll_locations_valid ();
-
   const char *ompd_env_var = getenv("OMP_OMPD");
   if (ompd_env_var && !strcmp(ompd_env_var, "on"))
   {
@@ -77,6 +74,9 @@ void ompd_init()
   }
     
   ompd_initialized = 1;
+  ompd_dll_locations=ompd_my_dll_locations;
+  ompd_dll_locations_valid ();
+
 }
 
 /*void omp_ompd_enable ( void )
@@ -90,7 +90,7 @@ void ompd_init()
 #endif
 }*/
 
-void ompd_dll_locations_valid ( void ){
+void __attribute__((noinline)) ompd_dll_locations_valid ( void ){
   /* naive way of implementing hard to opt-out empty function 
      we might want to use a separate object file? */
   asm ("");

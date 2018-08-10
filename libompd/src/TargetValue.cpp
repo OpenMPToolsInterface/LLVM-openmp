@@ -14,23 +14,7 @@ inline int ompd_sizeof(ompd_target_prim_types_t t) {
   assert(t != ompd_type_max && "ompd_type_max should not be used anywhere");
   assert(t != ompd_type_invalid && "request size of invalid type");
 
-  switch (t) {
-    case ompd_type_char:
-      return TValue::type_sizes.sizeof_char;
-    case ompd_type_short:
-      return TValue::type_sizes.sizeof_short;
-    case ompd_type_int:
-      return TValue::type_sizes.sizeof_int;
-    case ompd_type_long:
-      return TValue::type_sizes.sizeof_long;
-    case ompd_type_long_long:
-      return TValue::type_sizes.sizeof_long_long;
-    case ompd_type_pointer:
-      return TValue::type_sizes.sizeof_pointer;
-    default:
-      break;
-  }
-  return 0;
+  return (((char *)&TValue::type_sizes)[(int)t]);
 }
 
 TType &TTypeFactory::getType(ompd_address_space_context_t *context,

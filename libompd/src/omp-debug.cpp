@@ -68,6 +68,15 @@ ompd_process_initialize(ompd_address_space_context_t
             .getValue(ompd_state);
   if (ret != ompd_rc_ok)
     return ret;
+  ret = callbacks->memory_alloc(sizeof(ompd_address_space_handle_t),
+                                 (void **)(addrhandle));
+  if (ret != ompd_rc_ok)
+    return ret;
+//  *addrhandle = new ompd_address_space_handle_t;
+  if (!addrhandle)
+    return ompd_rc_error;
+  (*addrhandle)->context = context;
+  (*addrhandle)->kind = OMP_DEVICE_KIND_HOST;
 
   return ompd_rc_ok;
 }
@@ -110,8 +119,9 @@ ompd_rc_t ompd_release_address_space_handle(
   if (!addr_handle)
     return ompd_rc_bad_input;
 
-  delete addr_handle;
-  return ompd_rc_ok;
+  ompd_rc_t ret = callbacks->memory_free((void *)(addr_handle));
+//  delete addr_handle;
+  return ret;
 }
 
 ompd_rc_t ompd_device_initialize(
@@ -151,8 +161,11 @@ ompd_rc_t ompd_device_initialize(
     if ( ret != ompd_rc_ok )
       continue;
 
-    if (cuda_ctx == (*((uint64_t *)id))) {
-      *device_handle = new ompd_address_space_handle_t;
+    if (cuda_ctx == *((uint64_t *)id)) {
+      ret = callbacks->memory_alloc(sizeof(ompd_address_space_handle_t),
+                                     (void **)(device_handle));
+      if (ret != ompd_rc_ok)
+        return ret;
       if (!device_handle)
         return ompd_rc_error;
       (*device_handle)->context = device_context;
