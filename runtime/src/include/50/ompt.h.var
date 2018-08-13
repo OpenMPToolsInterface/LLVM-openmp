@@ -38,6 +38,7 @@
                                             \
     macro (ompt_get_parallel_info)          \
     macro (ompt_get_task_info)              \
+    macro (ompt_get_task_memory)            \
     macro (ompt_get_thread_data)            \
     macro (ompt_get_unique_id)              \
                                             \
@@ -277,8 +278,8 @@ typedef enum ompt_thread_t {
 } ompt_thread_t;
 
 typedef enum ompt_parallel_flag_t {
-    ompt_parallel_invoker_program = 0x00000001,             /* program invokes master task         */
-    ompt_parallel_invoker_runtime = 0x00000002,              /* runtime invokes master task         */
+    ompt_parallel_invoker_program = 0x00000001,              /* program invokes master task */
+    ompt_parallel_invoker_runtime = 0x00000002,              /* runtime invokes master task */
     ompt_parallel_league = 0x40000000,
     ompt_parallel_team = 0x80000000
 } ompt_parallel_flag_t;
@@ -403,14 +404,18 @@ typedef void (*ompt_callback_target_data_op_t) (
     ompt_id_t target_id,
     ompt_id_t host_op_id,
     ompt_target_data_op_t optype,
-    void *host_addr,
-    void *device_addr,
-    size_t bytes
+    void *src_addr,
+    int src_device_num,
+    void *dest_addr,
+    int dest_device_num,
+    size_t bytes,
+    const void *codeptr_ra
 );
 
 typedef void (*ompt_callback_target_submit_t) (
     ompt_id_t target_id,
-    ompt_id_t host_op_id
+    ompt_id_t host_op_id,
+    unsigned int requested_num_teams
 );
 
 typedef void (*ompt_callback_target_map_t) (
@@ -419,7 +424,8 @@ typedef void (*ompt_callback_target_map_t) (
     void **host_addr,
     void **device_addr,
     size_t *bytes,
-    unsigned int *mapping_flags
+    unsigned int *mapping_flags,
+    const void *codeptr_ra
 );
 
 typedef void (*ompt_callback_device_initialize_t) (
@@ -611,6 +617,12 @@ OMPT_API_FUNCTION(int, ompt_get_task_info, (
     omp_frame_t **task_frame,
     ompt_data_t **parallel_data,
     int *thread_num
+));
+
+OMPT_API_FUNCTION(int, ompt_get_task_memory, (
+    void **addr,
+    size_t *size,
+    int block
 ));
 
 /* procs */
