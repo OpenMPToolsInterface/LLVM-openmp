@@ -2567,9 +2567,9 @@ void __kmpc_set_nest_lock(ident_t *loc, kmp_int32 gtid, void **user_lock) {
           codeptr);
     }
   }
-#endif
   int acquire_status =
       KMP_D_LOCK_FUNC(user_lock, set)((kmp_dyna_lock_t *)user_lock, gtid);
+#endif
 #if USE_ITT_BUILD
   __kmp_itt_lock_acquired((kmp_user_lock_p)user_lock);
 #endif
@@ -2758,10 +2758,10 @@ void __kmpc_unset_nest_lock(ident_t *loc, kmp_int32 gtid, void **user_lock) {
 #if USE_ITT_BUILD
   __kmp_itt_lock_releasing((kmp_user_lock_p)user_lock);
 #endif
-  int release_status =
-      KMP_D_LOCK_FUNC(user_lock, unset)((kmp_dyna_lock_t *)user_lock, gtid);
 
 #if OMPT_SUPPORT && OMPT_OPTIONAL
+  int release_status =
+      KMP_D_LOCK_FUNC(user_lock, unset)((kmp_dyna_lock_t *)user_lock, gtid);
   // This is the case, if called from omp_init_lock_with_hint:
   void *codeptr = OMPT_LOAD_RETURN_ADDRESS(gtid);
   if (!codeptr)
