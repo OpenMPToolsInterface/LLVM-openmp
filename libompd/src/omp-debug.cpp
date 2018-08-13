@@ -232,6 +232,7 @@ ompd_rc_t ompd_get_thread_in_parallel(
 
   (*thread_handle)->th = taddr;
   (*thread_handle)->ah = parallel_handle->ah;
+  (*thread_handle)->cuda_kernel_info = parallel_handle->cuda_kernel_info;
   return ret;
 }
 

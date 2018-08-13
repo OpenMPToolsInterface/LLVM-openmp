@@ -92,6 +92,30 @@ static ompd_rc_t ompd_get_level(
   return ret;
 }
 
+
+static ompd_rc_t ompd_get_cuda_level(
+    ompd_parallel_handle_t *parallel_handle,
+    ompd_word_t *val) {
+  if (!parallel_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = parallel_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized");
+
+  uint16_t res;
+  ompd_rc_t ret = TValue(context, parallel_handle->th)
+                      .cast("ompd_npvtx_parallel_info_t", 0,
+                            OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+                      .access("level")
+                      .castBase(ompd_type_short)
+                      .getValue(res);
+  *val = res;
+  return ret;
+}
+
+
 static ompd_rc_t ompd_get_active_level(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
     ompd_word_t *val                         /* OUT: active nesting level */
@@ -341,7 +365,32 @@ ompd_get_num_threads(ompd_parallel_handle_t
    *val = res;
  }
  return ret;
-} 
+}
+
+static ompd_rc_t
+ompd_get_cuda_num_threads(ompd_parallel_handle_t *parallel_handle,
+                          ompd_word_t *val) {
+  if (!parallel_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = parallel_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized");
+
+  uint16_t res;
+
+  ompd_rc_t ret = TValue(context, parallel_handle->th)
+                      .cast("ompd_nvptx_parallel_info_t", 0,
+                            OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+                      .access("parallel_tasks")
+                      .cast("omptarget_npvtx_TaskDescr", 1)
+                      .access("items__threadsInTeam")
+                      .castBase(ompd_type_short)
+                      .getValue(res);
+  *val = res;
+  return ret;
+}
 
 ompd_rc_t ompd_get_icv_from_scope(void *handle, ompd_scope_t scope,
                                   ompd_icv_id_t icv_id,

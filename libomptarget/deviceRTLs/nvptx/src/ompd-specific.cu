@@ -20,10 +20,10 @@ OMPD_FOREACH_ACCESS(ompd_target_declare_access)
 #undef ompd_target_declare_sizeof
 
 __device__ __shared__
-  uint64_t ompd_access__omptarget_nvptx_TaskDescr__items__threadId;
+  uint64_t ompd_access__omptarget_nvptx_TaskDescr__items__threadsInTeam;
 
 __device__ __shared__
-  uint64_t ompd_sizeof__omptarget_nvptx_TaskDescr__items__threadId;
+  uint64_t ompd_sizeof__omptarget_nvptx_TaskDescr__items__threadsInTeam;
 
 
 __device__ void ompd_init ( void )
@@ -35,15 +35,15 @@ __device__ void ompd_init ( void )
   OMPD_FOREACH_ACCESS(ompd_target_init_access)
 #undef ompd_target_init_access
 
-  ompd_access__omptarget_nvptx_TaskDescr__items__threadId =
-          (uint64_t)&(((omptarget_nvptx_TaskDescr*)0)->items.threadId);
+  ompd_access__omptarget_nvptx_TaskDescr__items__threadsInTeam =
+          (uint64_t)&(((omptarget_nvptx_TaskDescr*)0)->items.threadsInTeam);
 
 #define ompd_target_init_sizeof_member(t,m) ompd_sizeof__##t##__##m = sizeof(((t*)0)->m);
   OMPD_FOREACH_ACCESS(ompd_target_init_sizeof_member)
 #undef ompd_target_init_sizeof_member
 
-  ompd_sizeof__omptarget_nvptx_TaskDescr__items__threadId =
-    (uint64_t)sizeof(((omptarget_nvptx_TaskDescr*)0)->items.threadId);
+  ompd_sizeof__omptarget_nvptx_TaskDescr__items__threadsInTeam =
+    (uint64_t)sizeof(((omptarget_nvptx_TaskDescr*)0)->items.threadsInTeam);
 
 #define ompd_target_init_sizeof(t) ompd_sizeof__##t = sizeof(t);
   OMPD_FOREACH_SIZEOF(ompd_target_init_sizeof)
