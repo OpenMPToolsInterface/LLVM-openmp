@@ -105,7 +105,20 @@ OMPDCommandFactory::OMPDCommandFactory()
 
 FOREACH_OMPD_API_FN(OMPD_FIND_API_FUNCTION)
 #undef OMPD_FIND_API_FUNCTION
+}
 
+OMPDCommandFactory::~OMPDCommandFactory()
+{
+  ompd_rc_t ret;
+  ret = functions->ompd_release_address_space_handle(addrhandle);
+  if (ret != ompd_rc_ok)
+  {
+    out << "ERROR: could not finalize target address space\n";
+  }
+}
+
+void OMPDCommandFactory::initOmpd()
+{
   // Initialize OMPD library
   ompd_callbacks_t *table = getCallbacksTable();
   assert(table && "Invalid callbacks table");
@@ -119,19 +132,12 @@ FOREACH_OMPD_API_FN(OMPD_FIND_API_FUNCTION)
                                           /*&prochandle, */&addrhandle);
   if (ret != ompd_rc_ok)
   {
+    addrhandle = nullptr;
     out << "ERROR: could not initialize target process\n";
   }
-
-  icvs = OMPDIcvsPtr(new OMPDIcvs(functions, addrhandle));
-}
-
-OMPDCommandFactory::~OMPDCommandFactory()
-{
-  ompd_rc_t ret;
-  ret = functions->ompd_release_address_space_handle(addrhandle);
-  if (ret != ompd_rc_ok)
+  else
   {
-    out << "ERROR: could not finalize target address space\n";
+    icvs = OMPDIcvsPtr(new OMPDIcvs(functions, addrhandle));
   }
 }
 
@@ -152,8 +158,12 @@ void * OMPDCommandFactory::findFunctionInLibrary(const char *fun) const
   return ret;
 }
 
-OMPDCommand* OMPDCommandFactory::create(const char *str, const vector<string>& extraArgs) const
+OMPDCommand* OMPDCommandFactory::create(const char *str, const vector<string>& extraArgs)
 {
+  if (addrhandle == nullptr) {
+    initOmpd();
+  }
+
   if (strcmp(str, "test") == 0)
     return new OMPDTestCallbacks(functions, addrhandle, extraArgs);
   else if (strcmp(str, "threads") == 0)
@@ -312,12 +322,12 @@ void OMPDThreads::execute() const
     {
       ompd_word_t state;
       device_thread_handles.push_back(thread_handle);
-      functions->ompd_get_state(thread_handle, &state, NULL);
+      ret = functions->ompd_get_state(thread_handle, &state, NULL);
       if (last_state == -1) {
         last_state = state;
         last_coords = i.coord;
         printf("(%li,0,0)  (%li,0,0)", i.coord.blockIdx.x, i.coord.threadIdx.x);
-      } else if (state != last_state || i.coord.blockIdx.x != last_coords.blockIdx.x) {
+      } else if (state != last_state || i.coord.blockIdx.x != last_coords.blockIdx.x || i.coord.threadIdx.x != last_coords.threadIdx.x + 1) {
         printf("  (%li,0,0)  %s\n", last_coords.threadIdx.x, cuda_state_names[last_state]);
         last_coords = i.coord;
         last_state = state;

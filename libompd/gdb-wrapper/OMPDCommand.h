@@ -155,6 +155,7 @@ class OMPDCommandFactory
 {
 private:
   void * findFunctionInLibrary(const char *fun) const;
+  void initOmpd();
   OMPDFunctionsPtr functions = nullptr;
   OMPDIcvsPtr icvs = nullptr;
 //   ompd_process_handle_t* prochandle = nullptr;
@@ -165,7 +166,7 @@ public:
   OMPDCommandFactory();
   ~OMPDCommandFactory();
 //  OMPDCommand* create(const char *str) const;
-  OMPDCommand* create(const char *str, const std::vector<std::string>& extraArgs=std::vector<std::string>()) const;
+  OMPDCommand* create(const char *str, const std::vector<std::string>& extraArgs=std::vector<std::string>());
 };
 
 typedef std::unique_ptr<OMPDCommandFactory> OMPDCommandFactoryPtr;
