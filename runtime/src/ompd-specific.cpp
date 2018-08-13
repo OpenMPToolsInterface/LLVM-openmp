@@ -1,4 +1,5 @@
 #include "ompd-specific.h"
+#include <stdlib.h>
 
 #ifdef OMPD_SUPPORT
 
@@ -22,7 +23,8 @@ OMPD_FOREACH_BITFIELD(ompd_declare_bitfield)
 OMPD_FOREACH_SIZEOF(ompd_declare_sizeof)
 #undef ompd_declare_sizeof
 
-volatile const char * * ompd_dll_locations=NULL;
+volatile char * * ompd_dll_locations=NULL;
+volatile static char * ompd_my_dll_locations[2] = {(char*)"libompd.so",NULL};
 uint64_t ompd_state=0;
 
 int ompd_rtl_version = 7;
@@ -63,7 +65,6 @@ OMPD_FOREACH_ACCESS(ompd_init_sizeof_member)
 OMPD_FOREACH_SIZEOF(ompd_init_sizeof)
 #undef ompd_init_sizeof
 
-  volatile static const char * ompd_my_dll_locations[2] = {"libompd.so",NULL};
 
 
   const char *ompd_env_var = getenv("OMP_OMPD");
@@ -76,7 +77,11 @@ OMPD_FOREACH_SIZEOF(ompd_init_sizeof)
   }
     
   ompd_initialized = 1;
-  ompd_dll_locations=ompd_my_dll_locations;
+//  ompd_dll_locations=ompd_my_dll_locations;
+  ompd_dll_locations = (volatile char**) malloc(sizeof(char*)*2);
+  ompd_dll_locations[0] = ompd_my_dll_locations[0];
+  ompd_dll_locations[1] = ompd_my_dll_locations[1];
+  asm ("");
   ompd_dll_locations_valid ();
 
 }

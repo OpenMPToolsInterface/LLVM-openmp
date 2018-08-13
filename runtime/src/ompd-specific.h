@@ -7,7 +7,7 @@
 #ifdef OMPD_SUPPORT
 
 void ompd_init();
-extern volatile const char * * ompd_dll_locations;
+extern volatile char * * ompd_dll_locations;
 extern int ompd_rtl_version;
 
 #ifdef  __cplusplus
