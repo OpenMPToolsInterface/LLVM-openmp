@@ -509,6 +509,12 @@ OMPT_API_ROUTINE int ompt_get_task_info(int ancestor_level, int *type,
                                        task_frame, parallel_data, thread_num);
 }
 
+OMPT_API_ROUTINE int ompt_get_task_memory(void **addr, size_t *size,
+                                          int block) {
+  // stub
+  return 0;
+}
+
 /*****************************************************************************
  * num_procs
  ****************************************************************************/
