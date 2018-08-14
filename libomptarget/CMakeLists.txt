@@ -53,6 +53,12 @@ if(LIBOMPTARGET_CMAKE_BUILD_TYPE MATCHES debug)
   add_definitions(-O0)
 endif()
 
+# OMPD support for libomptarget (currently only with cuda)
+set(LIBOMPTARGET_OMPD_SUPPORT FALSE CACHE BOOL "OMPD-support?")
+if (LIBOMPTARGET_OMPD_SUPPORT)
+  add_definitions(-DOMPD_SUPPORT=1)
+endif()
+
 include_directories(include)
 
 # Build target agnostic offloading library.

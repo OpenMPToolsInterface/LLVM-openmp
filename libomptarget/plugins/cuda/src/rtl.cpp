@@ -54,6 +54,19 @@ static int DebugLevel = 0;
   {}
 #endif
 
+#if OMPD_SUPPORT
+#ifdef __cplusplus
+extern "C" {
+#endif
+  /* TODO - Put these OMPD globals someplace cleaner */
+  uint64_t ompd_num_cuda_devices;
+  CUcontext* ompd_CudaContextArray;
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+#endif /* OMPD_SUPPORT */
+
+
 /// Keep entries table per device.
 struct FuncOrGblEntryTy {
   __tgt_target_table Table;
@@ -205,6 +218,10 @@ public:
 
     FuncGblEntries.resize(NumberOfDevices);
     Contexts.resize(NumberOfDevices);
+#if OMPD_SUPPORT
+    ompd_num_cuda_devices = (uint64_t)Contexts.size();
+    ompd_CudaContextArray = &Contexts[0];
+#endif /* OMPD_SUPPORT */
     ThreadsPerBlock.resize(NumberOfDevices);
     BlocksPerGrid.resize(NumberOfDevices);
     WarpSize.resize(NumberOfDevices);

@@ -54,6 +54,7 @@ if(LIBOMPTARGET_DEP_CUDA_FOUND)
       src/reduction.cu
       src/sync.cu
       src/task.cu
+      src/ompd-specific.cu
   )
 
   set(omp_data_objects src/omp_data.cu)

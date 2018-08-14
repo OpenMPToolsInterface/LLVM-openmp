@@ -32,6 +32,7 @@
 #include "option.h"    // choices we have
 #include "state-queue.h"
 #include "support.h"
+#include "ompd-specific.h"
 
 #define OMPTARGET_NVPTX_VERSION 1.1
 
@@ -53,13 +54,13 @@
 #if defined(CUDART_VERSION) && CUDART_VERSION >= 9000
 #define __SHFL_SYNC(mask, var, srcLane) __shfl_sync((mask), (var), (srcLane))
 #define __SHFL_DOWN_SYNC(mask, var, delta, width)                              \
-  __shfl_down_sync((mask), (var), (delta), (width))
+    __shfl_down_sync((mask), (var), (delta), (width))
 #define __BALLOT_SYNC(mask, predicate) __ballot_sync((mask), (predicate))
 #define __ACTIVEMASK() __activemask()
 #else
 #define __SHFL_SYNC(mask, var, srcLane) __shfl((var), (srcLane))
 #define __SHFL_DOWN_SYNC(mask, var, delta, width)                              \
-  __shfl_down((var), (delta), (width))
+    __shfl_down((var), (delta), (width))
 #define __BALLOT_SYNC(mask, predicate) __ballot((predicate))
 #define __ACTIVEMASK() __ballot(1)
 #endif
@@ -150,6 +151,13 @@ extern __device__ __shared__ DataSharingStateTy DataSharingState;
 // task ICV and (implicit & explicit) task state
 
 class omptarget_nvptx_TaskDescr {
+#if OMPD_SUPPORT
+  friend void __device__ ompd_init( void );
+  friend INLINE void ompd_init_thread(
+      omptarget_nvptx_TaskDescr *currTaskDescr);
+  friend __device__ void  ompd_set_device_specific_thread_state(
+      omptarget_nvptx_TaskDescr *taskDescr, omp_state_t state);
+#endif /* OMPD_SUPPORT */
 public:
   // methods for flags
   INLINE omp_sched_t GetRuntimeSched();
@@ -192,6 +200,11 @@ public:
   INLINE void CopyFromWorkDescr(omptarget_nvptx_TaskDescr *workTaskDescr);
   INLINE void CopyConvergentParent(omptarget_nvptx_TaskDescr *parentTaskDescr,
                                    uint16_t tid, uint16_t tnum);
+#ifdef OMPD_SUPPORT
+  INLINE ompd_nvptx_thread_info_t *ompd_ThreadInfo() {
+    return &ompd_thread_info;
+  }
+#endif
 
 private:
   // bits for flags: (7 used, 1 free)
@@ -216,6 +229,9 @@ private:
     uint16_t threadsInTeam;    // threads in current team
     uint64_t runtimeChunkSize; // runtime chunk size
   } items;
+#ifdef OMPD_SUPPORT
+  ompd_nvptx_thread_info_t ompd_thread_info;
+#endif
   omptarget_nvptx_TaskDescr *prev;
 };
 
@@ -247,6 +263,9 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 
 class omptarget_nvptx_TeamDescr {
+#ifdef OMPD_SUPPORT
+  friend void __device__ ompd_init( void );
+#endif /*OMPD_SUPPORT*/
 public:
   // access to data
   INLINE omptarget_nvptx_TaskDescr *LevelZeroTaskDescr() {
@@ -310,6 +329,9 @@ private:
 // tid refers here to the global thread id
 // do not support multiple concurrent kernel a this time
 class omptarget_nvptx_ThreadPrivateContext {
+#if OMPD_SUPPORT
+  friend void __device__ ompd_init( void );
+#endif /* OMPD_SUPPORT */
 public:
   // task
   INLINE omptarget_nvptx_TaskDescr *Level1TaskDescr(int tid) {
@@ -377,6 +399,10 @@ private:
   Counter eventsNum_or_stride[MAX_THREADS_PER_TEAM];
   // Queue to which this object must be returned.
   uint64_t SourceQueue;
+#ifdef OMPD_SUPPORT
+  // The implicit parallel region around the master task in generic mode
+  ompd_nvptx_parallel_info_t ompd_levelZeroParallelInfo;
+#endif
 };
 
 /// Device envrionment data

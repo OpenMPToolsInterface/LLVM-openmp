@@ -451,6 +451,10 @@ void KMP_EXPAND_NAME(KMP_API_NAME_GOMP_PARALLEL_START)(void (*task)(void *),
     frame->exit_frame = OMPT_GET_FRAME_ADDRESS(1);
   }
 #endif
+#if OMPD_SUPPORT
+    if ( ompd_state & OMPD_ENABLE_BP )
+        ompd_bp_parallel_begin ();  
+#endif
 }
 
 void KMP_EXPAND_NAME(KMP_API_NAME_GOMP_PARALLEL_END)(void) {
@@ -485,6 +489,10 @@ void KMP_EXPAND_NAME(KMP_API_NAME_GOMP_PARALLEL_END)(void) {
   } else {
     __kmpc_end_serialized_parallel(&loc, gtid);
   }
+#if OMPD_SUPPORT
+  if ( ompd_state & OMPD_ENABLE_BP )
+    ompd_bp_parallel_end ();  
+#endif
 }
 
 // Loop worksharing constructs
