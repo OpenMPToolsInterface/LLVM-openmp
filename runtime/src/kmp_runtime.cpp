@@ -3833,6 +3833,9 @@ int __kmp_register_root(int initial_thread) {
     ompt_set_thread_state(root_thread, omp_state_work_serial);
   }
 #endif
+#if OMPD_SUPPORT
+  ompd_bp_thread_begin();
+#endif
 
   KMP_MB();
   __kmp_release_bootstrap_lock(&__kmp_forkjoin_lock);
@@ -5589,6 +5592,9 @@ void *__kmp_launch_thread(kmp_info_t *this_thr) {
           ompt_thread_worker, thread_data);
     }
   }
+#endif
+#if OMPD_SUPPORT
+  ompd_bp_thread_begin();
 #endif
 
 #if OMPT_SUPPORT
