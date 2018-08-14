@@ -67,11 +67,6 @@ typedef struct _ompd_address_space_handle_s {
   uint64_t id;
 } ompd_address_space_handle_t;
 
-typedef struct _ompd_device_handle_s {
-  ompd_address_space_handle_t *ah;
-  ompd_address_t th; /* target handle */
-} ompd_device_handle_t;
-
 typedef struct _ompd_thread_handle_s {
   ompd_address_space_handle_t *ah;
   ompd_thread_context_t *thread_context;
