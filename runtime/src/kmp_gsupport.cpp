@@ -32,7 +32,7 @@ void KMP_EXPAND_NAME(KMP_API_NAME_GOMP_BARRIER)(void) {
   MKLOC(loc, "GOMP_barrier");
   KA_TRACE(20, ("GOMP_barrier: T#%d\n", gtid));
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-  ompt_frame_t *ompt_frame;
+  omp_frame_t *ompt_frame;
   if (ompt_enabled.enabled) {
     __ompt_get_task_info_internal(0, NULL, NULL, &ompt_frame, NULL, NULL);
     ompt_frame->enter_frame = OMPT_GET_FRAME_ADDRESS(1);
@@ -108,7 +108,7 @@ void KMP_EXPAND_NAME(KMP_API_NAME_GOMP_ATOMIC_START)(void) {
 
 void KMP_EXPAND_NAME(KMP_API_NAME_GOMP_ATOMIC_END)(void) {
   int gtid = __kmp_get_gtid();
-  KA_TRACE(20, ("GOMP_atomic_start: T#%d\n", gtid));
+  KA_TRACE(20, ("GOMP_atomic_end: T#%d\n", gtid));
   __kmp_release_atomic_lock(&__kmp_atomic_lock, gtid);
 }
 
@@ -178,7 +178,7 @@ void *KMP_EXPAND_NAME(KMP_API_NAME_GOMP_SINGLE_COPY_START)(void) {
 // and for all other threads to reach this point.
 
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-  ompt_frame_t *ompt_frame;
+  omp_frame_t *ompt_frame;
   if (ompt_enabled.enabled) {
     __ompt_get_task_info_internal(0, NULL, NULL, &ompt_frame, NULL, NULL);
     ompt_frame->enter_frame = OMPT_GET_FRAME_ADDRESS(1);
@@ -214,7 +214,7 @@ void KMP_EXPAND_NAME(KMP_API_NAME_GOMP_SINGLE_COPY_END)(void *data) {
   // propagated to all threads before trying to reuse the t_copypriv_data field.
   __kmp_team_from_gtid(gtid)->t.t_copypriv_data = data;
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-  ompt_frame_t *ompt_frame;
+  omp_frame_t *ompt_frame;
   if (ompt_enabled.enabled) {
     __ompt_get_task_info_internal(0, NULL, NULL, &ompt_frame, NULL, NULL);
     ompt_frame->enter_frame = OMPT_GET_FRAME_ADDRESS(1);
@@ -284,7 +284,7 @@ static
                                  void *data) {
 #if OMPT_SUPPORT
   kmp_info_t *thr;
-  ompt_frame_t *ompt_frame;
+  omp_frame_t *ompt_frame;
   omp_state_t enclosing_state;
 
   if (ompt_enabled.enabled) {
@@ -331,7 +331,7 @@ static
 
 #if OMPT_SUPPORT
   kmp_info_t *thr;
-  ompt_frame_t *ompt_frame;
+  omp_frame_t *ompt_frame;
   omp_state_t enclosing_state;
 
   if (ompt_enabled.enabled) {
@@ -422,7 +422,7 @@ void KMP_EXPAND_NAME(KMP_API_NAME_GOMP_PARALLEL_START)(void (*task)(void *),
   int gtid = __kmp_entry_gtid();
 
 #if OMPT_SUPPORT
-  ompt_frame_t *parent_frame, *frame;
+  omp_frame_t *parent_frame, *frame;
 
   if (ompt_enabled.enabled) {
     __ompt_get_task_info_internal(0, NULL, NULL, &parent_frame, NULL, NULL);
@@ -647,7 +647,7 @@ void KMP_EXPAND_NAME(KMP_API_NAME_GOMP_LOOP_END)(void) {
   KA_TRACE(20, ("GOMP_loop_end: T#%d\n", gtid))
 
 #if OMPT_SUPPORT && OMPT_OPTIONAL
-  ompt_frame_t *ompt_frame;
+  omp_frame_t *ompt_frame;
   if (ompt_enabled.enabled) {
     __ompt_get_task_info_internal(0, NULL, NULL, &ompt_frame, NULL, NULL);
     ompt_frame->enter_frame = OMPT_GET_FRAME_ADDRESS(1);
@@ -842,7 +842,7 @@ LOOP_NEXT_ULL(KMP_EXPAND_NAME(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_RUNTIME_NEXT),
 #if OMPT_SUPPORT && OMPT_OPTIONAL
 
 #define OMPT_LOOP_PRE()                                                        \
-  ompt_frame_t *parent_frame;                                                  \
+  omp_frame_t *parent_frame;                                                   \
   if (ompt_enabled.enabled) {                                                  \
     __ompt_get_task_info_internal(0, NULL, NULL, &parent_frame, NULL, NULL);   \
     parent_frame->enter_frame = OMPT_GET_FRAME_ADDRESS(1);                     \
@@ -1070,7 +1070,7 @@ void KMP_EXPAND_NAME(KMP_API_NAME_GOMP_PARALLEL_SECTIONS_START)(
   int gtid = __kmp_entry_gtid();
 
 #if OMPT_SUPPORT
-  ompt_frame_t *parent_frame;
+  omp_frame_t *parent_frame;
 
   if (ompt_enabled.enabled) {
     __ompt_get_task_info_internal(0, NULL, NULL, &parent_frame, NULL, NULL);
@@ -1110,7 +1110,7 @@ void KMP_EXPAND_NAME(KMP_API_NAME_GOMP_SECTIONS_END)(void) {
   KA_TRACE(20, ("GOMP_sections_end: T#%d\n", gtid))
 
 #if OMPT_SUPPORT
-  ompt_frame_t *ompt_frame;
+  omp_frame_t *ompt_frame;
   if (ompt_enabled.enabled) {
     __ompt_get_task_info_internal(0, NULL, NULL, &ompt_frame, NULL, NULL);
     ompt_frame->enter_frame = OMPT_GET_FRAME_ADDRESS(1);
