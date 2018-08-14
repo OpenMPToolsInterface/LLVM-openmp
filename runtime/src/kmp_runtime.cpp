@@ -32,6 +32,9 @@
 #if OMPT_SUPPORT
 #include "ompt-specific.h"
 #endif
+#if OMPD_SUPPORT
+#include "ompd-specific.h"
+#endif
 
 /* these are temporary issues to be dealt with */
 #define KMP_USE_PRCTL 0
@@ -1569,10 +1572,18 @@ int __kmp_fork_call(ident_t *loc, int gtid,
           exit_runtime_p = &dummy;
         }
 #endif
+#if OMPD_SUPPORT
+    if ( ompd_state & OMPD_ENABLE_BP )
+        ompd_bp_parallel_end ();
+#endif
 
         {
           KMP_TIME_PARTITIONED_BLOCK(OMP_parallel);
           KMP_SET_THREAD_STATE_BLOCK(IMPLICIT_TASK);
+#if OMPD_SUPPORT
+    if ( ompd_state & OMPD_ENABLE_BP )
+         ompd_bp_parallel_begin ();
+#endif
           __kmp_invoke_microtask(microtask, gtid, 0, argc, parent_team->t.t_argv
 #if OMPT_SUPPORT
                                  ,
@@ -1797,7 +1808,7 @@ int __kmp_fork_call(ident_t *loc, int gtid,
 
 #if OMPT_SUPPORT
           if (ompt_enabled.enabled) {
-            exit_runtime_p = NULL;
+            *exit_runtime_p = NULL;
             if (ompt_enabled.ompt_callback_implicit_task) {
               ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
                   ompt_scope_end, NULL, &(task_info->task_data), 1,
@@ -3832,6 +3843,9 @@ int __kmp_register_root(int initial_thread) {
     ompt_set_thread_state(root_thread, omp_state_work_serial);
   }
 #endif
+#if OMPD_SUPPORT
+  ompd_bp_thread_begin();
+#endif
 
   KMP_MB();
   __kmp_release_bootstrap_lock(&__kmp_forkjoin_lock);
@@ -5593,6 +5607,9 @@ void *__kmp_launch_thread(kmp_info_t *this_thr) {
     }
   }
 #endif
+#if OMPD_SUPPORT
+  ompd_bp_thread_begin();
+#endif
 
 #if OMPT_SUPPORT
   if (ompt_enabled.enabled) {
@@ -6397,6 +6414,9 @@ static void __kmp_do_serial_initialize(void) {
 
 #if OMPT_SUPPORT
   ompt_pre_init();
+#endif
+#if OMPD_SUPPORT
+    ompd_init();
 #endif
 
   __kmp_validate_locks();
