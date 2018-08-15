@@ -502,10 +502,6 @@ typedef void (*ompt_callback_master_t) (
     const void *codeptr_ra                /* return address of runtime call      */
 );
 
-typedef void (*ompt_callback_idle_t) (
-    ompt_scope_endpoint_t endpoint        /* endpoint of idle time               */
-);
-
 typedef enum ompt_work_t {
     ompt_work_loop            = 1,
     ompt_work_sections        = 2,
