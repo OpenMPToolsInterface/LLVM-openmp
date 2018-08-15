@@ -41,6 +41,7 @@
     macro (ompt_get_task_memory)            \
     macro (ompt_get_thread_data)            \
     macro (ompt_get_unique_id)              \
+    macro (ompt_finalize_tool)              \
                                             \
     macro(ompt_get_num_procs)               \
     macro(ompt_get_num_places)              \
@@ -278,8 +279,8 @@ typedef enum ompt_thread_t {
 } ompt_thread_t;
 
 typedef enum ompt_parallel_flag_t {
-    ompt_parallel_invoker_program = 0x00000001,              /* program invokes master task */
-    ompt_parallel_invoker_runtime = 0x00000002,              /* runtime invokes master task */
+    ompt_parallel_invoker_program = 0x00000001,   /* program invokes master task */
+    ompt_parallel_invoker_runtime = 0x00000002,   /* runtime invokes master task */
     ompt_parallel_league = 0x40000000,
     ompt_parallel_team = 0x80000000
 } ompt_parallel_flag_t;
@@ -710,6 +711,9 @@ OMPT_API_FUNCTION(int, ompt_enumerate_mutex_impls, (
 
 /* get_unique_id */
 OMPT_API_FUNCTION(uint64_t, ompt_get_unique_id, (void));
+
+/* finalize tool */
+OMPT_API_FUNCTION(void, ompt_finalize_tool, (void)); 
 
 #ifdef  __cplusplus
 };
