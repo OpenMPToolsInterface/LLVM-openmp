@@ -6952,6 +6952,13 @@ int __kmp_invoke_task_func(int gtid) {
   my_task_data =
       &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_data);
   my_parallel_data = &(team->t.ompt_team_info.parallel_data);
+
+  if(this_thr->th.th_teams_microtask && this_thr->th.th_teams_level == team->t.t_level) {
+      my_task_data =
+        &(team->t.t_parent->t.t_implicit_task_taskdata[tid].ompt_task_info.task_data);
+      my_parallel_data = &(team->t.t_parent->t.ompt_team_info.parallel_data);
+  }
+
   if (ompt_enabled.ompt_callback_implicit_task) {
     ompt_team_size = team->t.t_nproc;
     ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
