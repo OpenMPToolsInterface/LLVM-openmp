@@ -1024,14 +1024,12 @@ static void __kmp_hierarchical_barrier_gather(
   // All subordinates are gathered; now release parent if not master thread
 
   if (!KMP_MASTER_TID(tid)) { // worker threads release parent in hierarchy
-    KA_TRACE(
-        20,
-        ("__kmp_hierarchical_barrier_gather: T#%d(%d:%d) releasing T#%d(%d:%d) "
-         "arrived(%p): %llu => %llu\n",
-         gtid, team->t.t_id, tid,
-         __kmp_gtid_from_tid(thr_bar->parent_tid, team), team->t.t_id,
-         thr_bar->parent_tid, &thr_bar->b_arrived, thr_bar->b_arrived,
-         thr_bar->b_arrived + KMP_BARRIER_STATE_BUMP));
+    KA_TRACE(20, ("__kmp_hierarchical_barrier_gather: T#%d(%d:%d) releasing"
+                  " T#%d(%d:%d) arrived(%p): %llu => %llu\n",
+                  gtid, team->t.t_id, tid,
+                  __kmp_gtid_from_tid(thr_bar->parent_tid, team), team->t.t_id,
+                  thr_bar->parent_tid, &thr_bar->b_arrived, thr_bar->b_arrived,
+                  thr_bar->b_arrived + KMP_BARRIER_STATE_BUMP));
     /* Mark arrival to parent: After performing this write, a worker thread may
        not assume that the team is valid any more - it could be deallocated by
        the master thread at any time. */
@@ -1041,8 +1039,8 @@ static void __kmp_hierarchical_barrier_gather(
       ANNOTATE_BARRIER_BEGIN(this_thr);
       kmp_flag_64 flag(&thr_bar->b_arrived, other_threads[thr_bar->parent_tid]);
       flag.release();
-    } else { // Leaf does special release on the "offset" bits of parent's
-      // b_arrived flag
+    } else {
+      // Leaf does special release on "offset" bits of parent's b_arrived flag
       thr_bar->b_arrived = team->t.t_bar[bt].b_arrived + KMP_BARRIER_STATE_BUMP;
       kmp_flag_oncore flag(&thr_bar->parent_bar->b_arrived, thr_bar->offset);
       flag.set_waiter(other_threads[thr_bar->parent_tid]);
@@ -1293,8 +1291,7 @@ int __kmp_barrier(enum barrier_type bt, int gtid, int is_split,
   kmp_info_t *this_thr = __kmp_threads[gtid];
   kmp_team_t *team = this_thr->th.th_team;
   int status = 0;
-  ident_t *loc = __kmp_threads[gtid]->th.th_ident;
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_OPTIONAL
   ompt_data_t *my_task_data;
   ompt_data_t *my_parallel_data;
   void *return_address;
@@ -1421,10 +1418,10 @@ int __kmp_barrier(enum barrier_type bt, int gtid, int is_split,
 #endif
 
 #if OMP_40_ENABLED
+      kmp_int32 cancel_request = KMP_ATOMIC_LD_RLX(&team->t.t_cancel_request);
       // Reset cancellation flag for worksharing constructs
-      if (team->t.t_cancel_request == cancel_loop ||
-          team->t.t_cancel_request == cancel_sections) {
-        team->t.t_cancel_request = cancel_noreq;
+      if (cancel_request == cancel_loop || cancel_request == cancel_sections) {
+        KMP_ATOMIC_ST_RLX(&team->t.t_cancel_request, cancel_noreq);
       }
 #endif
 #if USE_ITT_BUILD
@@ -1443,6 +1440,7 @@ int __kmp_barrier(enum barrier_type bt, int gtid, int is_split,
           this_thr->th.th_teams_microtask == NULL &&
 #endif
           team->t.t_active_level == 1) {
+        ident_t *loc = __kmp_threads[gtid]->th.th_ident;
         kmp_uint64 cur_time = __itt_get_timestamp();
         kmp_info_t **other_threads = team->t.t_threads;
         int nproc = this_thr->th.th_team_nproc;
@@ -1669,10 +1667,10 @@ void __kmp_join_barrier(int gtid) {
 
   ANNOTATE_BARRIER_BEGIN(&team->t.t_bar);
 #if OMPT_SUPPORT
-  ompt_data_t *my_task_data;
-  ompt_data_t *my_parallel_data;
   if (ompt_enabled.enabled) {
 #if OMPT_OPTIONAL
+    ompt_data_t *my_task_data;
+    ompt_data_t *my_parallel_data;
     void *codeptr = NULL;
     int ds_tid = this_thr->th.th_info.ds.ds_tid;
     if (KMP_MASTER_TID(ds_tid) &&
