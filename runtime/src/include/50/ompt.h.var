@@ -709,7 +709,7 @@ OMPT_API_FUNCTION(int, ompt_enumerate_mutex_impls, (
 OMPT_API_FUNCTION(uint64_t, ompt_get_unique_id, (void));
 
 /* finalize tool */
-OMPT_API_FUNCTION(void, ompt_finalize_tool, (void)); 
+OMPT_API_FUNCTION(void, ompt_finalize_tool, (void));
 
 #ifdef  __cplusplus
 };
