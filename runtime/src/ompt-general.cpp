@@ -511,8 +511,7 @@ OMPT_API_ROUTINE int ompt_get_task_info(int ancestor_level, int *type,
 
 OMPT_API_ROUTINE int ompt_get_task_memory(void **addr, size_t *size,
                                           int block) {
-  // stub
-  return 0;
+  return __ompt_get_task_memory_internal(addr, size, block);
 }
 
 /*****************************************************************************

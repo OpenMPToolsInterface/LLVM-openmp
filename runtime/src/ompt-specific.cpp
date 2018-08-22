@@ -428,6 +428,19 @@ int __ompt_get_task_info_internal(int ancestor_level, int *type,
   return 0;
 }
 
+int __ompt_get_task_memory_internal(void** addr, size_t* size, int blocknum)
+{
+  if (blocknum == 0){
+    kmp_info_t *thr = ompt_get_thread();
+    kmp_taskdata_t  *taskdata = thr->th.th_current_task;
+    kmp_task_t *task = KMP_TASKDATA_TO_TASK(taskdata);
+    *addr = task+1;
+    *size = taskdata->td_size_alloc - sizeof(kmp_task_t) - sizeof(kmp_taskdata_t);
+    return (*size > 0);
+  }
+  return 0;
+}
+
 //----------------------------------------------------------
 // team support
 //----------------------------------------------------------
