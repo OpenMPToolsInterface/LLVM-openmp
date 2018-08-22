@@ -436,7 +436,7 @@ int __ompt_get_task_memory_internal(void** addr, size_t* size, int blocknum)
     kmp_task_t *task = KMP_TASKDATA_TO_TASK(taskdata);
     *addr = task+1;
     *size = taskdata->td_size_alloc - sizeof(kmp_task_t) - sizeof(kmp_taskdata_t);
-    return (*size > 0);
+    return ((int)*size > 0);
   }
   return 0;
 }

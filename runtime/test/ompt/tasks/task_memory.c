@@ -4,17 +4,28 @@
 #include "ompt-util.h"
 #include <omp.h>
 
+// CHECK: {{^}}0: NULL_POINTER=[[NULL:.*$]]
+
 int main() {
   int x;
 #pragma omp parallel num_threads(2)
   {
+// CHECK-DAG: _begin:{{.*}}, result=0
+// CHECK-DAG: _begin:{{.*}}, result=0
 #pragma omp master
     {
+// CHECK-DAG: _schedule:{{.*}}memory_addr=0x{{[0-f]+}}, memory_size=0, result=0
+#pragma omp task
+      { int i=0; i++; }
+// CHECK-DAG: _schedule:{{.*}}memory_addr=0x{{[0-f]+}}, memory_size=8, result=1
 #pragma omp task
       { x++; }
+// CHECK-DAG: _schedule:{{.*}}memory_addr=0x{{[0-f]+}}, memory_size=12, result=1
 #pragma omp task firstprivate(x)
       { x++; }
     }
+// CHECK-DAG: _end:{{.*}}, result=0
+// CHECK-DAG: _end:{{.*}}, result=0
   }
 
   return 0;
@@ -25,9 +36,9 @@ static void on_ompt_callback_implicit_task(ompt_scope_endpoint_t endpoint,
                                            ompt_data_t *task_data,
                                            unsigned int team_size,
                                            unsigned int thread_num) {
-  void *addr;
-  size_t size;
-  int result = ompt_get_task_memory(&addr, &size, 1);
+  void *addr=NULL;
+  size_t size=-1;
+  int result = ompt_get_task_memory(&addr, &size, 0);
   switch (endpoint) {
   case ompt_scope_begin:
     task_data->value = ompt_get_unique_id();
@@ -49,23 +60,19 @@ on_ompt_callback_task_create(ompt_data_t *encountering_task_data,
                              ompt_data_t *new_task_data, int type,
                              int has_dependences, const void *codeptr_ra) {
   new_task_data->value = ompt_get_unique_id();
-  void *addr;
-  size_t size;
-  int result = ompt_get_task_memory(&addr, &size, 1);
-  printf("ompt_task_create: task_id=%" PRIu64
-         ", memory_addr=%p, memory_size=%ld, result=%d \n",
-         new_task_data->value, addr, size, result);
 }
 
 static void on_ompt_callback_task_schedule(ompt_data_t *first_task_data,
                                            ompt_task_status_t prior_task_status,
                                            ompt_data_t *second_task_data) {
-  void *addr;
-  size_t size;
-  int result = ompt_get_task_memory(&addr, &size, 1);
+  if (prior_task_status != ompt_task_switch)
+    return;
+  void *addr=NULL;
+  size_t size=-1;
+  int result = ompt_get_task_memory(&addr, &size, 0);
   printf("ompt_task_schedule: task_id=%" PRIu64
          ", memory_addr=%p, memory_size=%ld, result=%d \n",
-         first_task_data->value, addr, size, result);
+         second_task_data->value, addr, size, result);
 }
 
 int ompt_initialize(ompt_function_lookup_t lookup, ompt_data_t *tool_data) {
@@ -89,9 +96,4 @@ ompt_start_tool_result_t *ompt_start_tool(unsigned int omp_version,
   return &ompt_start_tool_result;
 }
 
-// CHECK: {{^}}0: NULL_POINTER=[[NULL:.*$]]
 
-// CHECK: ompt_event_implicit_task_begin: task_id=[[TASK_ID:[0-9]+]]
-// CHECK-SAME: memory_addr=0x{{[0-f]+}}, memory_size={{[0-9]+}}, result=0
-// CHECK: ompt_event_implicit_task_end: task_id=[[TASK_ID:[0-9]+]]
-// CHECK-SAME: memory_addr=0x{{[0-f]+}}, memory_size={{[0-9]+}}, result=0
