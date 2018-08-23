@@ -33,25 +33,6 @@
 #include "ompd_typedefs.h"
 //#include "ompd_test.h"
 
-
-/*
- * The macro is used to create code to register all implemented ompd
- * API functions with the CommandFactory
- * For new implemented API function just add a new OMPD_DO line
- */
-
-
-#define FOREACH_OMPD_CALLBACK_FN(macro) \
-macro(ompd_dmemory_alloc) \
-macro(ompd_dmemory_free) \
-macro(ompd_tsizeof_prim) \
-macro(ompd_tsymbol_addr) \
-macro(ompd_ttype) \
-macro(ompd_ttype_sizeof) \
-macro(ompd_ttype_offset) \
-macro(ompd_tmemory_access) \
-macro(ompd_print_string)
-
 #define FOREACH_OMPD_API_FN(macro) \
 macro(ompd_process_initialize) \
 macro(ompd_device_initialize) \

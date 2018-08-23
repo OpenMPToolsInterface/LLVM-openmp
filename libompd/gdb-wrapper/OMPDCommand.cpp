@@ -537,41 +537,40 @@ vector<ompd_thread_handle_t*> odbGetThreadHandles(ompd_address_space_handle_t* a
   return thread_handles;
 }
 
-vector<ompd_thread_handle_t*> odbGetCudaThreadHandles(ompd_address_space_handle_t* addrhandle, OMPDFunctionsPtr functions)
+map<uint64_t, OMPDCudaContextPool> odbInitCudaDevices(OMPDFunctionsPtr functions, CudaGdb &cuda,
+                                                      ompd_address_space_handle_t *addrhandle)
+{
+  map<uint64_t, OMPDCudaContextPool> ret;
+  map<uint64_t, bool> device_initialized;
+  for (auto i: cuda.threads) {
+    if (!device_initialized[i.coord.cudaContext]) {
+      ret.emplace(i.coord.cudaContext, &i);
+      device_initialized[i.coord.cudaContext] = true;
+      functions->ompd_device_initialize(
+          addrhandle,
+          ret.at(i.coord.cudaContext).getGlobalOmpdContext(),
+          OMP_DEVICE_KIND_CUDA,
+          sizeof(i.coord.cudaContext),
+          &i.coord.cudaContext,
+          &ret.at(i.coord.cudaContext).ompd_device_handle);
+    }
+  }
+  return ret;
+}
+
+vector<ompd_thread_handle_t*> odbGetCudaThreadHandles(
+    OMPDFunctionsPtr functions,
+    CudaGdb &cuda,
+    map<uint64_t, OMPDCudaContextPool> &device_handles)
 {
   ompd_rc_t ret;
 
-  CudaGdb cuda;
-  vector<OMPDCudaContextPool*> cuda_ContextPools;
-  map<uint64_t, bool> device_initialized;
-  map<ompd_addr_t, ompd_address_space_handle_t*> address_spaces;
   vector<ompd_thread_handle_t *> device_thread_handles;
 
   for(auto i: cuda.threads) {
-    if (!device_initialized[i.coord.cudaContext]) {
-      OMPDCudaContextPool* cpool;
-      cpool = new OMPDCudaContextPool(&i);
-      ompd_rc_t result;
-
-      device_initialized[i.coord.cudaContext] = true;
-      result = functions->ompd_device_initialize(
-          addrhandle,
-          cpool->getGlobalOmpdContext(),
-          ompd_device_kind_cuda,
-          sizeof(i.coord.cudaContext),
-          &i.coord.cudaContext,
-          &cpool->ompd_device_handle);
-
-      if (result != ompd_rc_ok)
-      {
-        continue;
-      }
-
-      address_spaces[i.coord.cudaContext] = cpool->ompd_device_handle;
-    }
     ompd_thread_handle_t* thread_handle;
     ompd_rc_t ret = functions->ompd_get_thread_handle(
-                                    address_spaces[i.coord.cudaContext],
+                                    device_handles.at(i.coord.cudaContext).ompd_device_handle,
                                     ompd_thread_id_cudalogical,
                                     sizeof(i.coord), &i.coord,
                                     &thread_handle);
@@ -827,7 +826,9 @@ void OMPDParallelRegions::execute() const
   //
   // For Cuda devices
   //
-  auto cuda_thread_handles = odbGetCudaThreadHandles(addrhandle, functions);
+  CudaGdb cuda;
+  auto cuda_device_handles = odbInitCudaDevices(functions, cuda, addrhandle);
+  auto cuda_thread_handles = odbGetCudaThreadHandles(functions, cuda, cuda_device_handles);
   std::map<ompd_parallel_handle_t *,
            std::vector<ompd_thread_handle_t *>,
            OMPDParallelHandleCmp> cuda_parallel_handles(parallel_cmp_op);
@@ -837,11 +838,18 @@ void OMPDParallelRegions::execute() const
     }
   }
 
+  // For instantiation, it doesnt matter which device handle we use for
+  // OMPDIcvs, just use the first one
+
+  OMPDIcvs cudaIcvs(functions, cuda_device_handles.begin()->second.ompd_device_handle);
+
   printf("DEVICE PARALLEL REGIONS\n");
-  printf("Parallel Handle    Num Threads \n");
-  printf("------------------------------ \n");
+  printf("Parallel Handle    Num Threads   ICV level\n");
+  printf("------------------------------------------\n");
   for (auto &p: cuda_parallel_handles) {
-    printf("%-15p   %-10zu\n", p.first, p.second.size());
+    ompd_word_t icv_level;
+    cudaIcvs.get(p.first, "levels-var", &icv_level);
+    printf("%-15p   %-10zu   %ld\n", p.first, p.second.size(), icv_level);
   }
 
   for (auto t: cuda_thread_handles) {

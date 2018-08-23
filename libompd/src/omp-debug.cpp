@@ -204,10 +204,10 @@ ompd_rc_t ompd_get_thread_in_parallel(
 
   if (parallel_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
     ret = TValue(context, parallel_handle->th)
-              .cast("ompd_npvtx_parallel_info_t", 0,
+              .cast("ompd_nvptx_parallel_info_t", 0,
                     OMPD_SEGMENT_CUDA_PTX_GLOBAL)
               .access("parallel_tasks")
-              .cast("omptarget_npvtx_TaskDescr", 1)
+              .cast("omptarget_nvptx_TaskDescr", 1)
               .getPtrArrayElement(nth_handle)
               .dereference()
               .getAddress(&taddr);

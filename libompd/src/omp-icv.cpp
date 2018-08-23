@@ -2,17 +2,17 @@
 #include "ompd-private.h"
 #include "TargetValue.h"
 
-#define FOREACH_OMPD_ICV(macro)                                             \
-    macro (levels_var, "levels-var", ompd_scope_parallel)                   \
-    macro (active_levels_var, "active-levels-var", ompd_scope_parallel)     \
-    macro (thread_limit_var, "thread-limit-var", ompd_scope_address_space)  \
-    macro (max_active_levels_var, "max-active-levels-var", ompd_scope_task) \
-    macro (bind_var, "bind-var", ompd_scope_task)                           \
-    macro (num_procs_var, "ompd-num-procs-var", ompd_scope_address_space)   \
-    macro (thread_num_var, "ompd-thread-num-var", ompd_scope_thread)        \
-    macro (final_var, "ompd-final-var", ompd_scope_task)                    \
-    macro (implicit_var, "ompd-implicit-var", ompd_scope_task)              \
-    macro (team_size_var, "ompd-team-size-var", ompd_scope_parallel)        \
+#define FOREACH_OMPD_ICV(macro)                                                \
+    macro (levels_var, "levels-var", ompd_scope_parallel, 1)                   \
+    macro (active_levels_var, "active-levels-var", ompd_scope_parallel, 0)     \
+    macro (thread_limit_var, "thread-limit-var", ompd_scope_address_space, 0)  \
+    macro (max_active_levels_var, "max-active-levels-var", ompd_scope_task, 0) \
+    macro (bind_var, "bind-var", ompd_scope_task, 0)                           \
+    macro (num_procs_var, "ompd-num-procs-var", ompd_scope_address_space, 0)   \
+    macro (thread_num_var, "ompd-thread-num-var", ompd_scope_thread, 1)        \
+    macro (final_var, "ompd-final-var", ompd_scope_task, 0)                    \
+    macro (implicit_var, "ompd-implicit-var", ompd_scope_task, 0)              \
+    macro (team_size_var, "ompd-team-size-var", ompd_scope_parallel, 1)        \
 
 void __ompd_init_icvs(const ompd_callbacks_t *table) {
   callbacks = table;
@@ -20,7 +20,7 @@ void __ompd_init_icvs(const ompd_callbacks_t *table) {
 
 enum ompd_icv {
   ompd_icv_undefined_marker = 0, // ompd_icv_undefined is already defined in ompd.h
-#define ompd_icv_macro(v, n, s) ompd_icv_ ## v,
+#define ompd_icv_macro(v, n, s, d) ompd_icv_ ## v,
   FOREACH_OMPD_ICV(ompd_icv_macro)
 #undef ompd_icv_macro
   ompd_icv_after_last_icv
@@ -28,17 +28,56 @@ enum ompd_icv {
 
 static const char *ompd_icv_string_values[] = {
   "undefined",
-#define ompd_icv_macro(v, n, s) n,
+#define ompd_icv_macro(v, n, s, d) n,
   FOREACH_OMPD_ICV(ompd_icv_macro)
 #undef ompd_icv_macro
 };
 
 static const ompd_scope_t ompd_icv_scope_values[] = {
   ompd_scope_global,  // undefined marker
-#define ompd_icv_macro(v, n, s) s,
+#define ompd_icv_macro(v, n, s, d) s,
   FOREACH_OMPD_ICV(ompd_icv_macro)
 #undef ompd_icv_macro
 };
+
+static const uint8_t ompd_icv_available_cuda[] = {
+  1, // undefined marker
+#define ompd_icv_macro(v, n, s, d) d,
+  FOREACH_OMPD_ICV(ompd_icv_macro)
+#undef ompd_icv_macro
+ 1, // icv after last icv marker
+};
+
+
+static ompd_rc_t ompd_enumerate_icvs_cuda(ompd_icv_id_t current,
+                                          ompd_icv_id_t *next_id,
+                                          const char **next_icv_name,
+                                          ompd_scope_t *next_scope,
+                                          int *more) {
+  int next_possible_icv = current;
+  do {
+    next_possible_icv++;
+  } while (!ompd_icv_available_cuda[next_possible_icv]);
+
+  if (next_possible_icv >= ompd_icv_after_last_icv) {
+    return ompd_rc_bad_input;
+  }
+
+  *next_id = next_possible_icv;
+  *next_icv_name = ompd_icv_string_values[*next_id];
+  *next_scope = ompd_icv_scope_values[*next_id];
+
+  do {
+    next_possible_icv++;
+  } while (!ompd_icv_available_cuda[next_possible_icv]);
+
+  if (next_possible_icv >= ompd_icv_after_last_icv) {
+    *more = 0;
+  } else {
+    *more = 1;
+  }
+  return ompd_rc_ok;
+}
 
 ompd_rc_t ompd_enumerate_icvs(ompd_address_space_handle_t *handle,
                               ompd_icv_id_t current, ompd_icv_id_t *next_id,
@@ -49,7 +88,8 @@ ompd_rc_t ompd_enumerate_icvs(ompd_address_space_handle_t *handle,
     return ompd_rc_stale_handle;
   }
   if (handle->kind == OMP_DEVICE_KIND_CUDA) {
-    return ompd_rc_unsupported;
+    return ompd_enumerate_icvs_cuda(current, next_id, next_icv_name,
+                                    next_scope, more);
   }
   if (current + 1 >= ompd_icv_after_last_icv) {
     return ompd_rc_bad_input;
@@ -93,7 +133,7 @@ static ompd_rc_t ompd_get_level(
 }
 
 
-static ompd_rc_t ompd_get_cuda_level(
+static ompd_rc_t ompd_get_level_cuda(
     ompd_parallel_handle_t *parallel_handle,
     ompd_word_t *val) {
   if (!parallel_handle->ah)
@@ -106,7 +146,7 @@ static ompd_rc_t ompd_get_cuda_level(
 
   uint16_t res;
   ompd_rc_t ret = TValue(context, parallel_handle->th)
-                      .cast("ompd_npvtx_parallel_info_t", 0,
+                      .cast("ompd_nvptx_parallel_info_t", 0,
                             OMPD_SEGMENT_CUDA_PTX_GLOBAL)
                       .access("level")
                       .castBase(ompd_type_short)
@@ -384,7 +424,7 @@ ompd_get_cuda_num_threads(ompd_parallel_handle_t *parallel_handle,
                       .cast("ompd_nvptx_parallel_info_t", 0,
                             OMPD_SEGMENT_CUDA_PTX_GLOBAL)
                       .access("parallel_tasks")
-                      .cast("omptarget_npvtx_TaskDescr", 1)
+                      .cast("omptarget_nvptx_TaskDescr", 1)
                       .access("items__threadsInTeam")
                       .castBase(ompd_type_short)
                       .getValue(res);
@@ -405,30 +445,60 @@ ompd_rc_t ompd_get_icv_from_scope(void *handle, ompd_scope_t scope,
     return ompd_rc_bad_input;
   }
 
-  switch (icv_id) {
-    case ompd_icv_levels_var:
-      return ompd_get_level((ompd_parallel_handle_t *)handle, icv_value);
-    case ompd_icv_active_levels_var:
-      return ompd_get_active_level((ompd_parallel_handle_t *)handle, icv_value);
-    case ompd_icv_thread_limit_var:
-      return ompd_get_thread_limit((ompd_address_space_handle_t*)handle, icv_value);
-    case ompd_icv_max_active_levels_var:
-      return ompd_get_max_active_levels((ompd_task_handle_t*)handle, icv_value);
-    case ompd_icv_bind_var:
-      return ompd_get_proc_bind((ompd_task_handle_t*)handle, icv_value);
-    case ompd_icv_num_procs_var:
-      return ompd_get_num_procs((ompd_address_space_handle_t*)handle, icv_value);
-    case ompd_icv_thread_num_var:
-      return ompd_get_thread_num((ompd_thread_handle_t*)handle, icv_value);
-    case ompd_icv_final_var:
-      return ompd_in_final((ompd_task_handle_t*)handle, icv_value);
-    case ompd_icv_implicit_var:
-      return ompd_is_implicit((ompd_task_handle_t*)handle, icv_value);
-    case ompd_icv_team_size_var:
-      return ompd_get_num_threads((ompd_parallel_handle_t*)handle, icv_value);
+  omp_device_t device_kind;
+
+  switch (scope) {
+    case ompd_scope_thread:
+      device_kind = ((ompd_thread_handle_t *)handle)->ah->kind;
+      break;
+    case ompd_scope_parallel:
+      device_kind = ((ompd_parallel_handle_t *)handle)->ah->kind;
+      break;
+    case ompd_scope_address_space:
+      device_kind = ((ompd_address_space_handle_t *)handle)->kind;
+      break;
+    case ompd_scope_task:
+      device_kind = ((ompd_task_handle_t *)handle)->ah->kind;
+      break;
     default:
-      return ompd_rc_unsupported;
+      return ompd_rc_bad_input;
   }
+
+
+  if (device_kind == OMP_DEVICE_KIND_HOST) {
+    switch (icv_id) {
+      case ompd_icv_levels_var:
+        return ompd_get_level((ompd_parallel_handle_t *)handle, icv_value);
+      case ompd_icv_active_levels_var:
+        return ompd_get_active_level((ompd_parallel_handle_t *)handle, icv_value);
+      case ompd_icv_thread_limit_var:
+        return ompd_get_thread_limit((ompd_address_space_handle_t*)handle, icv_value);
+      case ompd_icv_max_active_levels_var:
+        return ompd_get_max_active_levels((ompd_task_handle_t*)handle, icv_value);
+      case ompd_icv_bind_var:
+        return ompd_get_proc_bind((ompd_task_handle_t*)handle, icv_value);
+      case ompd_icv_num_procs_var:
+        return ompd_get_num_procs((ompd_address_space_handle_t*)handle, icv_value);
+      case ompd_icv_thread_num_var:
+        return ompd_get_thread_num((ompd_thread_handle_t*)handle, icv_value);
+      case ompd_icv_final_var:
+        return ompd_in_final((ompd_task_handle_t*)handle, icv_value);
+      case ompd_icv_implicit_var:
+        return ompd_is_implicit((ompd_task_handle_t*)handle, icv_value);
+      case ompd_icv_team_size_var:
+        return ompd_get_num_threads((ompd_parallel_handle_t*)handle, icv_value);
+      default:
+        return ompd_rc_unsupported;
+    }
+  } else if (device_kind == OMP_DEVICE_KIND_CUDA) {
+    switch (icv_id) {
+      case ompd_icv_levels_var:
+        return ompd_get_level_cuda((ompd_parallel_handle_t *)handle, icv_value);
+      default:
+        return ompd_rc_unsupported;
+    }
+  }
+  return ompd_rc_unsupported;
 }
 
 ompd_rc_t
