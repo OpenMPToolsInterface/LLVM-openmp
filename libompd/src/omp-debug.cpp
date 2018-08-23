@@ -307,7 +307,8 @@ ompd_rc_t ompd_get_current_parallel_handle(
       }
     }
     TValue ph = prevTask.access("ompd_thread_info")
-                        .cast("ompd_nvptx_thread_info_t", 0)
+                        .cast("ompd_nvptx_thread_info_t", 0,
+                              OMPD_SEGMENT_CUDA_PTX_GLOBAL)
                         .access("enclosed_parallel");
 
     ret = ph.getAddress(&taddr);

@@ -49,6 +49,13 @@ ompd_rc_t TType::getSize(ompd_size_t *size) {
     ompd_size_t tmpSize;
     std::stringstream ss;
     ss << "ompd_sizeof__" << typeName;
+
+    // HACK FOR NAME MANGLING ISSUE IN CUDA-GDB (mr)
+    if (descSegment == OMPD_SEGMENT_CUDA_PTX_GLOBAL ||
+        descSegment == OMPD_SEGMENT_CUDA_PTX_SHARED) {
+      ss << "_";
+    }
+
     ret = TValue::callbacks->symbol_addr_lookup(context, NULL, ss.str().c_str(),
                                           &symbolAddr);
     if (ret != ompd_rc_ok) {
@@ -129,6 +136,13 @@ ompd_rc_t TType::getElementOffset(const char *fieldName, ompd_size_t *offset) {
     //    &fieldOffset);
     std::stringstream ss;
     ss << "ompd_access__" << typeName << "__" << fieldName;
+
+    // HACK FOR NAME MANGLING ISSUE IN CUDA-GDB (mr)
+    if (descSegment == OMPD_SEGMENT_CUDA_PTX_GLOBAL ||
+        descSegment == OMPD_SEGMENT_CUDA_PTX_SHARED) {
+      ss << "_";
+    }
+
     ret = TValue::callbacks->symbol_addr_lookup(context, NULL, ss.str().c_str(),
                                           &symbolAddr);
     if (ret != ompd_rc_ok) {
@@ -175,6 +189,13 @@ ompd_rc_t TType::getElementSize(const char *fieldName, ompd_size_t *size) {
     //    &fieldOffset);
     std::stringstream ss;
     ss << "ompd_sizeof__" << typeName << "__" << fieldName;
+    
+    // HACK FOR NAME MANGLING ISSUE IN CUDA-GDB (mr)
+    if (descSegment == OMPD_SEGMENT_CUDA_PTX_GLOBAL ||
+        descSegment == OMPD_SEGMENT_CUDA_PTX_SHARED) {
+      ss << "_";
+    }
+
     ret = TValue::callbacks->symbol_addr_lookup(context, NULL, ss.str().c_str(),
                                           &symbolAddr);
     if (ret != ompd_rc_ok) {
