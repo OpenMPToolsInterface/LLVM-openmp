@@ -408,7 +408,7 @@ ompd_get_num_threads(ompd_parallel_handle_t
 }
 
 static ompd_rc_t
-ompd_get_cuda_num_threads(ompd_parallel_handle_t *parallel_handle,
+ompd_get_num_threads_cuda(ompd_parallel_handle_t *parallel_handle,
                           ompd_word_t *val) {
   if (!parallel_handle->ah)
     return ompd_rc_stale_handle;
@@ -424,9 +424,10 @@ ompd_get_cuda_num_threads(ompd_parallel_handle_t *parallel_handle,
                       .cast("ompd_nvptx_parallel_info_t", 0,
                             OMPD_SEGMENT_CUDA_PTX_GLOBAL)
                       .access("parallel_tasks")
-                      .cast("omptarget_nvptx_TaskDescr", 1)
+                      .cast("omptarget_nvptx_TaskDescr", 1,
+                            OMPD_SEGMENT_CUDA_PTX_GLOBAL)
                       .access("items__threadsInTeam")
-                      .castBase(ompd_type_short)
+                      .castBase()
                       .getValue(res);
   *val = res;
   return ret;
@@ -494,6 +495,8 @@ ompd_rc_t ompd_get_icv_from_scope(void *handle, ompd_scope_t scope,
     switch (icv_id) {
       case ompd_icv_levels_var:
         return ompd_get_level_cuda((ompd_parallel_handle_t *)handle, icv_value);
+      case ompd_icv_team_size_var:
+        return ompd_get_num_threads_cuda((ompd_parallel_handle_t*)handle, icv_value);
       default:
         return ompd_rc_unsupported;
     }

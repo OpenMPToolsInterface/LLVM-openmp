@@ -844,12 +844,13 @@ void OMPDParallelRegions::execute() const
   OMPDIcvs cudaIcvs(functions, cuda_device_handles.begin()->second.ompd_device_handle);
 
   printf("DEVICE PARALLEL REGIONS\n");
-  printf("Parallel Handle    Num Threads   ICV level\n");
-  printf("------------------------------------------\n");
+  printf("Parallel Handle    Num Threads   ICV Num Threads   ICV level\n");
+  printf("------------------------------------------------------------\n");
   for (auto &p: cuda_parallel_handles) {
-    ompd_word_t icv_level;
+    ompd_word_t icv_level, icv_num_threads;
+    cudaIcvs.get(p.first, "ompd-team-size-var", &icv_num_threads);
     cudaIcvs.get(p.first, "levels-var", &icv_level);
-    printf("%-15p   %-10zu   %ld\n", p.first, p.second.size(), icv_level);
+    printf("%-15p   %-10zu   %-14ld   %ld\n", p.first, p.second.size(), icv_num_threads, icv_level);
   }
 
   for (auto t: cuda_thread_handles) {
@@ -857,6 +858,9 @@ void OMPDParallelRegions::execute() const
   }
   for (auto &p: cuda_parallel_handles) {
     functions->ompd_release_parallel_handle(p.first);
+  }
+  for (auto &d: cuda_device_handles) {
+    functions->ompd_release_address_space_handle(d.second.ompd_device_handle);
   }
 }
 

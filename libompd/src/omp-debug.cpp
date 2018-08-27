@@ -290,26 +290,25 @@ ompd_rc_t ompd_get_current_parallel_handle(
 
     ret = prevTask.getAddress(&taddr);
 
+    TValue ph;
     if (ret != ompd_rc_ok) {
       if (taddr.address == 0) {
-        prevTask = TValue(context, NULL,
-                          "omptarget_nvptx_threadPrivateContext",
-                           OMPD_SEGMENT_CUDA_PTX_SHARED)
-                     .cast("omptarget_nvptx_ThreadPrivateContext", 1,
-                           OMPD_SEGMENT_CUDA_PTX_SHARED)
-                     .access("teamContext")
-                     .cast("omptarget_nvptx_TeamDescr", 0)
-                     .access("levelZeroTaskDescr")
-                     .cast("omptarget_nvptx_TaskDescr", 0,
-                           OMPD_SEGMENT_CUDA_PTX_GLOBAL);
+        ph = TValue(context, NULL, "omptarget_nvptx_threadPrivateContext",
+                    OMPD_SEGMENT_CUDA_PTX_SHARED)
+                 .cast("omptarget_nvptx_ThreadPrivateContext", 1,
+                       OMPD_SEGMENT_CUDA_PTX_SHARED)
+                 .access("ompd_levelZeroParallelInfo")
+                 .cast("ompd_nvptx_parallel_info_t", 0,
+                       OMPD_SEGMENT_CUDA_PTX_GLOBAL);
       } else {
         return ret;
       }
+    } else {
+      ph = prevTask.access("ompd_thread_info")
+                    .cast("ompd_nvptx_thread_info_t", 0,
+                          OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+                    .access("enclosed_parallel");
     }
-    TValue ph = prevTask.access("ompd_thread_info")
-                        .cast("ompd_nvptx_thread_info_t", 0,
-                              OMPD_SEGMENT_CUDA_PTX_GLOBAL)
-                        .access("enclosed_parallel");
 
     ret = ph.getAddress(&taddr);
     if (ret != ompd_rc_ok)
@@ -397,12 +396,30 @@ ompd_rc_t ompd_get_enclosing_parallel_handle(
                                           .cast("omptarget_nvptx_TaskDescr", 1,
                                                 OMPD_SEGMENT_CUDA_PTX_GLOBAL)
                                           .access("prev")
-                                          .cast("omptarget_nvptx_TaskDescr", 1)
+                                          .cast("omptarget_nvptx_TaskDescr", 1,
+                                                OMPD_SEGMENT_CUDA_PTX_GLOBAL)
                                           .dereference();
 
     ret = prevTaskDescr.getAddress(&taddr);
 
+    // If the previous task of the tasks of the current parallel region is
+    // NULL, then we got the parallel handle for the (implicit?) top level
+    // task which has no enclosing task.
     if (ret != ompd_rc_ok) {
+      return ret;
+    }
+
+    // The instance of TaskDescr for the previous task contains the parallel
+    // info for the current parallel region. So we have to go back to the
+    // previous task of the previous task
+    prevTaskDescr = prevTaskDescr.access("prev")
+                                 .cast("omptarget_nvptx_TaskDescr", 1,
+                                       OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+                                 .dereference();
+
+    ret = prevTaskDescr.getAddress(&taddr);
+
+      if (ret != ompd_rc_ok) {
       if (taddr.address == 0 && level == 1) {
         // If we are in generic mode, there is an implicit parallel region
         // around the master thread
@@ -416,15 +433,18 @@ ompd_rc_t ompd_get_enclosing_parallel_handle(
       }
     } else {
       prevTaskDescr = prevTaskDescr.access("ompd_thread_info")
-                                   .cast("ompd_nvptx_thread_info_t", 0)
+                                   .cast("ompd_nvptx_thread_info_t", 0,
+                                         OMPD_SEGMENT_CUDA_PTX_GLOBAL)
                                    .access("enclosed_parallel");
     }
 
+    ret = prevTaskDescr.cast("ompd_nvptx_parallel_info_t", 0,
+                             OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+                       .getAddress(&taddr);
 
-    prevTaskDescr.cast("ompd_nvptx_parallel_info_t", 0,
-                        OMPD_SEGMENT_CUDA_PTX_GLOBAL)
-                 .getAddress(&taddr);
-
+    if (ret != ompd_rc_ok) {
+      return ret;
+    }
   } else {
     ret = ompd_rc_stale_handle;
     TValue lwtValue = TValue(context, parallel_handle->lwt);
