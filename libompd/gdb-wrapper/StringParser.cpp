@@ -225,6 +225,7 @@ vector<CudaThread> StringParser::matchCudaThreadsInfo(
   coord.cudaContext = ctx;
   coord.cudaDevId = dev;
   coord.kernelId = kernel;
+  coord.warpSize = 0;
 
   for (int b = 0; b < threadcounts.size(); ++b) {
     coord.blockIdx.x = b;

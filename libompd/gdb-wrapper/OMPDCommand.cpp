@@ -175,7 +175,7 @@ OMPDCommand* OMPDCommandFactory::create(const char *str, const vector<string>& e
   else if (strcmp(str, "api") == 0)
     return new OMPDApi(functions, addrhandle, extraArgs);
   else if (strcmp(str, "testapi") == 0)
-    return new OMPDTest(functions, addrhandle, extraArgs);
+    return new OMPDTest(functions, addrhandle, icvs, extraArgs);
   else if (strcmp(str, "parallel") == 0)
     return new OMPDParallelRegions(functions, addrhandle, icvs, extraArgs);
   else if (strcmp(str, "tasks") == 0)
@@ -703,17 +703,56 @@ vector<ompd_task_handle_t*> odbGetImplicitTasks(OMPDFunctionsPtr functions, ompd
         ph, i, &task_handle);
     return_handles.push_back(task_handle);
   }
-#if 0
-  ompd_task_handle_t* task_handles;
-  /*ret = */functions->ompd_get_task_in_parallel(
-          ph, &task_handles, &num_tasks);
-  for(int i=0; i<num_tasks; i++)
-  {
-    return_handles.push_back(task_handles[i]);
-  }
-  free(task_handles);
-#endif
   return return_handles;
+}
+
+static bool odbCheckThreadsInParallel(OMPDFunctionsPtr functions,
+                                      OMPDIcvsPtr icvs,
+                                      ompd_parallel_handle_t *ph,
+                                      vector<ompd_thread_handle_t*> thread_handles) {
+  ompd_rc_t ret;
+  bool check_passed = true;
+  int64_t icv_num_threads;
+  int64_t icv_level;
+
+  icvs->get(ph, "levels-var", &icv_level);
+
+  ret = icvs->get(ph, "ompd-team-size-var", &icv_num_threads);
+  if (ret != ompd_rc_ok) {
+    cout << "Error: could not retrieve icv 'ompd-team-size-var' (" << ret << ")" << endl;
+    return false;
+  }
+
+  OMPDThreadHandleCmp thread_cmp_op(functions);
+  std::set<ompd_thread_handle_t *, OMPDThreadHandleCmp> unique_thread_handles(thread_handles.begin(),
+                                                                              thread_handles.end(),
+                                                                              thread_cmp_op);
+
+  sout << "Checking parallel region with level " << icv_level << " and "
+       << icv_num_threads << " threads (overall " << unique_thread_handles.size()
+       << " associated threads)" << endl;
+
+  ompd_thread_handle_t *th;
+  for(int i = 0; i < icv_num_threads; i++) {
+    ret = functions->ompd_get_thread_in_parallel(ph, i, &th);
+    if (ret != ompd_rc_ok) {
+      cout << "Could not retrieve thread handle " << i << " in parallel (" << ret << ")" << endl;
+      check_passed = false;
+      continue;
+    }
+
+    auto matched_th = unique_thread_handles.find(th);
+    if (matched_th == unique_thread_handles.end()) {
+      cout << "Thread handle retrieved with ompd_get_thread_in_parallel doesn't match any thread associated with the parallel region (could already have been matched)" << endl;
+      check_passed = false;
+    } else {
+      sout << "Found matching thread for thread " << i << " in parallel region" << endl;
+      // we dont want a thread matched twice
+      unique_thread_handles.erase(matched_th);
+    }
+    functions->ompd_release_thread_handle(th);
+  }
+  return check_passed;
 }
 
 void OMPDTest::execute() const
@@ -776,8 +815,75 @@ void OMPDTest::execute() const
       functions->ompd_release_thread_handle(thr_h);
     }
   }
+  else if (extraArgs[0]  == "parallel-threads")
+  {
+    // Checks if the thread handles returned by ompd_get_thread_in_parallel make sense
+    if (extraArgs.size() > 1) {
+      hout << "Usage: odb testapi parallel-threads" << endl;
+      return;
+    }
 
+    // Check host parallel regions
+    auto host_thread_handles = odbGetThreadHandles(addrhandle, functions);
 
+    OMPDParallelHandleCmp parallel_cmp_op(functions);
+    std::map<ompd_parallel_handle_t *,
+             std::vector<ompd_thread_handle_t *>,
+             OMPDParallelHandleCmp> host_parallel_handles(parallel_cmp_op);
+    for (auto t: host_thread_handles) {
+      for (auto parallel_handle: odbGetParallelRegions(functions, t))
+      {
+        host_parallel_handles[parallel_handle].push_back(t);
+      }
+    }
+
+    bool host_check_passed = true;
+    for (auto &ph_threads: host_parallel_handles) {
+      if (!odbCheckThreadsInParallel(functions, icvs, ph_threads.first, ph_threads.second)) {
+        host_check_passed = false;
+      }
+    }
+
+    cout << "Host check passed: " << host_check_passed << "\n" << endl;
+
+    for (auto ph: host_parallel_handles) {
+      functions->ompd_release_parallel_handle(ph.first);
+    }
+
+    for (auto th: host_thread_handles) {
+      functions->ompd_release_thread_handle(th);
+    }
+
+    //
+    // For Cuda devices
+    //
+    CudaGdb cuda;
+    auto cuda_device_handles = odbInitCudaDevices(functions, cuda, addrhandle);
+    auto cuda_thread_handles = odbGetCudaThreadHandles(functions, cuda, cuda_device_handles);
+    std::map<ompd_parallel_handle_t *,
+             std::vector<ompd_thread_handle_t *>,
+             OMPDParallelHandleCmp> cuda_parallel_handles(parallel_cmp_op);
+    for (auto t: cuda_thread_handles) {
+      for (auto p: odbGetParallelRegions(functions, t)) {
+        cuda_parallel_handles[p].push_back(t);
+      }
+    }
+
+    // For instantiation, it doesnt matter which device handle we use for
+    // OMPDIcvs, just use the first one
+
+   auto cudaIcvs = OMPDIcvsPtr(new OMPDIcvs(functions, cuda_device_handles.begin()->second.ompd_device_handle));
+
+    bool cuda_check_passed = true;
+    for (auto ph_threads: cuda_parallel_handles) {
+      if (!odbCheckThreadsInParallel(functions, cudaIcvs, ph_threads.first, ph_threads.second)) {
+        cuda_check_passed = false;
+      }
+    }
+
+    cout << "Cuda check passed: " << cuda_check_passed << endl;
+    return;
+  }
 }
 
 const char* OMPDTest::toString() const

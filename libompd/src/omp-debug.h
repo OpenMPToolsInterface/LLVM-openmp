@@ -52,7 +52,6 @@ typedef struct _ompd_cuda_thread_kernel_info_s {
   ompd_addr_t cudaContext;
   ompd_addr_t warpSize;
   ompd_addr_t gridId;
-  ompd_addr_t kernelId;
 } ompd_cuda_thread_kernel_info_t;
 
 typedef struct _ompd_address_space_context_s ompd_address_space_context_t;

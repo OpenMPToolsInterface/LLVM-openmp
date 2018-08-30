@@ -117,6 +117,19 @@ public:
   }
 };
 
+class OMPDThreadHandleCmp
+{
+  OMPDFunctionsPtr functions;
+public:
+  OMPDThreadHandleCmp(const OMPDFunctionsPtr &f)
+    : functions(f) {}
+  bool operator()(ompd_thread_handle_t *a, ompd_thread_handle_t *b) {
+    int cmp = 0;
+    functions->ompd_thread_handle_compare(a, b, &cmp);
+    return cmp < 0;
+  }
+};
+
 class OMPDTaskHandleCmp
 {
   OMPDFunctionsPtr functions;
@@ -273,9 +286,13 @@ public:
   void execute() const;
   const char* toString() const;
 protected:
-  OMPDTest(const OMPDFunctionsPtr &f, ompd_address_space_handle_t* ah, const std::vector<std::string>& args) : OMPDCommand(f, ah, args){};
+  OMPDTest(const OMPDFunctionsPtr &f, ompd_address_space_handle_t* ah,
+           const OMPDIcvsPtr &icvs, const std::vector<std::string>& args)
+    : OMPDCommand(f, ah, args), icvs(icvs) {};
 
   friend OMPDCommandFactory;
+private:
+  OMPDIcvsPtr icvs;
 };
 
 class OMPDParallelRegions : public OMPDCommand
