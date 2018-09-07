@@ -653,7 +653,7 @@ bool odbCheckParallelNumThreads(OMPDFunctionsPtr functions, vector<ompd_parallel
 bool odbCheckTaskIDs(OMPDFunctionsPtr functions, vector<ompd_task_handle_t*> ths)
 {
   sout << "Checking of task IDs has been disable for upgrade of ompd in branch ompd-devices\n";
-  // MARKER_MR: TODO: fix checking of task ids
+  // TODO(mr): fix checking of task ids
   return true;
 #if 0
   bool res=true;
@@ -686,7 +686,7 @@ vector<ompd_task_handle_t*> odbGetTaskRegions(OMPDFunctionsPtr functions, ompd_t
   {
     task_handles.push_back(task_handle);
     ret = functions->ompd_get_generating_task_handle(
-          task_handle, &task_handle); // MARKER_MR: TODO: is it generating or scheduling task or something different?
+          task_handle, &task_handle); // Is it generating or scheduling task or something different?
   }
   return task_handles;
 }
@@ -1026,6 +1026,52 @@ void OMPDTasks::execute() const
   }
 
   for (auto thread: host_thread_handles) {
+    functions->ompd_release_thread_handle(thread);
+  }
+
+  // Cuda tasks
+  CudaGdb cuda;
+  auto cuda_device_handles = odbInitCudaDevices(functions, cuda, addrhandle);
+  auto cuda_thread_handles = odbGetCudaThreadHandles(functions, cuda, cuda_device_handles);
+  std::map<ompd_task_handle_t *,
+           std::vector<ompd_thread_handle_t *>,
+           OMPDTaskHandleCmp> cuda_task_handles(task_cmp_op);
+  for (auto t: cuda_thread_handles) {
+    for (auto task_handle: odbGetTaskRegions(functions, t)) {
+      cuda_task_handles[task_handle].push_back(t);
+    }
+  }
+printf("cuda tasks: %i\n", cuda_task_handles.size());
+
+  printf("\nCUDA TASKS\n");
+  printf("Task Handle   Assoc. Threads   ICV Level\n");
+  printf("----------------------------------------\n");
+
+  // For instantiation, it doesnt matter which device handle we use for
+  // OMPDIcvs, just use the first one
+
+  OMPDIcvs cudaIcvs(functions, cuda_device_handles.begin()->second.ompd_device_handle);
+
+  for (auto th: cuda_task_handles) {
+    ompd_parallel_handle_t *ph;
+    ret = functions->ompd_get_task_parallel_handle(th.first, &ph);
+    if (ret != ompd_rc_ok) {
+      printf("could not get parallel handle for nesting\n");
+      continue;
+    }
+
+    ompd_word_t icv_level;
+    cudaIcvs.get(ph, "levels-var", &icv_level);
+
+    printf("%-11p   %-14zu    %ld\n", th.first, th.second.size(), icv_level);
+    functions->ompd_release_parallel_handle(ph);
+  }
+
+  for (auto task: cuda_task_handles) {
+    functions->ompd_release_task_handle(task.first);
+  }
+
+  for (auto thread: cuda_thread_handles) {
     functions->ompd_release_thread_handle(thread);
   }
 }
