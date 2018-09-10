@@ -17,10 +17,10 @@ int main() {
 // CHECK-DAG: _schedule:{{.*}}memory_addr=0x{{[0-f]+}}, memory_size=0, result=0
 #pragma omp task
       { int i=0; i++; }
-// CHECK-DAG: _schedule:{{.*}}memory_addr=0x{{[0-f]+}}, memory_size=8, result=1
+// CHECK-DAG: schedule:{{.*}}addr=0x{{[0-f]+}}, memory_size={{[0-9]+}}, result=1
 #pragma omp task
       { x++; }
-// CHECK-DAG: _schedule:{{.*}}memory_addr=0x{{[0-f]+}}, memory_size=12, result=1
+// CHECK-DAG: schedule:{{.*}}addr=0x{{[0-f]+}}, memory_size={{[0-9]+}}, result=1
 #pragma omp task firstprivate(x)
       { x++; }
     }
