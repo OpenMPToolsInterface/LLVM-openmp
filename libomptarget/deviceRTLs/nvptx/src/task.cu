@@ -97,7 +97,9 @@ EXTERN int32_t __kmpc_omp_task_with_deps(kmp_Indent *loc, uint32_t global_tid,
   newTaskDescr->CopyForExplicitTask(parentTaskDescr);
   // set new task descriptor as top
   omptarget_nvptx_threadPrivateContext->SetTopLevelTaskDescr(tid, newTaskDescr);
-
+#ifdef OMPD_SUPPORT
+  ompd_init_explicit_task((void*)(newKmpTaskDescr->sub));
+#endif
   // 3. call sub
   PRINT(LD_TASK, "call task sub 0x%llx(task descr 0x%llx)\n",
         P64(newKmpTaskDescr->sub), P64(newKmpTaskDescr));

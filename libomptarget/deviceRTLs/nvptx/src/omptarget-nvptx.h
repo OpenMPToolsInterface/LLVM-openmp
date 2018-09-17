@@ -154,7 +154,8 @@ class omptarget_nvptx_TaskDescr {
 #if OMPD_SUPPORT
   friend void __device__ ompd_init( void );
   friend INLINE void ompd_init_thread(
-      omptarget_nvptx_TaskDescr *currTaskDescr);
+      omptarget_nvptx_TaskDescr *currTaskDescr, void *task_func,
+      uint8_t implicit);
   friend __device__ void  ompd_set_device_specific_thread_state(
       omptarget_nvptx_TaskDescr *taskDescr, omp_state_t state);
 #endif /* OMPD_SUPPORT */

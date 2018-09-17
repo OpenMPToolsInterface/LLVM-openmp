@@ -57,11 +57,6 @@ ompd_process_initialize(ompd_address_space_context_t
   ompd_rc_t ret = initTypeSizes(context);
   if (ret != ompd_rc_ok)
     return ret;
-  *addrhandle = new ompd_address_space_handle_t;
-  if (!addrhandle)
-    return ompd_rc_error;
-  (*addrhandle)->context = context;
-  (*addrhandle)->kind = OMP_DEVICE_KIND_HOST;
 
   ret = TValue(context, "ompd_state")
             .castBase(ompd_type_long_long)
@@ -72,7 +67,6 @@ ompd_process_initialize(ompd_address_space_context_t
                                  (void **)(addrhandle));
   if (ret != ompd_rc_ok)
     return ret;
-//  *addrhandle = new ompd_address_space_handle_t;
   if (!addrhandle)
     return ompd_rc_error;
   (*addrhandle)->context = context;
@@ -560,14 +554,27 @@ ompd_rc_t ompd_get_task_parallel_handle(
 
   if (task_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
     TValue parallelHandle;
+    // The ompd_parallel_info_t we need is only present in the previous task
+    // of an implicit task.
+    uint16_t task_is_implicit = 0;
+    ret = ompd_rc_ok;
     auto possibleTaskDescr = TValue(context, task_handle->th)
-                                .cast("omptarget_nvptx_TaskDescr", 0,
-                                      OMPD_SEGMENT_CUDA_PTX_GLOBAL)
-                                .access("prev")
-                                .cast("omptarget_nvptx_TaskDescr", 1,
-                                      OMPD_SEGMENT_CUDA_PTX_GLOBAL);
-    ret = possibleTaskDescr.dereference()
-                           .getAddress(&taddr);
+                              .cast("omptarget_nvptx_TaskDescr", 0,
+                                     OMPD_SEGMENT_CUDA_PTX_GLOBAL);
+ 
+    while (!task_is_implicit && ret == ompd_rc_ok) {
+      ret = possibleTaskDescr.access("ompd_thread_info")
+                             .cast("ompd_nvptx_thread_info_t", 0,
+                                   OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+                             .access("task_implicit")
+                             .castBase()
+                             .getValue(task_is_implicit);
+      possibleTaskDescr = possibleTaskDescr.access("prev")
+                                           .cast("omptarget_nvptx_TaskDescr",
+                                                 1, OMPD_SEGMENT_CUDA_PTX_GLOBAL);
+      ret = possibleTaskDescr.dereference().getAddress(&taddr);
+    }
+
     if (ret != ompd_rc_ok) {
       if (taddr.address == 0) {
         parallelHandle = TValue(context, NULL,
@@ -1083,7 +1090,7 @@ ompd_rc_t ompd_get_thread_id(
                         .cast("omptarget_nvptx_TaskDescr", 0,
                               OMPD_SEGMENT_CUDA_PTX_GLOBAL)
                         .access("ompd_thread_info")
-                        .cast("ompd_thread_info_t", 0,
+                        .cast("ompd_nvptx_thread_info_t", 0,
                               OMPD_SEGMENT_CUDA_PTX_GLOBAL);
 
     ret = threadInfo.access("threadIdx_x")
@@ -1234,7 +1241,6 @@ ompd_rc_t ompd_get_task_frame(
   return ret;
 }
 
-#if 1 // the runtime currently does not have task function information
 ompd_rc_t ompd_get_task_function(
     ompd_task_handle_t *task_handle, /* IN: OpenMP task handle */
     ompd_address_t *task_addr /* OUT: first instruction in the task region */
@@ -1251,33 +1257,36 @@ ompd_rc_t ompd_get_task_function(
     return ompd_rc_needs_state_tracking;
 
   assert(callbacks && "Callback table not initialized!");
-
-#if 0
-  /* We don't have a task function for implicit tasks */
-  ompd_word_t implicit;
-  ompd_rc_t ret = ompd_is_implicit (task_handle, &implicit);
-  if (ret != ompd_rc_ok)
-    return ret;
-  if (implicit)
-    return ompd_rc_bad_input;
-#else
   ompd_rc_t ret;
-#endif
-  task_addr->segment = OMPD_SEGMENT_UNSPECIFIED;
-  TValue taskInfo;
-  if(task_handle->lwt.address!=0)
-    return ompd_rc_bad_input; // We need to decide what we do here.
-  else
-    ret = TValue(context, task_handle->th).
-          cast("kmp_taskdata_t",0).		/*t*/
-          getArrayElement(1).                   /* see kmp.h: #define KMP_TASKDATA_TO_TASK(taskdata) (kmp_task_t *)(taskdata + 1) */
-          cast("kmp_task_t",0).                 /* (kmp_task_t *) */
-          access("routine").             /*td->ompt_task_info*/
-          castBase().
-          getValue(task_addr->address);
+
+  if (task_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
+    task_addr->segment = OMPD_SEGMENT_UNSPECIFIED;
+    ret = TValue(context, task_handle->th)
+            .cast("omptarget_nvptx_TaskDescr", 0,
+                  OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+            .access("ompd_thread_info")
+            .cast("ompd_nvptx_thread_info_t", 0,
+                  OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+            .access("task_function")
+            .castBase()
+            .getValue(task_addr->address);
+
+  } else {
+    task_addr->segment = OMPD_SEGMENT_UNSPECIFIED;
+    TValue taskInfo;
+    if(task_handle->lwt.address!=0)
+      return ompd_rc_bad_input; // We need to decide what we do here.
+    else
+      ret = TValue(context, task_handle->th).
+            cast("kmp_taskdata_t",0).		/*t*/
+            getArrayElement(1).                   /* see kmp.h: #define KMP_TASKDATA_TO_TASK(taskdata) (kmp_task_t *)(taskdata + 1) */
+            cast("kmp_task_t",0).                 /* (kmp_task_t *) */
+            access("routine").             /*td->ompt_task_info*/
+            castBase().
+            getValue(task_addr->address);
+  }
   return ret;
 }
-#endif
 
 /* --- --- OMPD Version and Compatibility Information ----------------------- */
 

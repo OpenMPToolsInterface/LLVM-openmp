@@ -1041,11 +1041,10 @@ void OMPDTasks::execute() const
       cuda_task_handles[task_handle].push_back(t);
     }
   }
-printf("cuda tasks: %i\n", cuda_task_handles.size());
 
   printf("\nCUDA TASKS\n");
-  printf("Task Handle   Assoc. Threads   ICV Level\n");
-  printf("----------------------------------------\n");
+  printf("Task Handle   Assoc. Threads   ICV Level   task function\n");
+  printf("--------------------------------------------------------\n");
 
   // For instantiation, it doesnt matter which device handle we use for
   // OMPDIcvs, just use the first one
@@ -1063,7 +1062,11 @@ printf("cuda tasks: %i\n", cuda_task_handles.size());
     ompd_word_t icv_level;
     cudaIcvs.get(ph, "levels-var", &icv_level);
 
-    printf("%-11p   %-14zu    %ld\n", th.first, th.second.size(), icv_level);
+    ompd_address_t task_func_addr;
+    task_func_addr.address = 0;
+    functions->ompd_get_task_function(th.first, &task_func_addr);
+
+    printf("%-11p   %-14zu    %-8ld   %p\n", th.first, th.second.size(), icv_level, (void*)task_func_addr.address);
     functions->ompd_release_parallel_handle(ph);
   }
 

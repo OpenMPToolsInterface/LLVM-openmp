@@ -221,6 +221,7 @@ EXTERN void __kmpc_kernel_prepare_parallel(void *WorkFn,
   PRINT0(LD_IO, "call to __kmpc_kernel_prepare_parallel\n");
   omptarget_nvptx_workFn = WorkFn;
 
+printf("__kmpc_kernel_prepare_parallel workFn=%p\n", WorkFn);
   if (!IsOMPRuntimeInitialized)
     return;
 

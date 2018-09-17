@@ -28,6 +28,8 @@ extern "C" __device__ void ompd_bp_task_end ( void );
   OMPD_ACCESS(ompd_nvptx_thread_info_t,state) \
   OMPD_ACCESS(ompd_nvptx_thread_info_t,threadIdx_x) \
   OMPD_ACCESS(ompd_nvptx_thread_info_t,enclosed_parallel)  \
+  OMPD_ACCESS(ompd_nvptx_thread_info_t,task_function) \
+  OMPD_ACCESS(ompd_nvptx_thread_info_t,task_implicit) \
   OMPD_ACCESS(ompd_nvptx_parallel_info_t,level) \
   OMPD_ACCESS(ompd_nvptx_parallel_info_t,parallel_tasks)
 
@@ -53,6 +55,7 @@ __device__ void ompd_set_device_specific_thread_state(
     omptarget_nvptx_TaskDescr *taskDescr, omp_state_t state);
 __device__ void ompd_set_device_thread_state(omp_state_t state);
 __device__ void ompd_init_thread_parallel();
+__device__ void ompd_init_explicit_task(void *task_func);
 
 INLINE void ompd_reset_device_thread_state() {
   ompd_set_device_thread_state(omp_state_work_serial);
@@ -83,6 +86,8 @@ typedef struct {
                   // simply store ThreadIdx.x and BlockIdx.x
   uint16_t threadIdx_x;
   ompd_nvptx_parallel_info_t enclosed_parallel;
+  void *task_function;
+  uint16_t task_implicit;
 } ompd_nvptx_thread_info_t;
 
 #endif /* OMPD_SUPPORT */
