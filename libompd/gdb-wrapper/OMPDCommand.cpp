@@ -549,7 +549,7 @@ map<uint64_t, OMPDCudaContextPool> odbInitCudaDevices(OMPDFunctionsPtr functions
       functions->ompd_device_initialize(
           addrhandle,
           ret.at(i.coord.cudaContext).getGlobalOmpdContext(),
-          OMP_DEVICE_KIND_CUDA,
+          OMPD_DEVICE_KIND_CUDA,
           sizeof(i.coord.cudaContext),
           &i.coord.cudaContext,
           &ret.at(i.coord.cudaContext).ompd_device_handle);

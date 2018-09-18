@@ -70,7 +70,7 @@ ompd_process_initialize(ompd_address_space_context_t
   if (!addrhandle)
     return ompd_rc_error;
   (*addrhandle)->context = context;
-  (*addrhandle)->kind = OMP_DEVICE_KIND_HOST;
+  (*addrhandle)->kind = OMPD_DEVICE_KIND_HOST;
 
   return ompd_rc_ok;
 }
@@ -163,7 +163,7 @@ ompd_rc_t ompd_device_initialize(
       if (!device_handle)
         return ompd_rc_error;
       (*device_handle)->context = device_context;
-      (*device_handle)->kind = OMP_DEVICE_KIND_CUDA;
+      (*device_handle)->kind = OMPD_DEVICE_KIND_CUDA;
       (*device_handle)->id = (uint64_t)id;
       return ompd_rc_ok;
     }
@@ -195,7 +195,7 @@ ompd_rc_t ompd_get_thread_in_parallel(
 
   ompd_address_t taddr;
 
-  if (parallel_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
+  if (parallel_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     uint16_t thread_idx;
     // We cannot use the task descriptor associated with the parallel info as
     // their task might not be currently active
@@ -280,7 +280,7 @@ ompd_rc_t ompd_thread_handle_compare(ompd_thread_handle_t *thread_handle_1,
   if (thread_handle_1->ah->kind != thread_handle_2->ah->kind)
     return ompd_rc_bad_input;
   *cmp_value = thread_handle_1->th.address - thread_handle_2->th.address;
-  if (*cmp_value == 0 && thread_handle_1->ah->kind == OMP_DEVICE_KIND_CUDA) {
+  if (*cmp_value == 0 && thread_handle_1->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     *cmp_value = thread_handle_1->cuda_kernel_info->cudaDevId -
         thread_handle_2->cuda_kernel_info->cudaDevId;
     if (*cmp_value == 0) {
@@ -321,7 +321,7 @@ ompd_rc_t ompd_get_current_parallel_handle(
 
   ompd_rc_t ret;
 
-  if (thread_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
+  if (thread_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     ompd_address_t taddr;
     TValue prevTask = TValue(context, thread_handle->th)
                         .cast("omptarget_nvptx_TaskDescr", 0)
@@ -416,7 +416,7 @@ ompd_rc_t ompd_get_enclosing_parallel_handle(
   ompd_address_t taddr = parallel_handle->th, lwt;
   ompd_rc_t ret;
 
-  if (parallel_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
+  if (parallel_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     uint16_t level;
     TValue curParallelInfo = TValue(context, taddr)
                              .cast("ompd_nvptx_parallel_info_t", 0,
@@ -552,7 +552,7 @@ ompd_rc_t ompd_get_task_parallel_handle(
 
   ompd_rc_t ret;
 
-  if (task_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
+  if (task_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     TValue parallelHandle;
     // The ompd_parallel_info_t we need is only present in the previous task
     // of an implicit task.
@@ -640,7 +640,7 @@ ompd_parallel_handle_compare(ompd_parallel_handle_t *parallel_handle_1,
     return ompd_rc_stale_handle;
   if (parallel_handle_1->ah->kind != parallel_handle_2->ah->kind)
     return ompd_rc_bad_input;
-  if (parallel_handle_1->ah->kind == OMP_DEVICE_KIND_HOST) {
+  if (parallel_handle_1->ah->kind == OMPD_DEVICE_KIND_HOST) {
     if (parallel_handle_1->th.address - parallel_handle_2->th.address)
       *cmp_value = parallel_handle_1->th.address - parallel_handle_2->th.address;
     else
@@ -674,7 +674,7 @@ ompd_rc_t ompd_get_current_task_handle(
 
   lwt.segment = OMPD_SEGMENT_UNSPECIFIED;
 
-  if (thread_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
+  if (thread_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     lwt.address = 0;
     taddr = thread_handle->th;
   } else {
@@ -717,7 +717,7 @@ ompd_rc_t ompd_get_generating_task_handle(
     ompd_task_handle_t **parent_task_handle /* OUT: OpenMP task handle */
     ) {
   // Generating and Scheduling task are the same on cuda?
-  if (task_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
+  if (task_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     return ompd_get_scheduling_task_handle(task_handle, parent_task_handle);
   }
 
@@ -793,7 +793,7 @@ ompd_rc_t ompd_get_scheduling_task_handle(
   ompd_address_t taddr;
   ompd_rc_t ret;
 
-  if (task_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
+  if (task_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     ret = TValue(context, task_handle->th)
             .cast("omptarget_nvptx_TaskDescr", 0,
                   OMPD_SEGMENT_CUDA_PTX_GLOBAL)
@@ -849,7 +849,7 @@ ompd_rc_t ompd_get_task_in_parallel(
   ompd_rc_t ret;
   ompd_address_t taddr;
 
-  if (parallel_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
+  if (parallel_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     ret = TValue(context, parallel_handle->th)
               .cast("ompd_nvptx_paralel_info", 0,
                     OMPD_SEGMENT_CUDA_PTX_GLOBAL)
@@ -902,7 +902,7 @@ ompd_rc_t ompd_task_handle_compare(ompd_task_handle_t *task_handle_1,
   if (task_handle_1->ah->kind != task_handle_2->ah->kind)
     return ompd_rc_bad_input;
   if (task_handle_1->th.address - task_handle_2->th.address ||
-        task_handle_1->ah->kind == OMP_DEVICE_KIND_CUDA)
+        task_handle_1->ah->kind == OMPD_DEVICE_KIND_CUDA)
     *cmp_value = task_handle_1->th.address - task_handle_2->th.address;
   else
     *cmp_value = task_handle_1->lwt.address - task_handle_2->lwt.address;
@@ -1156,7 +1156,7 @@ ompd_rc_t ompd_get_state(
   ompd_rc_t ret;
   assert(callbacks && "Callback table not initialized!");
 
-  if (thread_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
+  if (thread_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     if (wait_id)
       *wait_id = 0; //TODO: (mr) implement wait_ids in nvptx device rtl
     ret  = TValue(context, thread_handle->th)
@@ -1259,7 +1259,7 @@ ompd_rc_t ompd_get_task_function(
   assert(callbacks && "Callback table not initialized!");
   ompd_rc_t ret;
 
-  if (task_handle->ah->kind == OMP_DEVICE_KIND_CUDA) {
+  if (task_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     task_addr->segment = OMPD_SEGMENT_UNSPECIFIED;
     ret = TValue(context, task_handle->th)
             .cast("omptarget_nvptx_TaskDescr", 0,

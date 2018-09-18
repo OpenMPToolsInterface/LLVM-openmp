@@ -59,7 +59,7 @@ typedef struct ompd_address_t {
 const uint64_t ompd_segment_none = 0;
 
 /* types for device and thread id KIND, not for the actual thread/device id */
-typedef uint64_t omp_device_t;
+typedef uint64_t ompd_device_t;
 typedef uint64_t ompd_thread_id_t;
 
 /**

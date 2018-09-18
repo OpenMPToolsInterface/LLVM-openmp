@@ -87,7 +87,7 @@ ompd_rc_t ompd_enumerate_icvs(ompd_address_space_handle_t *handle,
   if (!handle) {
     return ompd_rc_stale_handle;
   }
-  if (handle->kind == OMP_DEVICE_KIND_CUDA) {
+  if (handle->kind == OMPD_DEVICE_KIND_CUDA) {
     return ompd_enumerate_icvs_cuda(current, next_id, next_icv_name,
                                     next_scope, more);
   }
@@ -446,7 +446,7 @@ ompd_rc_t ompd_get_icv_from_scope(void *handle, ompd_scope_t scope,
     return ompd_rc_bad_input;
   }
 
-  omp_device_t device_kind;
+  ompd_device_t device_kind;
 
   switch (scope) {
     case ompd_scope_thread:
@@ -466,7 +466,7 @@ ompd_rc_t ompd_get_icv_from_scope(void *handle, ompd_scope_t scope,
   }
 
 
-  if (device_kind == OMP_DEVICE_KIND_HOST) {
+  if (device_kind == OMPD_DEVICE_KIND_HOST) {
     switch (icv_id) {
       case ompd_icv_levels_var:
         return ompd_get_level((ompd_parallel_handle_t *)handle, icv_value);
@@ -491,7 +491,7 @@ ompd_rc_t ompd_get_icv_from_scope(void *handle, ompd_scope_t scope,
       default:
         return ompd_rc_unsupported;
     }
-  } else if (device_kind == OMP_DEVICE_KIND_CUDA) {
+  } else if (device_kind == OMPD_DEVICE_KIND_CUDA) {
     switch (icv_id) {
       case ompd_icv_levels_var:
         return ompd_get_level_cuda((ompd_parallel_handle_t *)handle, icv_value);

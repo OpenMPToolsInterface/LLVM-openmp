@@ -62,7 +62,7 @@ typedef struct _ompd_process_handle_s {
 
 typedef struct _ompd_address_space_handle_s {
   ompd_address_space_context_t *context;
-  omp_device_t kind;
+  ompd_device_t kind;
   uint64_t id;
 } ompd_address_space_handle_t;
 

@@ -8,7 +8,7 @@
 // TODO: (mr) I dont have time to change every thread id kind, so this is some compat stuff
 #define ompd_thread_id_pthread OMPD_THREAD_ID_PTHREAD
 #define ompd_thread_id_cudalogical OMPD_THREAD_ID_CUDALOGICAL
-#define ompd_device_kind_cuda OMP_DEVICE_KIND_CUDA
+#define ompd_device_kind_cuda OMPD_DEVICE_KIND_CUDA
 
 typedef ompd_rc_t (*ompd_initialize_fn_t) (
   ompd_word_t api_version,
@@ -37,7 +37,7 @@ typedef ompd_rc_t (*ompd_process_initialize_fn_t) (
 typedef ompd_rc_t (*ompd_device_initialize_fn_t) (
     ompd_address_space_handle_t *process_handle, /*IN: address space of the OpenMP process*/
     ompd_address_space_context_t *device_context, /*IN: Opaque tool handle for device address space*/
-    omp_device_t kind, /*IN: device identifier kind*/
+    ompd_device_t kind, /*IN: device identifier kind*/
     ompd_size_t sizeof_id, /*IN: size of device identifier*/
     void *id, /*IN: device identifier*/
     ompd_address_space_handle_t **device_handle /*OUT: device handle*/

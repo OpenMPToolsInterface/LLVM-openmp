@@ -69,6 +69,6 @@ typedef enum ompd_target_prim_types_t {
   ompd_type_max
 } ompd_target_prim_types_t;
 
-#include "ompd_types.h"
+#include "ompd-types.h"
 
 #endif /*SRC_OMPD_PRIVATE_H*/

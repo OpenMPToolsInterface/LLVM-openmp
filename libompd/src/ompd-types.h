@@ -56,10 +56,10 @@ typedef struct ompd_cudathread_coord_t {
 #define OMPD_SEGMENT_CUDA_PTX_FRAME          ((ompd_seg_t)15)
 
 /* Kinds of device device address spaces */
-#define OMP_DEVICE_KIND_HOST     ((omp_device_t)1)
-#define OMP_DEVICE_KIND_CUDA     ((omp_device_t)2)
+#define OMPD_DEVICE_KIND_HOST     ((ompd_device_t)1)
+#define OMPD_DEVICE_KIND_CUDA     ((ompd_device_t)2)
 /* The range of non-standard implementation defined values */
-#define OMP_DEVICE_IMPL_LO       ((omp_device_t)1000000)
-#define OMP_DEVICE_IMPL_HI       ((omp_device_t)1100000)
+#define OMPD_DEVICE_IMPL_LO       ((ompd_device_t)1000000)
+#define OMPD_DEVICE_IMPL_HI ((ompd_device_t)1100000)
 #endif
 
