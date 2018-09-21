@@ -323,33 +323,46 @@ ompd_rc_t ompd_get_current_parallel_handle(
 
   if (thread_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     ompd_address_t taddr;
-    TValue prevTask = TValue(context, thread_handle->th)
-                        .cast("omptarget_nvptx_TaskDescr", 0)
-                        .access("prev")
-                        .cast("omptarget_nvptx_TaskDescr", 1,
-                              OMPD_SEGMENT_CUDA_PTX_GLOBAL)
-                        .dereference();
-
-    ret = prevTask.getAddress(&taddr);
-
     TValue ph;
+    // The ompd_parallel_info_t we need is only present in the previous task
+    // of an implicit task.
+    uint16_t task_is_implicit = 0;
+    ret = ompd_rc_ok;
+    auto possibleTaskDescr = TValue(context, thread_handle->th)
+                              .cast("omptarget_nvptx_TaskDescr", 0,
+                                     OMPD_SEGMENT_CUDA_PTX_GLOBAL);
+
+    while (!task_is_implicit && ret == ompd_rc_ok) {
+      ret = possibleTaskDescr.access("ompd_thread_info")
+                             .cast("ompd_nvptx_thread_info_t", 0,
+                                   OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+                             .access("task_implicit")
+                             .castBase()
+                             .getValue(task_is_implicit);
+      possibleTaskDescr = possibleTaskDescr.access("prev")
+                                           .cast("omptarget_nvptx_TaskDescr",
+                                                 1, OMPD_SEGMENT_CUDA_PTX_GLOBAL);
+      ret = possibleTaskDescr.dereference().getAddress(&taddr);
+    }
+
     if (ret != ompd_rc_ok) {
       if (taddr.address == 0) {
-        ph = TValue(context, NULL, "omptarget_nvptx_threadPrivateContext",
-                    OMPD_SEGMENT_CUDA_PTX_SHARED)
+        ph = TValue(context, NULL, "omptarget_nvptx_threadPrivateContext")
                  .cast("omptarget_nvptx_ThreadPrivateContext", 1,
                        OMPD_SEGMENT_CUDA_PTX_SHARED)
-                 .access("ompd_levelZeroParallelInfo")
-                 .cast("ompd_nvptx_parallel_info_t", 0,
-                       OMPD_SEGMENT_CUDA_PTX_GLOBAL);
+                  .access("ompd_levelZeroParallelInfo")
+                  .cast("ompd_nvptx_parallel_info_t", 0,
+                        OMPD_SEGMENT_CUDA_PTX_GLOBAL);
       } else {
         return ret;
       }
     } else {
-      ph = prevTask.access("ompd_thread_info")
-                    .cast("ompd_nvptx_thread_info_t", 0,
-                          OMPD_SEGMENT_CUDA_PTX_GLOBAL)
-                    .access("enclosed_parallel");
+      ph = possibleTaskDescr.access("ompd_thread_info")
+               .cast("ompd_nvptx_thread_info_t", 0,
+                      OMPD_SEGMENT_CUDA_PTX_GLOBAL)
+               .access("enclosed_parallel")
+               .cast("ompd_nvptx_parallel_info_t", 0,
+                     OMPD_SEGMENT_CUDA_PTX_GLOBAL);
     }
 
     ret = ph.getAddress(&taddr);
@@ -561,7 +574,7 @@ ompd_rc_t ompd_get_task_parallel_handle(
     auto possibleTaskDescr = TValue(context, task_handle->th)
                               .cast("omptarget_nvptx_TaskDescr", 0,
                                      OMPD_SEGMENT_CUDA_PTX_GLOBAL);
- 
+
     while (!task_is_implicit && ret == ompd_rc_ok) {
       ret = possibleTaskDescr.access("ompd_thread_info")
                              .cast("ompd_nvptx_thread_info_t", 0,
