@@ -102,4 +102,6 @@ __device__ void ompd_bp_parallel_begin (){ asm (""); }
 __device__ void ompd_bp_parallel_end (){ asm (""); }
 __device__ void ompd_bp_task_begin (){ asm (""); }
 __device__ void ompd_bp_task_end (){ asm (""); }
+__device__ void ompd_bp_thread_begin (){ asm (""); }
+__device__ void ompd_bp_thread_end (){ asm (""); }
 #endif /* OMPD_SUPPORT */

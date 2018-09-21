@@ -221,7 +221,6 @@ EXTERN void __kmpc_kernel_prepare_parallel(void *WorkFn,
   PRINT0(LD_IO, "call to __kmpc_kernel_prepare_parallel\n");
   omptarget_nvptx_workFn = WorkFn;
 
-printf("__kmpc_kernel_prepare_parallel workFn=%p\n", WorkFn);
   if (!IsOMPRuntimeInitialized)
     return;
 
@@ -316,6 +315,7 @@ printf("__kmpc_kernel_prepare_parallel workFn=%p\n", WorkFn);
   // Move the previous thread into undefined state (will be reset in __kmpc_kernel_end_parallel)
   // TODO (mr) find a better place to do this
   ompd_set_device_thread_state(omp_state_undefined);
+  ompd_bp_parallel_begin();
 #endif /*OMPD_SUPPORT*/
 
   // set number of threads on work descriptor
@@ -374,6 +374,7 @@ EXTERN bool __kmpc_kernel_parallel(void **WorkFn,
     isActive = true;
 #ifdef OMPD_SUPPORT
     ompd_init_thread_parallel();
+    ompd_bp_thread_begin();
 #endif /*OMPD_SUPPORT*/
   }
 
@@ -391,6 +392,10 @@ EXTERN void __kmpc_kernel_end_parallel() {
       threadId, currTaskDescr->GetPrevTaskDescr());
 #ifdef OMPD_SUPPORT
   ompd_reset_device_thread_state();
+  ompd_bp_thread_end();
+  if (threadId == 0) {
+    ompd_bp_parallel_end();
+  }
 #endif /*OMPD_SUPPORT*/
 }
 
@@ -440,6 +445,8 @@ EXTERN void __kmpc_serialized_parallel(kmp_Indent *loc, uint32_t global_tid) {
                                                              newTaskDescr);
 #ifdef OMPD_SUPPORT
   ompd_init_thread_parallel(); // we are still in a prallel region
+  // every thread is a parallel region.. hooray
+  ompd_bp_parallel_begin();
 #endif /*OMPD_SUPPORT*/
 }
 
@@ -453,6 +460,9 @@ EXTERN void __kmpc_end_serialized_parallel(kmp_Indent *loc,
   // set new top
   omptarget_nvptx_threadPrivateContext->SetTopLevelTaskDescr(
       threadId, currTaskDescr->GetPrevTaskDescr());
+#ifdef OMPD_SUPPORT
+  ompd_bp_parallel_end();
+#endif
   // free
   SafeFree(currTaskDescr, (char *)"new seq parallel task");
 }

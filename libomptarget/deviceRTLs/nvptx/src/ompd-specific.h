@@ -16,6 +16,8 @@ extern "C" __device__ void ompd_bp_parallel_begin ( void );
 extern "C" __device__ void ompd_bp_parallel_end ( void );
 extern "C" __device__ void ompd_bp_task_begin ( void );
 extern "C" __device__ void ompd_bp_task_end ( void );
+extern "C" __device__ void ompd_bp_thread_begin ( void );
+extern "C" __device__ void ompd_bp_thread_end ( void );
 
 
 #define OMPD_FOREACH_ACCESS(OMPD_ACCESS) \
@@ -87,7 +89,7 @@ typedef struct {
   uint16_t threadIdx_x;
   ompd_nvptx_parallel_info_t enclosed_parallel;
   void *task_function;
-  uint16_t task_implicit;
+  uint8_t task_implicit;
 } ompd_nvptx_thread_info_t;
 
 #endif /* OMPD_SUPPORT */
