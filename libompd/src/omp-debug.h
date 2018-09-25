@@ -55,10 +55,6 @@ typedef struct _ompd_cuda_thread_kernel_info_s {
 
 typedef struct _ompd_address_space_context_s ompd_address_space_context_t;
 
-typedef struct _ompd_process_handle_s {
-  ompd_address_space_context_t *context;
-} ompd_process_handle_t;
-
 typedef struct _ompd_address_space_handle_s {
   ompd_address_space_context_t *context;
   ompd_device_t kind;
