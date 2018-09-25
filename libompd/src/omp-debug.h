@@ -13,7 +13,6 @@
 #ifdef __cplusplus
 
 #include <cstdlib>
-#include <new>
 
 #define OMPD_DLL_VERSION 201811;
 
