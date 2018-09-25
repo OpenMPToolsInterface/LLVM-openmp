@@ -1,5 +1,5 @@
-//TODO: (mr) move this to cmake file
-#define OMPD_SUPPORT 1
+#ifndef __OMPD_SPECIFIC_H__
+#define __OMPD_SPECIFIC_H__
 
 #ifdef OMPD_SUPPORT
 
@@ -7,8 +7,6 @@
 #include "option.h"
 #include <stdint.h>
 
-#ifndef __OMPD_SPECIFIC_H__
-#define __OMPD_SPECIFIC_H__
 
 
 __device__ void ompd_init( void );
