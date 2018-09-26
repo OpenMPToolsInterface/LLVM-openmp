@@ -285,6 +285,15 @@ typedef enum ompt_parallel_flag_t {
     ompt_parallel_team = 0x80000000
 } ompt_parallel_flag_t;
 
+typedef enum ompt_target_map_flag_t {
+    ompt_target_map_flag_to       = 0x01,
+    ompt_target_map_flag_from     = 0x02,
+    ompt_target_map_flag_alloc    = 0x04,
+    ompt_target_map_flag_release  = 0x08,
+    ompt_target_map_flag_delete   = 0x10,
+    ompt_target_map_flag_implicit = 0x20
+} ompt_target_map_flag_t;
+
 typedef void (*ompt_callback_thread_begin_t) (
     ompt_thread_t thread_type,            /* type of thread                      */
     ompt_data_t *thread_data              /* data of thread                      */
