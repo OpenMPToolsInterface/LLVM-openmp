@@ -245,7 +245,7 @@ void OMPDThreads::execute() const
   for(auto i: thread_ids) {
     ompd_thread_handle_t* thread_handle;
     ompd_rc_t ret = functions->ompd_get_thread_handle(
-        addrhandle, ompd_thread_id_pthread, sizeof(i.second),
+        addrhandle, OMPD_THREAD_ID_PTHREAD, sizeof(i.second),
         &(i.second), &thread_handle);
     if (ret == ompd_rc_ok)
     {
@@ -291,7 +291,7 @@ void OMPDThreads::execute() const
       result = functions->ompd_device_initialize(
           addrhandle,
           cpool->getGlobalOmpdContext(),
-          ompd_device_kind_cuda,
+          OMPD_DEVICE_KIND_CUDA,
           sizeof(i.coord.cudaContext),
           &i.coord.cudaContext,
           &cpool->ompd_device_handle);
@@ -314,7 +314,7 @@ void OMPDThreads::execute() const
     ompd_thread_handle_t* thread_handle;
     ompd_rc_t ret = functions->ompd_get_thread_handle(
                                     address_spaces[i.coord.cudaContext],
-                                    ompd_thread_id_cudalogical,
+                                    OMPD_THREAD_ID_CUDALOGICAL,
                                     sizeof(i.coord), &i.coord,
                                     &thread_handle);
 
@@ -386,7 +386,7 @@ void OMPDLevels::execute() const
     ompd_thread_handle_t *thread_handle;
     ompd_parallel_handle_t *parallel_handle;
     ret = functions->ompd_get_thread_handle(
-        addrhandle, ompd_thread_id_pthread, sizeof(i.second) ,&(i.second), &thread_handle);
+        addrhandle, OMPD_THREAD_ID_PTHREAD, sizeof(i.second) ,&(i.second), &thread_handle);
     if (ret != ompd_rc_ok) {
       continue;
     }
@@ -490,7 +490,7 @@ void OMPDApi::execute() const
 
   if (extraArgs[0] == "get_threads")
   {
-#if 0 // MARKER_MR: TODO: reimplement this functionality with breakpoints
+#if 0
     if(extraArgs.size()>1)
     {
       hout << "Usage: odb api get_threads" << endl;
@@ -529,7 +529,7 @@ vector<ompd_thread_handle_t*> odbGetThreadHandles(ompd_address_space_handle_t* a
   {
     ompd_thread_handle_t* thread_handle;
     ret = functions->ompd_get_thread_handle(
-        addrhandle, ompd_thread_id_pthread, sizeof(i.second) ,&(i.second), &thread_handle);
+        addrhandle, OMPD_THREAD_ID_PTHREAD, sizeof(i.second) ,&(i.second), &thread_handle);
     if (ret!=ompd_rc_ok)
       continue;
     thread_handles.push_back(thread_handle);
@@ -571,7 +571,7 @@ vector<ompd_thread_handle_t*> odbGetCudaThreadHandles(
     ompd_thread_handle_t* thread_handle;
     ompd_rc_t ret = functions->ompd_get_thread_handle(
                                     device_handles.at(i.coord.cudaContext).ompd_device_handle,
-                                    ompd_thread_id_cudalogical,
+                                    OMPD_THREAD_ID_CUDALOGICAL,
                                     sizeof(i.coord), &i.coord,
                                     &thread_handle);
 
@@ -603,7 +603,6 @@ vector<ompd_parallel_handle_t*> odbGetParallelRegions(OMPDFunctionsPtr functions
 bool odbCheckParallelIDs(OMPDFunctionsPtr functions, vector<ompd_parallel_handle_t*> phs)
 {
   sout << "Checking of parallel IDs has been disabled for upgrade of ompd in branch ompd-devices\n";
-  // MARKER_MR: TODO: fix checking of parallel ids
   return true;
 #if 0
   bool res=true;
@@ -628,7 +627,6 @@ bool odbCheckParallelIDs(OMPDFunctionsPtr functions, vector<ompd_parallel_handle
 bool odbCheckParallelNumThreads(OMPDFunctionsPtr functions, vector<ompd_parallel_handle_t*> phs)
 {
   sout << "Checking of parallel IDs has been disable for upgrade of ompd in branch ompd-devices\n";
-  // MARKER_MR: TODO: fix checking of parallel ids for num threads
   return true;
 #if 0
   bool res=true;
@@ -653,7 +651,6 @@ bool odbCheckParallelNumThreads(OMPDFunctionsPtr functions, vector<ompd_parallel
 bool odbCheckTaskIDs(OMPDFunctionsPtr functions, vector<ompd_task_handle_t*> ths)
 {
   sout << "Checking of task IDs has been disable for upgrade of ompd in branch ompd-devices\n";
-  // TODO(mr): fix checking of task ids
   return true;
 #if 0
   bool res=true;
@@ -804,7 +801,7 @@ void OMPDTest::execute() const
       }
       sout << endl;
       pthread_t            osthread;
-      functions->ompd_get_thread_id(thr_h, ompd_thread_id_pthread, sizeof(pthread_t), &osthread);
+      functions->ompd_get_thread_id(thr_h, OMPD_THREAD_ID_PTHREAD, sizeof(pthread_t), &osthread);
       host_contextPool->getThreadContext(&osthread)->setThisGdbContext();
       odbCheckParallelIDs(functions, parallel_h);
       odbCheckTaskIDs(functions, task_h);

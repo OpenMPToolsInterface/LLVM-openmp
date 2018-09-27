@@ -5,10 +5,6 @@
  * Global initialization and finalization
  */
 
-// TODO: (mr) I dont have time to change every thread id kind, so this is some compat stuff
-#define ompd_thread_id_pthread OMPD_THREAD_ID_PTHREAD
-#define ompd_thread_id_cudalogical OMPD_THREAD_ID_CUDALOGICAL
-#define ompd_device_kind_cuda OMPD_DEVICE_KIND_CUDA
 
 typedef ompd_rc_t (*ompd_initialize_fn_t) (
   ompd_word_t api_version,
