@@ -31,6 +31,7 @@ extern "C" {
 #define STR(x) STR_HELPER(x)
 
 #include "ompd.h"
+#include "ompd-types.h"
 
 /******************************************************************************
  * General helper functions
@@ -51,6 +52,8 @@ typedef struct _ompd_cuda_thread_kernel_info_s {
   ompd_addr_t cudaContext;
   ompd_addr_t warpSize;
   ompd_addr_t gridId;
+  ompd_dim3_t gridDim;
+  ompd_dim3_t blockDim;
 } ompd_cuda_thread_kernel_info_t;
 
 typedef struct _ompd_address_space_context_s ompd_address_space_context_t;

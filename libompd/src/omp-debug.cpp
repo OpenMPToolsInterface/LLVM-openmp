@@ -130,8 +130,6 @@ ompd_rc_t ompd_device_initialize(
   if (!device_context)
     return ompd_rc_bad_input;
 
-  // TODO:(mr) primitive type sizes can be different on devices? Think about implementing that
-
   ompd_rc_t ret;
   uint64_t ompd_num_cuda_devices;
 
@@ -145,7 +143,6 @@ ompd_rc_t ompd_device_initialize(
   for (uint64_t i = 0; i < ompd_num_cuda_devices; i++) {
     uint64_t cuda_ctx;
 
-    // TODO: (mr) think of a better way to cast contexts
     ret = TValue(process_handle->context, "ompd_CudaContextArray").
           cast("ompd_cuda_context_ptr_t",1).
           getArrayElement(i).
@@ -1024,6 +1021,8 @@ ompd_get_thread_handle(ompd_address_space_handle_t
     (*thread_handle)->cuda_kernel_info->cudaContext = p->cudaContext;
     (*thread_handle)->cuda_kernel_info->warpSize = p->warpSize;
     (*thread_handle)->cuda_kernel_info->gridId = p->gridId;
+    (*thread_handle)->cuda_kernel_info->gridDim = p->gridDim;
+    (*thread_handle)->cuda_kernel_info->blockDim = p->blockDim;
   } else {
     ret = TValue(context, tcontext, "__kmp_gtid")
               .castBase("__kmp_gtid")
@@ -1124,7 +1123,9 @@ ompd_rc_t ompd_get_thread_id(
 
     cuda_thread_id->blockIdx.y = cuda_thread_id->blockIdx.z = 0;
 
-    // TODO (mr) add gridDim and blockDim
+    cuda_thread_id->gridDim = thread_handle->cuda_kernel_info->gridDim;
+    cuda_thread_id->blockDim = thread_handle->cuda_kernel_info->blockDim;
+
     return ompd_rc_ok;
   } else {
     ompd_size_t size;
@@ -1171,7 +1172,7 @@ ompd_rc_t ompd_get_state(
 
   if (thread_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     if (wait_id)
-      *wait_id = 0; //TODO: (mr) implement wait_ids in nvptx device rtl
+      *wait_id = 0;
     ret  = TValue(context, thread_handle->th)
             .cast("omptarget_nvptx_TaskDescr", 0, OMPD_SEGMENT_CUDA_PTX_SHARED)
             .access("ompd_thread_info")
