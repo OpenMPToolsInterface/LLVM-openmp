@@ -1402,6 +1402,7 @@ void __kmp_serialized_parallel(ident_t *loc, kmp_int32 global_tid) {
     /* OMPT state */
     this_thr->th.ompt_thread_info.state = omp_state_work_parallel;
     OMPT_CUR_TASK_INFO(this_thr)->frame.exit_frame = OMPT_GET_FRAME_ADDRESS(1);
+    OMPT_CUR_TASK_INFO(this_thr)->scheduling_parent = this_thr->th.th_current_task->td_parent;
   }
 #endif
 }
@@ -1565,6 +1566,7 @@ int __kmp_fork_call(ident_t *loc, int gtid,
             OMPT_CUR_TASK_INFO(master_th)
                 ->thread_num = __kmp_tid_from_gtid(gtid);
           }
+          OMPT_CUR_TASK_INFO(master_th)->scheduling_parent = master_th->th.th_current_task->td_parent;
 
           /* OMPT state */
           master_th->th.ompt_thread_info.state = omp_state_work_parallel;
@@ -1786,6 +1788,7 @@ int __kmp_fork_call(ident_t *loc, int gtid,
               OMPT_CUR_TASK_INFO(master_th)
                   ->thread_num = __kmp_tid_from_gtid(gtid);
             }
+            OMPT_CUR_TASK_INFO(master_th)->scheduling_parent = master_th->th.th_current_task->td_parent;
 
             /* OMPT state */
             master_th->th.ompt_thread_info.state = omp_state_work_parallel;
@@ -1891,6 +1894,7 @@ int __kmp_fork_call(ident_t *loc, int gtid,
               OMPT_CUR_TASK_INFO(master_th)
                   ->thread_num = __kmp_tid_from_gtid(gtid);
             }
+            OMPT_CUR_TASK_INFO(master_th)->scheduling_parent = master_th->th.th_current_task->td_parent;
 
             /* OMPT state */
             master_th->th.ompt_thread_info.state = omp_state_work_parallel;
