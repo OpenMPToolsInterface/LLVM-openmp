@@ -362,7 +362,11 @@ TBaseValue TValue::castBase(const char *varName) {
   return TBaseValue(*this, size);
 }
 
-TBaseValue TValue::castBase() const { return TBaseValue(*this, fieldSize); }
+TBaseValue TValue::castBase() const { 
+	if(pointerLevel>0)
+		return TBaseValue(*this, type_sizes.sizeof_pointer); 
+	return TBaseValue(*this, fieldSize); 
+}
 
 TBaseValue TValue::castBase(ompd_target_prim_types_t baseType) const {
   return TBaseValue(*this, baseType);

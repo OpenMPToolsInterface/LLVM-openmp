@@ -89,6 +89,14 @@ typedef struct _ompd_task_handle_s {
                                                        used to retrieve this
                                                        parallel region handle
                                                      */
+  _ompd_task_handle_s(){
+    ah=NULL;
+    th.segment=OMPD_SEGMENT_UNSPECIFIED; 
+    lwt.segment=OMPD_SEGMENT_UNSPECIFIED; 
+    th.address=0;
+    lwt.address=0;
+    cuda_kernel_info=NULL;
+  }
 } ompd_task_handle_t;
 
 #endif

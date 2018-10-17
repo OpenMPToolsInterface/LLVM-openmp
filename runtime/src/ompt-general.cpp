@@ -371,7 +371,7 @@ void ompt_post_init() {
 }
 
 void ompt_fini() {
-  if (ompt_enabled.enabled) {
+  if (ompt_enabled.enabled && ompt_start_tool_result && ompt_start_tool_result->finalize) {
     ompt_start_tool_result->finalize(&(ompt_start_tool_result->tool_data));
   }
 

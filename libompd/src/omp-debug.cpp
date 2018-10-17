@@ -190,7 +190,7 @@ ompd_rc_t ompd_get_thread_in_parallel(
 
   assert(callbacks && "Callback table not initialized!");
 
-  ompd_address_t taddr;
+  ompd_address_t taddr={OMPD_SEGMENT_UNSPECIFIED,0};
 
   if (parallel_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     uint16_t thread_idx;
@@ -375,7 +375,7 @@ ompd_rc_t ompd_get_current_parallel_handle(
     (*parallel_handle)->th = taddr;
     (*parallel_handle)->cuda_kernel_info = thread_handle->cuda_kernel_info;
   } else {
-    ompd_address_t taddr, lwt;
+    ompd_address_t taddr={OMPD_SEGMENT_UNSPECIFIED,0}, lwt={OMPD_SEGMENT_UNSPECIFIED,0};
 
     TValue teamdata = TValue(context, thread_handle->th) /*__kmp_threads[t]->th*/
                           .cast("kmp_base_info_t")
@@ -423,7 +423,7 @@ ompd_rc_t ompd_get_enclosing_parallel_handle(
 
   assert(callbacks && "Callback table not initialized!");
 
-  ompd_address_t taddr = parallel_handle->th, lwt;
+  ompd_address_t taddr = parallel_handle->th, lwt={OMPD_SEGMENT_UNSPECIFIED,0};
   ompd_rc_t ret;
 
   if (parallel_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
@@ -558,7 +558,7 @@ ompd_rc_t ompd_get_task_parallel_handle(
     return ompd_rc_stale_handle;
 
   assert(callbacks && "Callback table not initialized!");
-  ompd_address_t taddr;
+  ompd_address_t taddr={OMPD_SEGMENT_UNSPECIFIED,0};
 
   ompd_rc_t ret;
 
@@ -679,7 +679,7 @@ ompd_rc_t ompd_get_current_task_handle(
     return ompd_rc_stale_handle;
 
   assert(callbacks && "Callback table not initialized!");
-  ompd_address_t taddr, lwt;
+  ompd_address_t taddr={OMPD_SEGMENT_UNSPECIFIED,0}, lwt={OMPD_SEGMENT_UNSPECIFIED,0};
   ompd_rc_t ret = ompd_rc_ok;
 
   lwt.segment = OMPD_SEGMENT_UNSPECIFIED;
@@ -740,7 +740,7 @@ ompd_rc_t ompd_get_generating_task_handle(
     return ompd_rc_stale_handle;
 
   assert(callbacks && "Callback table not initialized!");
-  ompd_address_t taddr = task_handle->th, lwt;
+  ompd_address_t taddr = task_handle->th, lwt={OMPD_SEGMENT_UNSPECIFIED,0};
 
   ompd_rc_t ret = ompd_rc_stale_handle;
   TValue lwtValue = TValue(context, task_handle->lwt);
@@ -800,7 +800,7 @@ ompd_rc_t ompd_get_scheduling_task_handle(
     return ompd_rc_stale_handle;
 
   assert(callbacks && "Callback table not initialized!");
-  ompd_address_t taddr;
+  ompd_address_t taddr={OMPD_SEGMENT_UNSPECIFIED,0};
   ompd_rc_t ret;
 
   if (task_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
@@ -823,8 +823,11 @@ ompd_rc_t ompd_get_scheduling_task_handle(
             .cast("ompt_task_info_t")
             .access("scheduling_parent") // td->ompd_task_info.scheduling_parent
             .cast("kmp_taskdata_t", 1)
-            .dereference()
-            .getAddress(&taddr);
+            .castBase()
+            .getValue(taddr.address);
+    if (taddr.address == 0) {
+      return ompd_rc_unavailable;
+    }
   }
 
   if (ret != ompd_rc_ok)
@@ -835,6 +838,7 @@ ompd_rc_t ompd_get_scheduling_task_handle(
     return ret;
 
   (*parent_task_handle)->th = taddr;
+  (*parent_task_handle)->lwt = {OMPD_SEGMENT_UNSPECIFIED,0};
   (*parent_task_handle)->ah = task_handle->ah;
   (*parent_task_handle)->cuda_kernel_info = task_handle->cuda_kernel_info;
   return ret;
@@ -857,7 +861,7 @@ ompd_rc_t ompd_get_task_in_parallel(
   assert(callbacks && "Callback table not initialized!");
 
   ompd_rc_t ret;
-  ompd_address_t taddr;
+  ompd_address_t taddr={OMPD_SEGMENT_UNSPECIFIED,0};
 
   if (parallel_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     ret = TValue(context, parallel_handle->th)
@@ -961,7 +965,7 @@ ompd_get_thread_handle(ompd_address_space_handle_t
                 .getPtrArrayElement(p->threadIdx.x)
                 .dereference();
 
-    ompd_address_t taddr;
+    ompd_address_t taddr={OMPD_SEGMENT_UNSPECIFIED,0};
     ret = th.getAddress(&taddr);
 
     if (ret != ompd_rc_ok) {
@@ -1038,7 +1042,7 @@ ompd_get_thread_handle(ompd_address_space_handle_t
                     .getArrayElement(tId) /*__kmp_threads[t]*/
                     .access("th");        /*__kmp_threads[t]->th*/
 
-    ompd_address_t taddr;
+    ompd_address_t taddr={OMPD_SEGMENT_UNSPECIFIED,0};
     ret = th.getAddress(&taddr);
     if (ret != ompd_rc_ok)
       return ret;
