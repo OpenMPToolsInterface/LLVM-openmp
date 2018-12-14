@@ -1091,7 +1091,7 @@ ompd_rc_t ompd_get_thread_id(
     return ompd_rc_stale_handle;
   ompd_rc_t ret;
 
-  if (kind != OMPD_THREAD_ID_CUDALOGICAL) {
+  if (kind == OMPD_THREAD_ID_CUDALOGICAL) {
     if (sizeof_thread_id != sizeof(ompd_cudathread_coord_t)) {
       return ompd_rc_bad_input;
     }
