@@ -891,6 +891,7 @@ ompd_rc_t ompd_get_task_in_parallel(
 
   (*task_handle)->th = taddr;
   (*task_handle)->ah = parallel_handle->ah;
+  (*task_handle)->lwt = {OMPD_SEGMENT_UNSPECIFIED,0};
   (*task_handle)->cuda_kernel_info = parallel_handle->cuda_kernel_info;
   return ret;
 }
