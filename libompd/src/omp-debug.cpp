@@ -1325,11 +1325,7 @@ ompd_rc_t ompd_get_task_function(
               .cast("kmp_team_p", 1)
               .access("t")            /*td.td_team->t*/
               .cast("kmp_base_team_t", 0)
-              .access("t_parent")     /*td.td_team->t.t_parent*/
-              .cast("kmp_team_p", 1)
-              .access("t")            /*td.td_team->t.t_parent->t*/
-              .cast("kmp_base_team_t", 0)
-              .access("t_pkfn")       /*td.td_team->t.t_parent->t.t_pkfn*/
+              .access("t_pkfn")       /*td.td_team->t.t_pkfn*/
               .castBase()
               .getValue(task_addr->address);
 
