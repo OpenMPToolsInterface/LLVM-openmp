@@ -1296,13 +1296,45 @@ ompd_rc_t ompd_get_task_function(
     if(task_handle->lwt.address!=0)
       return ompd_rc_bad_input; // We need to decide what we do here.
     else
-      ret = TValue(context, task_handle->th).
-            cast("kmp_taskdata_t",0).		/*t*/
-            getArrayElement(1).                   /* see kmp.h: #define KMP_TASKDATA_TO_TASK(taskdata) (kmp_task_t *)(taskdata + 1) */
-            cast("kmp_task_t",0).                 /* (kmp_task_t *) */
-            access("routine").             /*td->ompt_task_info*/
-            castBase().
-            getValue(task_addr->address);
+    {
+      ompd_word_t val;
+      ret = TValue(context, task_handle->th)
+                      .cast("kmp_taskdata_t") // td
+                      .access("td_flags")     // td->td_flags
+                      .cast("kmp_tasking_flags_t")
+                      .check("tasktype", &val); // td->td_flags.tasktype
+
+      if (ret != ompd_rc_ok)
+        return ret;
+      
+      if (val==1) { // tasktype: explicit = 1, implicit = 0
+      
+        ret = TValue(context, task_handle->th)
+              .cast("kmp_taskdata_t",0)		/*t*/
+              .getArrayElement(1)                   /* see kmp.h: #define KMP_TASKDATA_TO_TASK(taskdata) (kmp_task_t *)(taskdata + 1) */
+              .cast("kmp_task_t",0)                 /* (kmp_task_t *) */
+              .access("routine")             /*td->ompt_task_info*/
+              .castBase()
+              .getValue(task_addr->address);
+
+      } else {
+
+        ret = TValue(context, task_handle->th)
+              .cast("kmp_taskdata_t") /*td*/
+              .access("td_team")      /*td.td_team*/
+              .cast("kmp_team_p", 1)
+              .access("t")            /*td.td_team->t*/
+              .cast("kmp_base_team_t", 0)
+              .access("t_parent")     /*td.td_team->t.t_parent*/
+              .cast("kmp_team_p", 1)
+              .access("t")            /*td.td_team->t.t_parent->t*/
+              .cast("kmp_base_team_t", 0)
+              .access("t_pkfn")       /*td.td_team->t.t_parent->t.t_pkfn*/
+              .castBase()
+              .getValue(task_addr->address);
+
+      }
+    }
   }
   return ret;
 }
