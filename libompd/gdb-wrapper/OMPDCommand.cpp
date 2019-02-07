@@ -110,7 +110,7 @@ FOREACH_OMPD_API_FN(OMPD_FIND_API_FUNCTION)
 OMPDCommandFactory::~OMPDCommandFactory()
 {
   ompd_rc_t ret;
-  ret = functions->ompd_release_address_space_handle(addrhandle);
+  ret = functions->ompd_rel_address_space_handle(addrhandle);
   if (ret != ompd_rc_ok)
   {
     out << "ERROR: could not finalize target address space\n";
@@ -254,7 +254,7 @@ void OMPDThreads::execute() const
       ret = functions->ompd_get_state(thread_handle, &state, &wait_id);
       printf("  %-12u     %p     0x%lx\t%s\t%lx\n",
           (unsigned int)i.first, thread_handle, i.second, host_state_names[state], wait_id);
-      functions->ompd_release_thread_handle(thread_handle);
+      functions->ompd_rel_thread_handle(thread_handle);
     }
     else
     {
@@ -354,7 +354,7 @@ void OMPDThreads::execute() const
 
   // release thread handles
   for (auto i: device_thread_handles) {
-    functions->ompd_release_thread_handle(i);
+    functions->ompd_rel_thread_handle(i);
   }
 
   if (last_state != -1) {
@@ -390,7 +390,7 @@ void OMPDLevels::execute() const
     if (ret != ompd_rc_ok) {
       continue;
     }
-    ret = functions->ompd_get_current_parallel_handle(thread_handle,
+    ret = functions->ompd_get_curr_parallel_handle(thread_handle,
                                                       &parallel_handle);
     if (ret == ompd_rc_ok)
     {
@@ -589,7 +589,7 @@ vector<ompd_parallel_handle_t*> odbGetParallelRegions(OMPDFunctionsPtr functions
   ompd_rc_t ret;
   ompd_parallel_handle_t * parallel_handle;
   vector<ompd_parallel_handle_t*> parallel_handles;
-  ret = functions->ompd_get_current_parallel_handle(
+  ret = functions->ompd_get_curr_parallel_handle(
           th, &parallel_handle);
   while(ret == ompd_rc_ok)
   {
@@ -677,7 +677,7 @@ vector<ompd_task_handle_t*> odbGetTaskRegions(OMPDFunctionsPtr functions, ompd_t
   ompd_rc_t ret;
   ompd_task_handle_t *task_handle;
   vector<ompd_task_handle_t*> task_handles;
-  ret = functions->ompd_get_current_task_handle(
+  ret = functions->ompd_get_curr_task_handle(
           th, &task_handle);
   while(ret == ompd_rc_ok)
   {
@@ -747,7 +747,7 @@ static bool odbCheckThreadsInParallel(OMPDFunctionsPtr functions,
       // we dont want a thread matched twice
       unique_thread_handles.erase(matched_th);
     }
-    functions->ompd_release_thread_handle(th);
+    functions->ompd_rel_thread_handle(th);
   }
   return check_passed;
 }
@@ -791,7 +791,7 @@ void OMPDTest::execute() const
                ith, &tid);
 #endif
           sout << "0x" << hex << ith << " (" << "DISABLED IN ompd-devices" << "), ";
-          functions->ompd_release_task_handle(ith);
+          functions->ompd_rel_task_handle(ith);
         }
         sout << endl;
       }
@@ -806,10 +806,10 @@ void OMPDTest::execute() const
       odbCheckParallelIDs(functions, parallel_h);
       odbCheckTaskIDs(functions, task_h);
       for(auto ph: parallel_h)
-        functions->ompd_release_parallel_handle(ph);
+        functions->ompd_rel_parallel_handle(ph);
       for(auto th: task_h)
-        functions->ompd_release_task_handle(th);
-      functions->ompd_release_thread_handle(thr_h);
+        functions->ompd_rel_task_handle(th);
+      functions->ompd_rel_thread_handle(thr_h);
     }
   }
   else if (extraArgs[0]  == "parallel-threads")
@@ -844,11 +844,11 @@ void OMPDTest::execute() const
     cout << "Host check passed: " << host_check_passed << "\n" << endl;
 
     for (auto ph: host_parallel_handles) {
-      functions->ompd_release_parallel_handle(ph.first);
+      functions->ompd_rel_parallel_handle(ph.first);
     }
 
     for (auto th: host_thread_handles) {
-      functions->ompd_release_thread_handle(th);
+      functions->ompd_rel_thread_handle(th);
     }
 
     //
@@ -920,10 +920,10 @@ void OMPDParallelRegions::execute() const
   }
 
   for (auto t: host_thread_handles) {
-    functions->ompd_release_thread_handle(t);
+    functions->ompd_rel_thread_handle(t);
   }
   for (auto &p: host_parallel_handles) {
-    functions->ompd_release_parallel_handle(p.first);
+    functions->ompd_rel_parallel_handle(p.first);
   }
 
   //
@@ -957,13 +957,13 @@ void OMPDParallelRegions::execute() const
   }
 
   for (auto t: cuda_thread_handles) {
-    functions->ompd_release_thread_handle(t);
+    functions->ompd_rel_thread_handle(t);
   }
   for (auto &p: cuda_parallel_handles) {
-    functions->ompd_release_parallel_handle(p.first);
+    functions->ompd_rel_parallel_handle(p.first);
   }
   for (auto &d: cuda_device_handles) {
-    functions->ompd_release_address_space_handle(d.second.ompd_device_handle);
+    functions->ompd_rel_address_space_handle(d.second.ompd_device_handle);
   }
 }
 
@@ -1019,11 +1019,11 @@ void OMPDTasks::execute() const
   }
 
   for (auto task: host_task_handles) {
-    functions->ompd_release_task_handle(task.first);
+    functions->ompd_rel_task_handle(task.first);
   }
 
   for (auto thread: host_thread_handles) {
-    functions->ompd_release_thread_handle(thread);
+    functions->ompd_rel_thread_handle(thread);
   }
 
   // Cuda tasks
@@ -1064,15 +1064,15 @@ void OMPDTasks::execute() const
     functions->ompd_get_task_function(th.first, &task_func_addr);
 
     printf("%-11p   %-14zu    %-8ld   %p\n", th.first, th.second.size(), icv_level, (void*)task_func_addr.address);
-    functions->ompd_release_parallel_handle(ph);
+    functions->ompd_rel_parallel_handle(ph);
   }
 
   for (auto task: cuda_task_handles) {
-    functions->ompd_release_task_handle(task.first);
+    functions->ompd_rel_task_handle(task.first);
   }
 
   for (auto thread: cuda_thread_handles) {
-    functions->ompd_release_thread_handle(thread);
+    functions->ompd_rel_thread_handle(thread);
   }
 }
 

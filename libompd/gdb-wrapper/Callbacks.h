@@ -102,7 +102,8 @@ ompd_rc_t CB_host_to_target (
     );
     
 ompd_rc_t CB_print_string (
-    const char *string
+    const char *string,
+    int category
     );
 
 #endif /* GDB_CALLBACKS_H_ */

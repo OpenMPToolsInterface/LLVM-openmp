@@ -40,7 +40,7 @@ typedef ompd_rc_t (*ompd_device_initialize_fn_t) (
   );
 
 
-typedef ompd_rc_t (*ompd_release_address_space_handle_fn_t) (
+typedef ompd_rc_t (*ompd_rel_address_space_handle_fn_t) (
     ompd_address_space_handle_t *addr_handle    /* IN: handle for the address space */
   );
 
@@ -77,7 +77,7 @@ typedef ompd_rc_t (*ompd_get_thread_handle_fn_t) (
     ompd_thread_handle_t       **thread_handle     /* OUT: OpenMP thread handle*/
   );
 
-typedef ompd_rc_t (*ompd_release_thread_handle_fn_t) (
+typedef ompd_rc_t (*ompd_rel_thread_handle_fn_t) (
     ompd_thread_handle_t *thread_handle
 );
 
@@ -98,7 +98,7 @@ typedef ompd_rc_t (*ompd_get_thread_id_fn_t) (
  * Parallel Region Handles
  */
 
-typedef ompd_rc_t (*ompd_get_current_parallel_handle_fn_t) (
+typedef ompd_rc_t (*ompd_get_curr_parallel_handle_fn_t) (
     ompd_thread_handle_t *thread_handle,
     ompd_parallel_handle_t **parallel_handle
   );
@@ -113,7 +113,7 @@ typedef ompd_rc_t (*ompd_get_task_parallel_handle_fn_t) (
     ompd_parallel_handle_t **task_parallel_handle
   );
 
-typedef ompd_rc_t (*ompd_release_parallel_handle_fn_t) (
+typedef ompd_rc_t (*ompd_rel_parallel_handle_fn_t) (
     ompd_parallel_handle_t *parallel_handle
   );
 
@@ -127,7 +127,7 @@ typedef ompd_rc_t (*ompd_parallel_handle_compare_fn_t) (
  * Task Handles
  */
 
-typedef ompd_rc_t (*ompd_get_current_task_handle_fn_t) (
+typedef ompd_rc_t (*ompd_get_curr_task_handle_fn_t) (
     ompd_thread_handle_t *thread_handle,
     ompd_task_handle_t **task_handle
   );
@@ -148,7 +148,7 @@ typedef ompd_rc_t (*ompd_get_task_in_parallel_fn_t) (
     ompd_task_handle_t **task_handle
   );
 
-typedef ompd_rc_t (*ompd_release_task_handle_fn_t) (
+typedef ompd_rc_t (*ompd_rel_task_handle_fn_t) (
     ompd_task_handle_t *task_handle
 );
 
