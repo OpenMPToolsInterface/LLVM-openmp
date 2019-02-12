@@ -4,10 +4,9 @@
 
 //===----------------------------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.txt for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -16,13 +15,6 @@
 
 /* ------------------------------------------------------------------------ */
 /* ------------------------------------------------------------------------ */
-
-// Need to raise Win version from XP to Vista here for support of
-// InterlockedExchange64
-#if defined(_WIN32_WINNT) && defined(_M_IX86)
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0502
-#endif
 
 #include "kmp.h"
 #include "kmp_error.h"
@@ -332,7 +324,6 @@ static UT __kmp_wait_yield(volatile UT *spinner, UT checker,
 
 template <typename UT>
 void __kmp_dispatch_deo(int *gtid_ref, int *cid_ref, ident_t *loc_ref) {
-  typedef typename traits_t<UT>::signed_t ST;
   dispatch_private_info_template<UT> *pr;
 
   int gtid = *gtid_ref;

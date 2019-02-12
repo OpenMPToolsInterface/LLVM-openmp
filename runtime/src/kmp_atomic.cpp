@@ -4,10 +4,9 @@
 
 //===----------------------------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.txt for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -2906,7 +2905,6 @@ ATOMIC_CRITICAL_CPT(cmplx16, div_a16_cpt, kmp_cmplx128_a16_t, /, 32c,
 #define ATOMIC_CMPXCHG_CPT_REV(TYPE_ID, OP_ID, TYPE, BITS, OP, GOMP_FLAG)      \
   ATOMIC_BEGIN_CPT(TYPE_ID, OP_ID, TYPE, TYPE)                                 \
   TYPE new_value;                                                              \
-  TYPE KMP_ATOMIC_VOLATILE temp_val;                                           \
   OP_GOMP_CRITICAL_CPT_REV(OP, GOMP_FLAG)                                      \
   OP_CMPXCHG_CPT_REV(TYPE, BITS, OP)                                           \
   }
@@ -2978,7 +2976,6 @@ ATOMIC_CMPXCHG_CPT_REV(float8, sub_cpt_rev, kmp_real64, 64, -,
 #define ATOMIC_CRITICAL_CPT_REV(TYPE_ID, OP_ID, TYPE, OP, LCK_ID, GOMP_FLAG)   \
   ATOMIC_BEGIN_CPT(TYPE_ID, OP_ID, TYPE, TYPE)                                 \
   TYPE new_value;                                                              \
-  TYPE KMP_ATOMIC_VOLATILE temp_val;                                           \
   /*printf("__kmp_atomic_mode = %d\n", __kmp_atomic_mode);*/                   \
   OP_GOMP_CRITICAL_CPT_REV(OP, GOMP_FLAG)                                      \
   OP_CRITICAL_CPT_REV(OP, LCK_ID)                                              \

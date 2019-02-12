@@ -1,9 +1,8 @@
 //===------------ rtl.h - Target independent OpenMP target RTL ------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.txt for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -43,7 +42,6 @@ struct RTLInfoTy {
                                    // i.e. the OpenMP index of the first device
                                    // to be registered with this RTL.
   int32_t NumberOfDevices;         // Number of devices this RTL deals with.
-  std::vector<DeviceTy *> Devices; // one per device (NumberOfDevices in total).
 
   void *LibraryHandler;
 
@@ -74,7 +72,7 @@ struct RTLInfoTy {
   // The existence of the mutex above makes RTLInfoTy non-copyable.
   // We need to provide a copy constructor explicitly.
   RTLInfoTy()
-      : Idx(-1), NumberOfDevices(-1), Devices(), LibraryHandler(0),
+      : Idx(-1), NumberOfDevices(-1), LibraryHandler(0),
 #ifdef OMPTARGET_DEBUG
         RTLName(),
 #endif
@@ -86,7 +84,6 @@ struct RTLInfoTy {
   RTLInfoTy(const RTLInfoTy &r) : Mtx() {
     Idx = r.Idx;
     NumberOfDevices = r.NumberOfDevices;
-    Devices = r.Devices;
     LibraryHandler = r.LibraryHandler;
 #ifdef OMPTARGET_DEBUG
     RTLName = r.RTLName;

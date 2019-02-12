@@ -1,9 +1,8 @@
 //===------------ omp_data.cu - NVPTX OpenMP GPU objects --------- CUDA -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.txt for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -26,6 +25,13 @@ __device__ omptarget_device_environmentTy omptarget_device_environment;
 __device__
     omptarget_nvptx_Queue<omptarget_nvptx_ThreadPrivateContext, OMP_STATE_COUNT>
         omptarget_nvptx_device_State[MAX_SM];
+
+__device__ omptarget_nvptx_SimpleMemoryManager
+    omptarget_nvptx_simpleMemoryManager;
+__device__ __shared__ uint32_t usedMemIdx;
+__device__ __shared__ uint32_t usedSlotIdx;
+
+__device__ __shared__ uint8_t parallelLevel;
 
 // Pointer to this team's OpenMP state object
 __device__ __shared__

@@ -3,10 +3,9 @@
 #
 #//===----------------------------------------------------------------------===//
 #//
-#//                     The LLVM Compiler Infrastructure
-#//
-#// This file is dual licensed under the MIT and the University of Illinois Open
-#// Source Licenses. See LICENSE.txt for details.
+#// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+#// See https://llvm.org/LICENSE.txt for license information.
+#// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #//
 #//===----------------------------------------------------------------------===//
 #
@@ -110,12 +109,14 @@ sub process(\%) {
         if ( not $entries->{ $entry }->{ obsolete } ) {
             my $ordinal = $entries->{ $entry }->{ ordinal };
             if ( $entry =~ m{\A[ok]mp_} ) {
-                if ( not defined( $ordinal ) or $ordinal eq "DATA" ) {
+                if ( not defined( $ordinal ) ) {
                     runtime_error(
                         "Bad entry \"$entry\": ordinal number is not specified."
                     );
                 }; # if
-                $entries->{ uc( $entry ) } = { ordinal => 1000 + $ordinal };
+                if ( $ordinal ne "DATA" ) {
+                    $entries->{ uc( $entry ) } = { ordinal => 1000 + $ordinal };
+                }
             }; # if
         }; # if
     }; # foreach

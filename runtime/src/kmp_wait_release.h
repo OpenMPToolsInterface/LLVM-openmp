@@ -4,10 +4,9 @@
 
 //===----------------------------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.txt for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -54,6 +53,7 @@ public:
   typedef P flag_t;
   kmp_flag_native(volatile P *p, flag_type ft) : loc(p), t(ft) {}
   volatile P *get() { return loc; }
+  void *get_void_p() { return RCAST(void *, CCAST(P *, loc)); }
   void set(volatile P *new_loc) { loc = new_loc; }
   flag_type get_type() { return t; }
   P load() { return *loc; }
@@ -75,6 +75,10 @@ public:
    * @result the pointer to the actual flag
    */
   std::atomic<P> *get() { return loc; }
+  /*!
+   * @result void* pointer to the actual flag
+   */
+  void *get_void_p() { return RCAST(void *, loc); }
   /*!
    * @param new_loc in   set loc to point at new_loc
    */
@@ -114,13 +118,13 @@ public:
 };
 
 #if OMPT_SUPPORT
-static inline void __ompt_implicit_task_end(kmp_info_t *this_thr,
-                                            omp_state_t omp_state,
-                                            ompt_data_t *tId,
-                                            ompt_data_t *pId) {
+OMPT_NOINLINE
+static void __ompt_implicit_task_end(kmp_info_t *this_thr,
+                                     ompt_state_t ompt_state,
+                                     ompt_data_t *tId) {
   int ds_tid = this_thr->th.th_info.ds.ds_tid;
-  if (omp_state == omp_state_wait_barrier_implicit) {
-    this_thr->th.ompt_thread_info.state = omp_state_overhead;
+  if (ompt_state == ompt_state_wait_barrier_implicit) {
+    this_thr->th.ompt_thread_info.state = ompt_state_overhead;
 #if OMPT_OPTIONAL
     void *codeptr = NULL;
     if (ompt_enabled.ompt_callback_sync_region_wait) {
@@ -135,17 +139,12 @@ static inline void __ompt_implicit_task_end(kmp_info_t *this_thr,
     if (!KMP_MASTER_TID(ds_tid)) {
       if (ompt_enabled.ompt_callback_implicit_task) {
         ompt_callbacks.ompt_callback(ompt_callback_implicit_task)(
-            ompt_scope_end, NULL, tId, 0, ds_tid);
+            ompt_scope_end, NULL, tId, 0, ds_tid, ompt_task_implicit);
       }
-#if OMPT_OPTIONAL
-      if (ompt_enabled.ompt_callback_idle) {
-        ompt_callbacks.ompt_callback(ompt_callback_idle)(ompt_scope_begin);
-      }
-#endif
       // return to idle state
-      this_thr->th.ompt_thread_info.state = omp_state_idle;
+      this_thr->th.ompt_thread_info.state = ompt_state_idle;
     } else {
-      this_thr->th.ompt_thread_info.state = omp_state_overhead;
+      this_thr->th.ompt_thread_info.state = ompt_state_overhead;
     }
   }
 }
@@ -153,21 +152,25 @@ static inline void __ompt_implicit_task_end(kmp_info_t *this_thr,
 
 /* Spin wait loop that first does pause, then yield, then sleep. A thread that
    calls __kmp_wait_*  must make certain that another thread calls __kmp_release
-   to wake it back up to prevent deadlocks!  */
-template <class C>
+   to wake it back up to prevent deadlocks!
+
+   NOTE: We may not belong to a team at this point.  */
+template <class C, int final_spin>
 static inline void
-__kmp_wait_template(kmp_info_t *this_thr, C *flag,
-                    int final_spin USE_ITT_BUILD_ARG(void *itt_sync_obj)) {
-  // NOTE: We may not belong to a team at this point.
+__kmp_wait_template(kmp_info_t *this_thr,
+                    C *flag USE_ITT_BUILD_ARG(void *itt_sync_obj)) {
+#if USE_ITT_BUILD && USE_ITT_NOTIFY
   volatile void *spin = flag->get();
+#endif
   kmp_uint32 spins;
-  kmp_uint32 hibernate;
   int th_gtid;
   int tasks_completed = FALSE;
   int oversubscribed;
 #if !KMP_USE_MONITOR
   kmp_uint64 poll_count;
   kmp_uint64 hibernate_goal;
+#else
+  kmp_uint32 hibernate;
 #endif
 
   KMP_FSYNC_SPIN_INIT(spin, NULL);
@@ -176,6 +179,10 @@ __kmp_wait_template(kmp_info_t *this_thr, C *flag,
     return;
   }
   th_gtid = this_thr->th.th_info.ds.ds_gtid;
+#if KMP_OS_UNIX
+  if (final_spin)
+    KMP_ATOMIC_ST_REL(&this_thr->th.th_blocking, true);
+#endif
   KA_TRACE(20,
            ("__kmp_wait_sleep: T#%d waiting for flag(%p)\n", th_gtid, flag));
 #if KMP_STATS_ENABLED
@@ -191,27 +198,27 @@ THIS function is called from
 function.
        Events are triggered in the calling code (__kmp_barrier):
 
-                state := omp_state_overhead
+                state := ompt_state_overhead
             barrier-begin
             barrier-wait-begin
-                state := omp_state_wait_barrier
+                state := ompt_state_wait_barrier
           call join-barrier-implementation (finally arrive here)
           {}
           call fork-barrier-implementation (finally arrive here)
           {}
-                state := omp_state_overhead
+                state := ompt_state_overhead
             barrier-wait-end
             barrier-end
-                state := omp_state_work_parallel
+                state := ompt_state_work_parallel
 
 
   __kmp_fork_barrier  (after thread creation, before executing implicit task)
           call fork-barrier-implementation (finally arrive here)
-          {} // worker arrive here with state = omp_state_idle
+          {} // worker arrive here with state = ompt_state_idle
 
 
   __kmp_join_barrier  (implicit barrier at end of parallel region)
-                state := omp_state_barrier_implicit
+                state := ompt_state_barrier_implicit
             barrier-begin
             barrier-wait-begin
           call join-barrier-implementation (finally arrive here
@@ -226,44 +233,33 @@ final_spin=FALSE)
             barrier-end
             implicit-task-end
             idle-begin
-                state := omp_state_idle
+                state := ompt_state_idle
 
-       Before leaving, if state = omp_state_idle
+       Before leaving, if state = ompt_state_idle
             idle-end
-                state := omp_state_overhead
+                state := ompt_state_overhead
 */
 #if OMPT_SUPPORT
-  omp_state_t ompt_entry_state;
-  ompt_data_t *pId = NULL;
+  ompt_state_t ompt_entry_state;
   ompt_data_t *tId;
   if (ompt_enabled.enabled) {
     ompt_entry_state = this_thr->th.ompt_thread_info.state;
-    if (!final_spin || ompt_entry_state != omp_state_wait_barrier_implicit ||
+    if (!final_spin || ompt_entry_state != ompt_state_wait_barrier_implicit ||
         KMP_MASTER_TID(this_thr->th.th_info.ds.ds_tid)) {
       ompt_lw_taskteam_t *team =
           this_thr->th.th_team->t.ompt_serialized_team_info;
       if (team) {
-        pId = &(team->ompt_team_info.parallel_data);
         tId = &(team->ompt_task_info.task_data);
       } else {
-        pId = OMPT_CUR_TEAM_DATA(this_thr);
         tId = OMPT_CUR_TASK_DATA(this_thr);
       }
     } else {
-      pId = NULL;
       tId = &(this_thr->th.ompt_thread_info.task_data);
     }
-#if OMPT_OPTIONAL
-    if (ompt_entry_state == omp_state_idle) {
-      if (ompt_enabled.ompt_callback_idle) {
-        ompt_callbacks.ompt_callback(ompt_callback_idle)(ompt_scope_begin);
-      }
-    } else
-#endif
-        if (final_spin && (__kmp_tasking_mode == tskm_immediate_exec ||
-                           this_thr->th.th_task_team == NULL)) {
+    if (final_spin && (__kmp_tasking_mode == tskm_immediate_exec ||
+                       this_thr->th.th_task_team == NULL)) {
       // implicit task is done. Either no taskqueue, or task-team finished
-      __ompt_implicit_task_end(this_thr, ompt_entry_state, tId, pId);
+      __ompt_implicit_task_end(this_thr, ompt_entry_state, tId);
     }
   }
 #endif
@@ -271,12 +267,20 @@ final_spin=FALSE)
   // Setup for waiting
   KMP_INIT_YIELD(spins);
 
-  if (__kmp_dflt_blocktime != KMP_MAX_BLOCKTIME) {
+  if (__kmp_dflt_blocktime != KMP_MAX_BLOCKTIME
+#if OMP_50_ENABLED
+      || __kmp_pause_status == kmp_soft_paused
+#endif
+      ) {
 #if KMP_USE_MONITOR
 // The worker threads cannot rely on the team struct existing at this point.
 // Use the bt values cached in the thread struct instead.
 #ifdef KMP_ADJUST_BLOCKTIME
-    if (__kmp_zero_bt && !this_thr->th.th_team_bt_set)
+    if (
+#if OMP_50_ENABLED
+        __kmp_pause_status == kmp_soft_paused ||
+#endif
+        (__kmp_zero_bt && !this_thr->th.th_team_bt_set))
       // Force immediate suspend if not set by user and more threads than
       // available procs
       hibernate = 0;
@@ -299,7 +303,13 @@ final_spin=FALSE)
                   th_gtid, __kmp_global.g.g_time.dt.t_value, hibernate,
                   hibernate - __kmp_global.g.g_time.dt.t_value));
 #else
-    hibernate_goal = KMP_NOW() + this_thr->th.th_team_bt_intervals;
+#if OMP_50_ENABLED
+    if (__kmp_pause_status == kmp_soft_paused) {
+      // Force immediate suspend
+      hibernate_goal = KMP_NOW();
+    } else
+#endif
+      hibernate_goal = KMP_NOW() + this_thr->th.th_team_bt_intervals;
     poll_count = 0;
 #endif // KMP_USE_MONITOR
   }
@@ -333,7 +343,7 @@ final_spin=FALSE)
 #if OMPT_SUPPORT
           // task-team is done now, other cases should be catched above
           if (final_spin && ompt_enabled.enabled)
-            __ompt_implicit_task_end(this_thr, ompt_entry_state, tId, pId);
+            __ompt_implicit_task_end(this_thr, ompt_entry_state, tId);
 #endif
           this_thr->th.th_task_team = NULL;
           this_thr->th.th_reap_state = KMP_SAFE_TO_REAP;
@@ -392,7 +402,11 @@ final_spin=FALSE)
 #endif
 
     // Don't suspend if KMP_BLOCKTIME is set to "infinite"
-    if (__kmp_dflt_blocktime == KMP_MAX_BLOCKTIME)
+    if (__kmp_dflt_blocktime == KMP_MAX_BLOCKTIME
+#if OMP_50_ENABLED
+        && __kmp_pause_status != kmp_soft_paused
+#endif
+        )
       continue;
 
     // Don't suspend if there is a likelihood of new tasks being spawned.
@@ -408,8 +422,23 @@ final_spin=FALSE)
       continue;
 #endif
 
+#if OMP_50_ENABLED
+    if (__kmp_dflt_blocktime == KMP_MAX_BLOCKTIME &&
+        __kmp_pause_status != kmp_soft_paused)
+      continue;
+#endif
+
     KF_TRACE(50, ("__kmp_wait_sleep: T#%d suspend time reached\n", th_gtid));
+
+#if KMP_OS_UNIX
+    if (final_spin)
+      KMP_ATOMIC_ST_REL(&this_thr->th.th_blocking, false);
+#endif
     flag->suspend(th_gtid);
+#if KMP_OS_UNIX
+    if (final_spin)
+      KMP_ATOMIC_ST_REL(&this_thr->th.th_blocking, true);
+#endif
 
     if (TCR_4(__kmp_global.g.g_done)) {
       if (__kmp_global.g.g_abort)
@@ -423,21 +452,16 @@ final_spin=FALSE)
   }
 
 #if OMPT_SUPPORT
-  omp_state_t ompt_exit_state = this_thr->th.ompt_thread_info.state;
-  if (ompt_enabled.enabled && ompt_exit_state != omp_state_undefined) {
+  ompt_state_t ompt_exit_state = this_thr->th.ompt_thread_info.state;
+  if (ompt_enabled.enabled && ompt_exit_state != ompt_state_undefined) {
 #if OMPT_OPTIONAL
     if (final_spin) {
-      __ompt_implicit_task_end(this_thr, ompt_exit_state, tId, pId);
+      __ompt_implicit_task_end(this_thr, ompt_exit_state, tId);
       ompt_exit_state = this_thr->th.ompt_thread_info.state;
     }
 #endif
-    if (ompt_exit_state == omp_state_idle) {
-#if OMPT_OPTIONAL
-      if (ompt_enabled.ompt_callback_idle) {
-        ompt_callbacks.ompt_callback(ompt_callback_idle)(ompt_scope_end);
-      }
-#endif
-      this_thr->th.ompt_thread_info.state = omp_state_overhead;
+    if (ompt_exit_state == ompt_state_idle) {
+      this_thr->th.ompt_thread_info.state = ompt_state_overhead;
     }
   }
 #endif
@@ -450,6 +474,10 @@ final_spin=FALSE)
   }
 #endif
 
+#if KMP_OS_UNIX
+  if (final_spin)
+    KMP_ATOMIC_ST_REL(&this_thr->th.th_blocking, false);
+#endif
   KMP_FSYNC_SPIN_ACQUIRED(CCAST(void *, spin));
 }
 
@@ -463,7 +491,7 @@ template <class C> static inline void __kmp_release_template(C *flag) {
 #endif
   KF_TRACE(20, ("__kmp_release: T#%d releasing flag(%x)\n", gtid, flag->get()));
   KMP_DEBUG_ASSERT(flag->get());
-  KMP_FSYNC_RELEASING(flag->get());
+  KMP_FSYNC_RELEASING(flag->get_void_p());
 
   flag->internal_release();
 
@@ -741,8 +769,12 @@ public:
   }
   void wait(kmp_info_t *this_thr,
             int final_spin USE_ITT_BUILD_ARG(void *itt_sync_obj)) {
-    __kmp_wait_template(this_thr, this,
-                        final_spin USE_ITT_BUILD_ARG(itt_sync_obj));
+    if (final_spin)
+      __kmp_wait_template<kmp_flag_32, TRUE>(
+          this_thr, this USE_ITT_BUILD_ARG(itt_sync_obj));
+    else
+      __kmp_wait_template<kmp_flag_32, FALSE>(
+          this_thr, this USE_ITT_BUILD_ARG(itt_sync_obj));
   }
   void release() { __kmp_release_template(this); }
   flag_type get_ptr_type() { return flag32; }
@@ -775,8 +807,12 @@ public:
   }
   void wait(kmp_info_t *this_thr,
             int final_spin USE_ITT_BUILD_ARG(void *itt_sync_obj)) {
-    __kmp_wait_template(this_thr, this,
-                        final_spin USE_ITT_BUILD_ARG(itt_sync_obj));
+    if (final_spin)
+      __kmp_wait_template<kmp_flag_64, TRUE>(
+          this_thr, this USE_ITT_BUILD_ARG(itt_sync_obj));
+    else
+      __kmp_wait_template<kmp_flag_64, FALSE>(
+          this_thr, this USE_ITT_BUILD_ARG(itt_sync_obj));
   }
   void release() { __kmp_release_template(this); }
   flag_type get_ptr_type() { return flag64; }
@@ -863,8 +899,12 @@ public:
   bool is_sleeping() { return is_sleeping_val(*get()); }
   bool is_any_sleeping() { return is_sleeping_val(*get()); }
   void wait(kmp_info_t *this_thr, int final_spin) {
-    __kmp_wait_template<kmp_flag_oncore>(
-        this_thr, this, final_spin USE_ITT_BUILD_ARG(itt_sync_obj));
+    if (final_spin)
+      __kmp_wait_template<kmp_flag_oncore, TRUE>(
+          this_thr, this USE_ITT_BUILD_ARG(itt_sync_obj));
+    else
+      __kmp_wait_template<kmp_flag_oncore, FALSE>(
+          this_thr, this USE_ITT_BUILD_ARG(itt_sync_obj));
   }
   void release() { __kmp_release_template(this); }
   void suspend(int th_gtid) { __kmp_suspend_oncore(th_gtid, this); }

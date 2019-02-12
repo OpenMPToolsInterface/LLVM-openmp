@@ -1,9 +1,8 @@
 //===-RTLs/generic-64bit/src/rtl.cpp - Target RTLs Implementation - C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.txt for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -66,7 +65,7 @@ struct FuncOrGblEntryTy {
 
 /// Class containing all the device information.
 class RTLDeviceInfoTy {
-  std::vector<FuncOrGblEntryTy> FuncGblEntries;
+  std::vector<std::list<FuncOrGblEntryTy>> FuncGblEntries;
 
 public:
   std::list<DynLibTy> DynLibs;
@@ -76,7 +75,8 @@ public:
                           __tgt_offload_entry *end) {
     assert(device_id < (int32_t)FuncGblEntries.size() &&
            "Unexpected device id!");
-    FuncOrGblEntryTy &E = FuncGblEntries[device_id];
+    FuncGblEntries[device_id].emplace_back();
+    FuncOrGblEntryTy &E = FuncGblEntries[device_id].back();
 
     E.Table.EntriesBegin = begin;
     E.Table.EntriesEnd = end;
@@ -86,7 +86,7 @@ public:
   bool findOffloadEntry(int32_t device_id, void *addr) {
     assert(device_id < (int32_t)FuncGblEntries.size() &&
            "Unexpected device id!");
-    FuncOrGblEntryTy &E = FuncGblEntries[device_id];
+    FuncOrGblEntryTy &E = FuncGblEntries[device_id].back();
 
     for (__tgt_offload_entry *i = E.Table.EntriesBegin, *e = E.Table.EntriesEnd;
          i < e; ++i) {
@@ -101,7 +101,7 @@ public:
   __tgt_target_table *getOffloadEntriesTable(int32_t device_id) {
     assert(device_id < (int32_t)FuncGblEntries.size() &&
            "Unexpected device id!");
-    FuncOrGblEntryTy &E = FuncGblEntries[device_id];
+    FuncOrGblEntryTy &E = FuncGblEntries[device_id].back();
 
     return &E.Table;
   }

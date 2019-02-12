@@ -4,10 +4,9 @@
 
 //===----------------------------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.txt for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -86,9 +85,12 @@
    128-bit extended precision type yet */
 typedef long double _Quad;
 #elif KMP_COMPILER_GCC
+/* GCC on NetBSD lacks __multc3/__divtc3 builtins needed for quad */
+#if !KMP_OS_NETBSD
 typedef __float128 _Quad;
 #undef KMP_HAVE_QUAD
 #define KMP_HAVE_QUAD 1
+#endif
 #elif KMP_COMPILER_MSVC
 typedef long double _Quad;
 #endif
@@ -100,7 +102,9 @@ typedef long double _Quad;
 #endif
 #endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
 
+#define KMP_USE_X87CONTROL 0
 #if KMP_OS_WINDOWS
+#define KMP_END_OF_LINE "\r\n"
 typedef char kmp_int8;
 typedef unsigned char kmp_uint8;
 typedef short kmp_int16;
@@ -122,6 +126,10 @@ typedef struct kmp_struct64 kmp_int64;
 typedef struct kmp_struct64 kmp_uint64;
 /* Not sure what to use for KMP_[U]INT64_SPEC here */
 #endif
+#if KMP_ARCH_X86 && KMP_MSVC_COMPAT
+#undef KMP_USE_X87CONTROL
+#define KMP_USE_X87CONTROL 1
+#endif
 #if KMP_ARCH_X86_64
 #define KMP_INTPTR 1
 typedef __int64 kmp_intptr_t;
@@ -132,6 +140,7 @@ typedef unsigned __int64 kmp_uintptr_t;
 #endif /* KMP_OS_WINDOWS */
 
 #if KMP_OS_UNIX
+#define KMP_END_OF_LINE "\n"
 typedef char kmp_int8;
 typedef unsigned char kmp_uint8;
 typedef short kmp_int16;
@@ -246,7 +255,7 @@ template <> struct traits_t<unsigned long long> {
 
 #define KMP_EXPORT extern /* export declaration in guide libraries */
 
-#if __GNUC__ >= 4
+#if __GNUC__ >= 4 && !defined(__MINGW32__)
 #define __forceinline __inline
 #endif
 
@@ -287,6 +296,20 @@ extern "C" {
 
 #define KMP_CACHE_PREFETCH(ADDR) /* nothing */
 
+// Define attribute that indicates that the fall through from the previous 
+// case label is intentional and should not be diagnosed by a compiler
+//   Code from libcxx/include/__config
+// Use a function like macro to imply that it must be followed by a semicolon
+#if __cplusplus > 201402L && __has_cpp_attribute(fallthrough)
+#  define KMP_FALLTHROUGH() [[fallthrough]]
+#elif __has_cpp_attribute(clang::fallthrough)
+#  define KMP_FALLTHROUGH() [[clang::fallthrough]]
+#elif __has_attribute(fallthough) || _GNUC_VER >= 700
+#  define KMP_FALLTHROUGH() __attribute__((__fallthrough__))
+#else
+#  define KMP_FALLTHROUGH() ((void)0)
+#endif
+
 // Define attribute that indicates a function does not return
 #if __cplusplus >= 201103L
 #define KMP_NORETURN [[noreturn]]
@@ -296,7 +319,7 @@ extern "C" {
 #define KMP_NORETURN __attribute__((noreturn))
 #endif
 
-#if KMP_OS_WINDOWS
+#if KMP_OS_WINDOWS && KMP_MSVC_COMPAT
 #define KMP_ALIGN(bytes) __declspec(align(bytes))
 #define KMP_THREAD_LOCAL __declspec(thread)
 #define KMP_ALIAS /* Nothing */
@@ -313,9 +336,12 @@ extern "C" {
 #endif
 
 // Define KMP_VERSION_SYMBOL and KMP_EXPAND_NAME
-#ifdef KMP_USE_VERSION_SYMBOLS
+#ifndef KMP_STR
 #define KMP_STR(x) _KMP_STR(x)
 #define _KMP_STR(x) #x
+#endif
+
+#ifdef KMP_USE_VERSION_SYMBOLS
 // If using versioned symbols, KMP_EXPAND_NAME prepends
 // __kmp_api_ to the real API name
 #define KMP_EXPAND_NAME(api_name) _KMP_EXPAND_NAME(api_name)
@@ -353,10 +379,12 @@ enum kmp_mem_fence_type {
 
 #if KMP_ASM_INTRINS && KMP_OS_WINDOWS
 
+#if KMP_MSVC_COMPAT && !KMP_COMPILER_CLANG
 #pragma intrinsic(InterlockedExchangeAdd)
 #pragma intrinsic(InterlockedCompareExchange)
 #pragma intrinsic(InterlockedExchange)
 #pragma intrinsic(InterlockedExchange64)
+#endif
 
 // Using InterlockedIncrement / InterlockedDecrement causes a library loading
 // ordering problem, so we use InterlockedExchangeAdd instead.
