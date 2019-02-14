@@ -78,23 +78,23 @@ __device__ void ompd_set_device_specific_thread_state(
 }
 
 __device__ void  ompd_set_device_thread_state(omp_state_t state) {
-  ompd_set_device_specific_thread_state(getMyTopTaskDescriptor(), state);
+  ompd_set_device_specific_thread_state(getMyTopTaskDescriptor(isSPMDMode()), state);
 }
 
 __device__ void ompd_init_thread_parallel() {
-  omptarget_nvptx_TaskDescr *currTaskDescr = getMyTopTaskDescriptor();
+  omptarget_nvptx_TaskDescr *currTaskDescr = getMyTopTaskDescriptor(isSPMDMode());
   ompd_init_thread(currTaskDescr, omptarget_nvptx_workFn, 1);
   ompd_set_device_specific_thread_state(currTaskDescr, omp_state_work_parallel);
 }
 
 __device__ void ompd_init_thread_master() {
-  omptarget_nvptx_TaskDescr *currTaskDescr = getMyTopTaskDescriptor();
+  omptarget_nvptx_TaskDescr *currTaskDescr = getMyTopTaskDescriptor(isSPMDMode());
   ompd_init_thread(currTaskDescr, NULL, 1);
   ompd_set_device_specific_thread_state(currTaskDescr, omp_state_work_serial);
 }
 
 __device__ void ompd_init_explicit_task(void *task_func) {
-    omptarget_nvptx_TaskDescr *taskDescr = getMyTopTaskDescriptor();
+    omptarget_nvptx_TaskDescr *taskDescr = getMyTopTaskDescriptor(isSPMDMode());
     ompd_init_thread(taskDescr, task_func, 0);
 }
 
