@@ -1,4 +1,4 @@
-#include "ompd.h"
+#include "omp-tools.h"
 #include "ompd-private.h"
 #include "omp-debug.h"
 #include <cstring>
@@ -54,7 +54,7 @@ ompd_rc_t ompd_enumerate_states(
     }
     const char *find_next_state_name = get_ompd_cuda_state_name(*next_state);
     char *next_state_name_cpy;
-    ret = callbacks->memory_alloc(
+    ret = callbacks->alloc_memory(
         strlen(find_next_state_name) + 1, (void **)&next_state_name_cpy);
     if (ret != ompd_rc_ok) {
       return ret;
@@ -79,7 +79,7 @@ ompd_rc_t ompd_enumerate_states(
     }
     
     char *next_state_name_cpy;
-    ret = callbacks->memory_alloc(strlen(find_next_state_name) + 1, (void **)&next_state_name_cpy);
+    ret = callbacks->alloc_memory(strlen(find_next_state_name) + 1, (void **)&next_state_name_cpy);
     if (ret != ompd_rc_ok) {
       return ret;
     }

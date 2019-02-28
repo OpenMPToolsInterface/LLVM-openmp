@@ -3,7 +3,7 @@
 */
 #ifndef __OPMD_TYPES_H
 #define __OPMD_TYPES_H
-#include "ompd.h"
+#include "omp-tools.h"
 
 #define OMPD_TYPES_VERSION   20170927 /* YYYYMMDD Format */
 

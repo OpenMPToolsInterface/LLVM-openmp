@@ -1,5 +1,5 @@
 
-#include "ompd.h"
+#include "omp-tools.h"
 #include "ompd-private.h"
 #include <stdlib.h>
 

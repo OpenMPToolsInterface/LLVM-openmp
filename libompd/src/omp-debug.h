@@ -30,12 +30,12 @@ extern "C" {
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-#include "ompd.h"
+#include "omp-tools.h"
 #include "ompd-types.h"
 
 /******************************************************************************
  * General helper functions
-   */
+ ******************************************************************************/
   ompd_rc_t initTypeSizes(ompd_address_space_context_t *context);
 
 #ifdef __cplusplus
@@ -56,22 +56,22 @@ typedef struct _ompd_cuda_thread_kernel_info_s {
   ompd_dim3_t blockDim;
 } ompd_cuda_thread_kernel_info_t;
 
-typedef struct _ompd_address_space_context_s ompd_address_space_context_t;
+typedef struct _ompd_aspace_cont ompd_address_space_context_t;
 
-typedef struct _ompd_address_space_handle_s {
+typedef struct _ompd_aspace_handle {
   ompd_address_space_context_t *context;
   ompd_device_t kind;
   uint64_t id;
 } ompd_address_space_handle_t;
 
-typedef struct _ompd_thread_handle_s {
+typedef struct _ompd_thread_handle {
   ompd_address_space_handle_t *ah;
   ompd_thread_context_t *thread_context;
   ompd_address_t th; /* target handle */
   ompd_cuda_thread_kernel_info_t *cuda_kernel_info; /* only valid for cuda */
 } ompd_thread_handle_t;
 
-typedef struct _ompd_parallel_handle_s {
+typedef struct _ompd_parallel_handle {
   ompd_address_space_handle_t *ah;
   ompd_address_t th;  /* target handle */
   ompd_address_t lwt; /* lwt handle */
@@ -81,7 +81,7 @@ typedef struct _ompd_parallel_handle_s {
                                                      */
 } ompd_parallel_handle_t;
 
-typedef struct _ompd_task_handle_s {
+typedef struct _ompd_task_handle {
   ompd_address_space_handle_t *ah;
   ompd_address_t th;  /* target handle */
   ompd_address_t lwt; /* lwt handle */
@@ -89,7 +89,7 @@ typedef struct _ompd_task_handle_s {
                                                        used to retrieve this
                                                        parallel region handle
                                                      */
-  _ompd_task_handle_s(){
+  _ompd_task_handle(){
     ah=NULL;
     th.segment=OMPD_SEGMENT_UNSPECIFIED; 
     lwt.segment=OMPD_SEGMENT_UNSPECIFIED; 
@@ -101,7 +101,6 @@ typedef struct _ompd_task_handle_s {
 
 #endif
 
-// TODO (mr) this is ugly, but better then a global symbol (?)
 void __ompd_init_icvs(const ompd_callbacks_t *table);
 void __ompd_init_states(const ompd_callbacks_t *table);
 

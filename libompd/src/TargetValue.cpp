@@ -57,7 +57,7 @@ ompd_rc_t TType::getSize(ompd_size_t *size) {
     }
 
     ret = TValue::callbacks->symbol_addr_lookup(context, NULL, ss.str().c_str(),
-                                          &symbolAddr);
+                                          &symbolAddr, NULL);
     if (ret != ompd_rc_ok) {
       dout << "missing symbol " << ss.str()
            << " add this to ompd-specific.h:\nOMPD_SIZEOF(" << typeName
@@ -76,7 +76,7 @@ ompd_rc_t TType::getSize(ompd_size_t *size) {
       symbolAddr.segment = OMPD_SEGMENT_CUDA_PTX_SHARED;
     }
 
-    ret = TValue::callbacks->read_memory(context, NULL, symbolAddr,
+    ret = TValue::callbacks->read_memory(context, NULL, &symbolAddr,
                                           1 * TValue::type_sizes.sizeof_long_long,
                                           &(tmpSize));
     if (ret != ompd_rc_ok)
@@ -100,7 +100,7 @@ ompd_rc_t TType::getBitfieldMask(const char *fieldName,
     std::stringstream ss;
     ss << "ompd_bitfield__" << typeName << "__" << fieldName;
     ret = TValue::callbacks->symbol_addr_lookup(context, NULL, ss.str().c_str(),
-                                          &symbolAddr);
+                                                &symbolAddr, NULL);
     if (ret != ompd_rc_ok) {
       dout << "missing symbol " << ss.str()
            << " add this to ompd-specific.h:\nOMPD_BITFIELD(" << typeName << ","
@@ -109,7 +109,7 @@ ompd_rc_t TType::getBitfieldMask(const char *fieldName,
     }
     symbolAddr.segment = descSegment;
 
-    ret = TValue::callbacks->read_memory(context, NULL, symbolAddr,
+    ret = TValue::callbacks->read_memory(context, NULL, &symbolAddr,
                                           1 * TValue::type_sizes.sizeof_long_long,
                                           &(tmpMask));
     if (ret != ompd_rc_ok)
@@ -144,7 +144,7 @@ ompd_rc_t TType::getElementOffset(const char *fieldName, ompd_size_t *offset) {
     }
 
     ret = TValue::callbacks->symbol_addr_lookup(context, NULL, ss.str().c_str(),
-                                          &symbolAddr);
+                                                &symbolAddr, NULL);
     if (ret != ompd_rc_ok) {
       dout << "missing symbol " << ss.str()
            << " add this to ompd-specific.h:\nOMPD_ACCESS(" << typeName << ","
@@ -162,7 +162,7 @@ ompd_rc_t TType::getElementOffset(const char *fieldName, ompd_size_t *offset) {
       symbolAddr.segment = OMPD_SEGMENT_CUDA_PTX_SHARED;
     }
 
-    ret = TValue::callbacks->read_memory(context, NULL, symbolAddr,
+    ret = TValue::callbacks->read_memory(context, NULL, &symbolAddr,
                                           1 * TValue::type_sizes.sizeof_long_long,
                                           &(tmpOffset));
     if (ret != ompd_rc_ok)
@@ -197,7 +197,7 @@ ompd_rc_t TType::getElementSize(const char *fieldName, ompd_size_t *size) {
     }
 
     ret = TValue::callbacks->symbol_addr_lookup(context, NULL, ss.str().c_str(),
-                                          &symbolAddr);
+                                                &symbolAddr, NULL);
     if (ret != ompd_rc_ok) {
       dout << "missing symbol " << ss.str()
            << " add this to ompd-specific.h:\nOMPD_ACCESS(" << typeName << ","
@@ -215,7 +215,7 @@ ompd_rc_t TType::getElementSize(const char *fieldName, ompd_size_t *size) {
       symbolAddr.segment = OMPD_SEGMENT_CUDA_PTX_SHARED;
     }
 
-    ret = TValue::callbacks->read_memory(context, NULL, symbolAddr,
+    ret = TValue::callbacks->read_memory(context, NULL, &symbolAddr,
                                           1 * TValue::type_sizes.sizeof_long_long,
                                           &(tmpOffset));
     if (ret != ompd_rc_ok)
@@ -264,7 +264,7 @@ TValue::TValue(ompd_address_space_context_t *_context,
       /*valueName(_valueName),*/ context(_context), tcontext(_tcontext),
       fieldSize(0) {
   errorState.errorCode =
-      callbacks->symbol_addr_lookup(context, tcontext, _valueName, &symbolAddr);
+      callbacks->symbol_addr_lookup(context, tcontext, _valueName, &symbolAddr, NULL);
   symbolAddr.segment = segment;
   //  assert((ret==ompd_rc_ok) && "Callback call failed");
 }
@@ -313,7 +313,7 @@ TValue TValue::dereference() const {
   TValue ret = *this;
   ret.pointerLevel--;
   ret.errorState.errorCode = callbacks->read_memory(
-      context, tcontext, symbolAddr, 1 * TValue::type_sizes.sizeof_pointer,
+      context, tcontext, &symbolAddr, 1 * TValue::type_sizes.sizeof_pointer,
       &(tmpAddr.address));
   if (ret.errorState.errorCode != ompd_rc_ok)
     return ret;
@@ -345,7 +345,7 @@ ompd_rc_t TValue::getRawValue(void *buf, int count) {
     return errorState.errorCode;
 
   errorState.errorCode =
-      callbacks->read_memory(context, tcontext, symbolAddr, size, buf);
+      callbacks->read_memory(context, tcontext, &symbolAddr, size, buf);
   return errorState.errorCode;
 }
 
@@ -439,7 +439,7 @@ TBaseValue::TBaseValue(const TValue &_tvalue, ompd_size_t _baseTypeSize)
 ompd_rc_t TBaseValue::getValue(void *buf, int count) {
   if (errorState.errorCode != ompd_rc_ok)
     return errorState.errorCode;
-  errorState.errorCode = callbacks->read_memory(context, tcontext, symbolAddr,
+  errorState.errorCode = callbacks->read_memory(context, tcontext, &symbolAddr,
                                                  count * baseTypeSize, buf);
   if (errorState.errorCode != ompd_rc_ok)
     return errorState.errorCode;
@@ -447,14 +447,3 @@ ompd_rc_t TBaseValue::getValue(void *buf, int count) {
       callbacks->device_to_host(context, buf, baseTypeSize, count, buf);
   return errorState.errorCode;
 }
-
-// ompd_rc_t TBaseValue::getValue(struct ompd_handle* buf, int count)
-// {
-//   if( errorState.errorCode != ompd_rc_ok )
-//     return errorState.errorCode;
-//   errorState.errorCode = callbacks->read_memory(context, tcontext,
-//   symbolAddr,
-//       count, baseType, &(buf->th));
-//   assert((errorState.errorCode == ompd_rc_ok) && "Callback call failed");
-//   return errorState.errorCode;
-// }
