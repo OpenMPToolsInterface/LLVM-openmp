@@ -121,7 +121,7 @@ ompd_rc_t ompd_rel_address_space_handle(
 ompd_rc_t ompd_device_initialize(
     ompd_address_space_handle_t *process_handle,
     ompd_address_space_context_t *device_context,
-    int kind,
+    ompd_device_t kind,
     ompd_size_t sizeof_id,
     void *id,
     ompd_address_space_handle_t **device_handle

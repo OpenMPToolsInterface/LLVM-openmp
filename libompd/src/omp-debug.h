@@ -10,11 +10,11 @@
 #ifndef SRC_OMP_DEBUG_H_
 #define SRC_OMP_DEBUG_H_
 
+#define OMPD_DLL_VERSION 201811
+
 #ifdef __cplusplus
 
 #include <cstdlib>
-
-#define OMPD_DLL_VERSION 201811;
 
 extern "C" {
 #endif
@@ -30,16 +30,17 @@ extern "C" {
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-#include "omp-tools.h"
 #include "ompd-types.h"
+#include "omp-tools.h"
 
+#ifdef __cplusplus
+}
+#endif
 /******************************************************************************
  * General helper functions
  ******************************************************************************/
   ompd_rc_t initTypeSizes(ompd_address_space_context_t *context);
 
-#ifdef __cplusplus
-  }
 
 
 static const ompd_callbacks_t *callbacks = nullptr;
@@ -98,8 +99,6 @@ typedef struct _ompd_task_handle {
     cuda_kernel_info=NULL;
   }
 } ompd_task_handle_t;
-
-#endif
 
 void __ompd_init_icvs(const ompd_callbacks_t *table);
 void __ompd_init_states(const ompd_callbacks_t *table);

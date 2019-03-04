@@ -70,5 +70,4 @@ typedef enum ompd_target_prim_types_t {
 } ompd_target_prim_types_t;
 
 #include "ompd-types.h"
-
 #endif /*SRC_OMPD_PRIVATE_H*/

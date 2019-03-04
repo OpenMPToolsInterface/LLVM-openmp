@@ -7,12 +7,13 @@
 #ifdef OMPD_SUPPORT
 
 void ompd_init();
-extern volatile const char * * ompd_dll_locations;
+//extern volatile const char * * ompd_dll_locations;
 extern int ompd_rtl_version;
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
+#if 0
 void __attribute__ ((noinline)) ompd_dll_locations_valid ( void );
 void __attribute__ ((noinline)) ompd_bp_parallel_begin ( void );
 void __attribute__ ((noinline)) ompd_bp_parallel_end ( void );
@@ -20,6 +21,7 @@ void __attribute__ ((noinline)) ompd_bp_task_begin ( void );
 void __attribute__ ((noinline)) ompd_bp_task_end ( void );
 void __attribute__ ((noinline)) ompd_bp_thread_begin ( void );
 void __attribute__ ((noinline)) ompd_bp_thread_end ( void );
+#endif
 #ifdef  __cplusplus
 } /* extern "C" */
 #endif

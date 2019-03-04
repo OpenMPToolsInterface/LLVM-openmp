@@ -1,4 +1,3 @@
-#include "omp-tools.h"
 #include "ompd-private.h"
 #include "omp-debug.h"
 #include <cstring>
