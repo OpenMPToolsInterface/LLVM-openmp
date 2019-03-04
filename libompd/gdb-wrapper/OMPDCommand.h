@@ -29,7 +29,7 @@
 #include <vector>
 #include <string>
 #include <map>
-#include "ompd.h"
+#include "omp-tools.h"
 #include "ompd_typedefs.h"
 //#include "ompd_test.h"
 

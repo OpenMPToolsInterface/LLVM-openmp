@@ -12,7 +12,6 @@
 #include "OutputString.h"
 #include "Debug.h"
 #include "omp.h"
-#include "ompd.h"
 //#include "ompd_test.h"
 #define ODB_LINUX
 #include "CudaGdb.h"
@@ -437,8 +436,9 @@ void OMPDCallback::execute() const
     long long temp=0;
     ompd_addr_t addr = (ompd_addr_t)strtoll(extraArgs[1].c_str(), NULL, 0);
     int cnt = atoi(extraArgs[2].c_str());
-    ret = CB_read_tmemory(
-            host_contextPool->getGlobalOmpdContext(), NULL, {0,addr}, cnt, &temp);
+    ompd_address_t read_addr = {0, addr};
+    ret = CB_read_memory(
+            host_contextPool->getGlobalOmpdContext(), NULL, &read_addr, cnt, &temp);
     if (ret != ompd_rc_ok)
       return;
     sout << "0x" << hex << temp << endl;
@@ -457,8 +457,8 @@ void OMPDCallback::execute() const
       return;
     }
     ompd_address_t temp={0,0};
-    ret = CB_tsymbol_addr(
-            host_contextPool->getGlobalOmpdContext(), NULL, extraArgs[1].c_str(), &temp);
+    ret = CB_symbol_addr(
+            host_contextPool->getGlobalOmpdContext(), NULL, extraArgs[1].c_str(), &temp, NULL);
     if (ret != ompd_rc_ok)
       return;
     sout << "0x" << hex << temp.address << endl;
@@ -1000,8 +1000,8 @@ void OMPDTasks::execute() const
     ompd_word_t icv_level;
     icvs->get(ph, "levels-var", &icv_level);
 
-    ompd_address_t enter_frame;
-    ompd_address_t exit_frame;
+    ompd_frame_info_t enter_frame;
+    ompd_frame_info_t exit_frame;
     ret = functions->ompd_get_task_frame(th.first, &enter_frame, &exit_frame);
     if (ret != ompd_rc_ok) {
       printf("could not get task frame\n");
@@ -1014,8 +1014,9 @@ void OMPDTasks::execute() const
       printf("could not get task entry point\n");
     }
     printf("%-11p   %-14zu   %-9ld   %-11p   %-10p   %p\n", th.first,
-        th.second.size(), icv_level, (void*)enter_frame.address,
-        (void*)exit_frame.address, (void*)task_function.address);
+        th.second.size(), icv_level, (void*)enter_frame.frame_address.address,
+        (void*)exit_frame.frame_address.address,
+        (void*)task_function.address);
   }
 
   for (auto task: host_task_handles) {

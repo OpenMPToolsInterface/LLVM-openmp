@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <vector>
 #include <map>
-#include "ompd.h"
+#include "omp-tools.h"
 #include "../src/ompd-private.h"
 
 struct CudaThread {

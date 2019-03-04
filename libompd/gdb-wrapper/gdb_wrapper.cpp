@@ -11,7 +11,6 @@
 #include "GdbProcess.h"
 #include "Callbacks.h"
 #include "OMPDCommand.h"
-#include "ompd.h"
 #include "ompd_test.h"
 
 #include <vector>

@@ -37,16 +37,17 @@ void initializeCallbacks(const GdbProcessPtr &proc)
   gdb = proc;
 
   // Initialize static table
-  cb.memory_alloc       = CB_dmemory_alloc;
-  cb.memory_free        = CB_dmemory_free;
+  cb.alloc_memory       = CB_alloc_memory;
+  cb.free_memory        = CB_free_memory;
   cb.print_string       = CB_print_string;
   cb.get_thread_context_for_thread_id = CB_thread_context;
-  cb.sizeof_types       = CB_tsizeof_prim;
-  cb.symbol_addr_lookup = CB_tsymbol_addr;
-  cb.read_memory        = CB_read_tmemory;
-  cb.write_memory       = CB_write_tmemory;
-  cb.host_to_device     = CB_host_to_target;
-  cb.device_to_host     = CB_target_to_host;
+  cb.sizeof_type        = CB_sizeof_prim;
+  cb.symbol_addr_lookup = CB_symbol_addr;
+  cb.read_memory        = CB_read_memory;
+  cb.write_memory       = CB_write_memory;
+  cb.read_string        = CB_read_memory;
+  cb.host_to_device     = CB_host_to_device;
+  cb.device_to_host     = CB_device_to_host;
 }
 
 ompd_callbacks_t * getCallbacksTable()
@@ -54,7 +55,7 @@ ompd_callbacks_t * getCallbacksTable()
   return &cb;
 }
 
-ompd_rc_t CB_dmemory_alloc (
+ompd_rc_t CB_alloc_memory (
     ompd_size_t bytes,
     void **ptr)
 {
@@ -66,7 +67,7 @@ ompd_rc_t CB_dmemory_alloc (
   return ompd_rc_ok;
 }
 
-ompd_rc_t CB_dmemory_free (
+ompd_rc_t CB_free_memory(
     void *ptr)
 {
   if (!ptr)
@@ -93,26 +94,6 @@ ompd_rc_t CB_thread_context (
   return ret;
 }
 
-ompd_rc_t CB_process_context (
-    ompd_address_space_context_t* context,
-    ompd_address_space_context_t** containing_process_context
-    )
-{
-  ompd_rc_t ret = context ? ompd_rc_ok : ompd_rc_stale_handle;
-  OMPDContext* ompc = (OMPDContext*)context;
-
-  if (OMPDCudaContext* cuda_c = dynamic_cast<OMPDCudaContext *>(ompc)) {
-    *containing_process_context = cuda_c->host_cp->getGlobalOmpdContext();
-  }
-  else if (OMPDHostContext* host_c = dynamic_cast<OMPDHostContext *>(ompc)) {
-    *containing_process_context = host_c->cp->getGlobalOmpdContext();
-  }
-  else {
-    assert(0 && "Unable to find process context!");
-  }
-
-  return ret;
-}
 
 void init_sizes(){
   prim_sizes[ompd_type_char]      = getSizeOf("char");
@@ -123,7 +104,7 @@ void init_sizes(){
   prim_sizes[ompd_type_pointer]   = getSizeOf("void *");
 }
 
-ompd_rc_t CB_tsizeof_prim(
+ompd_rc_t CB_sizeof_prim(
     ompd_address_space_context_t *context,
     ompd_device_type_sizes_t *sizes)
 {
@@ -160,11 +141,12 @@ unsigned int getSizeOf(const char *str)
   return static_cast<unsigned int>(intVal);
 }
 
-ompd_rc_t CB_tsymbol_addr(
+ompd_rc_t CB_symbol_addr(
     ompd_address_space_context_t *context,
     ompd_thread_context_t *tcontext,
     const char *symbol_name,
-    ompd_address_t *symbol_addr)
+    ompd_address_t *symbol_addr,
+    const char *file_name)
 {
   ompd_rc_t ret = context ? ompd_rc_ok : ompd_rc_stale_handle;
   assert(gdb.get() != nullptr && "Invalid GDB process!");
@@ -182,22 +164,6 @@ ompd_rc_t CB_tsymbol_addr(
     symbol_addr->address = (ompd_addr_t) strtoull (addr, NULL, 0);
   else if (strlen(addr) == 0)
     ret = ompd_rc_error;
-
-  return ret;
-}
-
-ompd_rc_t CB_num_os_threads (
-    ompd_address_space_context_t *context,
-    ompd_size_t *num_os_threads)
-{
-  ompd_rc_t ret = context ? ompd_rc_ok : ompd_rc_stale_handle;
-  assert(gdb.get() != nullptr && "Invalid GDB process!");
-
-  auto threads = getThreadIDsFromDebugger();
-  if (threads.size() == 0)
-    return ompd_rc_error;
-
-  *num_os_threads = threads.size();
 
   return ret;
 }
@@ -267,21 +233,21 @@ inline void set_mem_strings(vector<string>& str, T* dest)
     dest[i]=(T)strtoll(str[i].c_str(), NULL, 0);
 }
 
-ompd_rc_t CB_write_tmemory (
+ompd_rc_t CB_write_memory (
     ompd_address_space_context_t *context,
     ompd_thread_context_t *tcontext,
-    ompd_address_t addr,
-    ompd_word_t nbytes,
+    const ompd_address_t *addr,
+    ompd_size_t nbytes,
     const void *buffer)
 {
   return ompd_rc_unsupported;
 }
 
-ompd_rc_t CB_read_tmemory (
+ompd_rc_t CB_read_memory (
     ompd_address_space_context_t *context,
     ompd_thread_context_t *tcontext,
-    ompd_address_t addr,
-    ompd_word_t nbytes,
+    const ompd_address_t *addr,
+    ompd_size_t nbytes,
     void *buffer)
 {
   if (!context)
@@ -306,7 +272,7 @@ ompd_rc_t CB_read_tmemory (
   stringstream command;
   string cast;
 
-  switch (addr.segment) {
+  switch (addr->segment) {
       default:
           cast = "xb 0x"; break;
       case OMPD_SEGMENT_CUDA_PTX_GLOBAL:
@@ -316,7 +282,7 @@ ompd_rc_t CB_read_tmemory (
       case OMPD_SEGMENT_CUDA_PTX_SHARED:
           cast = "xb (@shared unsigned char*) 0x"; break;
   }
-  command << "x/" << nbytes << cast << std::hex << addr.address;
+  command << "x/" << nbytes << cast << std::hex << addr->address;
 
   gdb->writeInput(command.str().c_str());
   vector<string> words;
@@ -329,11 +295,11 @@ ompd_rc_t CB_read_tmemory (
   return ompd_rc_ok;
 }
 
-ompd_rc_t CB_target_to_host (
+ompd_rc_t CB_device_to_host (
     ompd_address_space_context_t *address_space_context, /* IN */
     const void *input,          /* IN */
-    int unit_size,              /* IN */
-    int count,      /* IN: number of primitive type */
+    ompd_size_t unit_size,              /* IN */
+    ompd_size_t count,      /* IN: number of primitive type */
                     /* items to process */
     void *output    /* OUT */
 )
@@ -342,11 +308,11 @@ ompd_rc_t CB_target_to_host (
   return ompd_rc_ok;
 }
     
-ompd_rc_t CB_host_to_target (
+ompd_rc_t CB_host_to_device (
     ompd_address_space_context_t *address_space_context, /* IN */
     const void *input,          /* IN */
-    int unit_size,              /* IN */
-    int count,      /* IN: number of primitive type */
+    ompd_size_t unit_size,              /* IN */
+    ompd_size_t count,      /* IN: number of primitive type */
                     /* items to process */
     void *output    /* OUT */
 )
