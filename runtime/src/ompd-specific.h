@@ -1,4 +1,5 @@
 #include "kmp.h"
+#include "omp-tools.h"
 #include <stdint.h>
 
 #ifndef __OMPD_SPECIFIC_H__

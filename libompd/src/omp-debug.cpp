@@ -1245,7 +1245,7 @@ ompd_rc_t ompd_get_task_frame(
                        .access("ompt_task_info") // td->ompt_task_info
                        .cast("ompt_task_info_t")
                        .access("frame") // td->ompd_task_info.frame
-                       .cast("omp_frame_t", 0);
+                       .cast("ompt_frame_t", 0);
     enter_frame->frame_address.segment = OMPD_SEGMENT_UNSPECIFIED;
     ret = frame
             .access("enter_frame") // td->ompt_task_info.frame.enter_frame
