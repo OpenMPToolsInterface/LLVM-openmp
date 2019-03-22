@@ -1,3 +1,4 @@
+#include <cstring>
 #include "omp-debug.h"
 #include "ompd-private.h"
 #include "TargetValue.h"
@@ -55,6 +56,7 @@ static ompd_rc_t ompd_enumerate_icvs_cuda(ompd_icv_id_t current,
                                           ompd_scope_t *next_scope,
                                           int *more) {
   int next_possible_icv = current;
+  ompd_rc_t ret;
   do {
     next_possible_icv++;
   } while (!ompd_icv_available_cuda[next_possible_icv]);
@@ -64,7 +66,15 @@ static ompd_rc_t ompd_enumerate_icvs_cuda(ompd_icv_id_t current,
   }
 
   *next_id = next_possible_icv;
-  *next_icv_name = ompd_icv_string_values[*next_id];
+
+  ret = callbacks->alloc_memory(
+      std::strlen(ompd_icv_string_values[*next_id]) + 1,
+      (void**) next_icv_name);
+  if (ret != ompd_rc_ok) {
+    return ret;
+  }
+  std::strcpy((char*)*next_icv_name, ompd_icv_string_values[*next_id]);
+
   *next_scope = ompd_icv_scope_values[*next_id];
 
   do {
@@ -96,7 +106,15 @@ ompd_rc_t ompd_enumerate_icvs(ompd_address_space_handle_t *handle,
   }
 
   *next_id = current + 1;
-  *next_icv_name = ompd_icv_string_values[*next_id];
+
+  ompd_rc_t ret = callbacks->alloc_memory(
+      std::strlen(ompd_icv_string_values[*next_id]) + 1,
+      (void**)next_icv_name);
+  if (ret != ompd_rc_ok) {
+    return ret;
+  }
+  std::strcpy((char*)*next_icv_name, ompd_icv_string_values[*next_id]);
+
   *next_scope = ompd_icv_scope_values[*next_id];
 
   if ((*next_id) + 1 >= ompd_icv_after_last_icv) {
