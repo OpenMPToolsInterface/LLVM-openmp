@@ -66,8 +66,8 @@ void ompd_init()
   volatile static const char * ompd_my_dll_locations[2] = {"libompd.so",NULL};
 
 
-  const char *ompd_env_var = getenv("OMP_OMPD");
-  if (ompd_env_var && !strcmp(ompd_env_var, "on"))
+  const char *ompd_env_var = getenv("OMP_DEBUG");
+  if (ompd_env_var && !strcmp(ompd_env_var, "enabled"))
   {
     fprintf(stderr,
                 "OMP_OMPD active\n");
