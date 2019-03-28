@@ -6540,6 +6540,7 @@ static void __kmp_do_serial_initialize(void) {
   ompt_pre_init();
 #endif
 #if OMPD_SUPPORT
+  __kmp_env_dump();
     ompd_init();
 #endif
 
@@ -7534,6 +7535,13 @@ void __kmp_cleanup(void) {
   if (__kmp_affinity_format) {
     KMP_INTERNAL_FREE(__kmp_affinity_format);
     __kmp_affinity_format = NULL;
+  }
+#endif
+#if OMPD_SUPPORT
+  if (ompd_state) {
+    KMP_INTERNAL_FREE(ompd_env_block);
+    ompd_env_block = NULL;
+    ompd_env_block_size = 0;
   }
 #endif
 

@@ -1359,16 +1359,78 @@ ompd_get_version_string(const char **string /* OUT: OMPD version string */
 
 /* --- 4.8 Display Control Variables ---------------------------------------- */
 
-ompd_rc_t
-ompd_get_display_control_vars(ompd_address_space_handle_t *address_space_handle,
-                              const char *const **control_var_values) {
-  static const char *const control_vars[] = {NULL};
-  *control_var_values = control_vars;
+ompd_rc_t ompd_get_display_control_vars(ompd_address_space_handle_t *handle,
+                                        const char *const **control_vars) {
+  if (!handle)
+    return ompd_rc_stale_handle;
+  if (!control_vars)
+    return ompd_rc_bad_input;
+
+  ompd_address_space_context_t *context = handle->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  // runtime keeps a full dump of OMP/KMP definitions in this format
+  // <var1 name>=<var1 value>\n<var2 name>=<var2 value>\n...
+  ompd_address_t block_addr = {ompd_segment_none, 0};
+  OMPD_GET_VALUE(context, NULL, "ompd_env_block", type_sizes.sizeof_pointer,
+                 &block_addr.address);
+
+  // query size of the block
+  ompd_size_t block_size;
+  OMPD_GET_VALUE(context, NULL, "ompd_env_block_size", sizeof(ompd_size_t),
+                 &block_size);
+
+  // copy raw data from the address space
+  char *block;
+  OMPD_CALLBACK(alloc_memory, block_size, (void **)&block);
+  OMPD_CALLBACK(read_memory, context, NULL, &block_addr, block_size, block);
+
+  // count number of items, replace new line to zero.
+  int block_items = 1; // also count the last "NULL" item
+  for (ompd_size_t i = 0; i < block_size; i++) {
+    if (block[i] == '\n') {
+      block_items++;
+      block[i] = '\0';
+    }
+  }
+
+  // create vector of char*
+  const char **ctl_vars;
+  OMPD_CALLBACK(alloc_memory, block_items * sizeof(char *),
+                (void **)(&ctl_vars));
+  char *pos = block;
+  ctl_vars[0] = block;
+
+  // ctl_vars[0] points to the entire block, ctl_vars[1]... points to the
+  // smaller subsets of the block, and ctl_vars[block_items-2] points to the
+  // last string in the block.
+  for (int i = 1; i < block_items - 1; i++) {
+    while (*pos++ != '\0')
+      ;
+    if (pos > block + block_size)
+      return ompd_rc_error;
+    ctl_vars[i] = pos;
+  }
+  // last item must be NULL
+  ctl_vars[block_items - 1] = NULL;
+
+  *control_vars = ctl_vars;
+
   return ompd_rc_ok;
 }
 
-ompd_rc_t
-ompd_rel_display_control_vars(const char *const **control_var_values) {
+ompd_rc_t ompd_rel_display_control_vars(const char *const **control_vars) {
+  if (!control_vars)
+    return ompd_rc_bad_input;
+
+  char **ctl_vars = const_cast<char **>(*control_vars);
+
+  // remove the raw block first
+  OMPD_CALLBACK(free_memory, (void *)ctl_vars[0]);
+  // remove the vector
+  OMPD_CALLBACK(free_memory, (void *)ctl_vars);
+
   return ompd_rc_ok;
 }
 

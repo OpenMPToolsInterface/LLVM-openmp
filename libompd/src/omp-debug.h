@@ -45,6 +45,22 @@ extern "C" {
 
 static const ompd_callbacks_t *callbacks = nullptr;
 
+// Invoke callback function and return if it fails
+#define OMPD_CALLBACK(fn, ...)                                                 \
+  do {                                                                         \
+    ompd_rc_t _rc = callbacks->fn(__VA_ARGS__);                                \
+    if (_rc != ompd_rc_ok)                                                     \
+      return _rc;                                                              \
+  } while (0)
+
+// Read the memory contents located at the given symbol
+#define OMPD_GET_VALUE(context, th_context, name, size, buf)                   \
+  do {                                                                         \
+    ompd_address_t _addr;                                                      \
+    OMPD_CALLBACK(symbol_addr_lookup, context, th_context, name, &_addr,       \
+                  NULL);                                                       \
+    OMPD_CALLBACK(read_memory, context, th_context, &_addr, size, buf);        \
+  } while (0)
 
 // Information shared by all threads in a kernel
 // Used to map thread handles to native cuda thread ids

@@ -25,6 +25,9 @@
 #include "kmp_str.h"
 #include "kmp_wrapper_getpid.h"
 #include <ctype.h> // toupper()
+#if OMPD_SUPPORT
+#include "ompd-specific.h"
+#endif
 
 static int __kmp_env_toPrint(char const *name, int flag);
 
@@ -5827,5 +5830,48 @@ void __kmp_env_print_2() {
 
 } // __kmp_env_print_2
 #endif // OMP_40_ENABLED
+
+#if OMPD_SUPPORT
+// Dump environment variables for OMPD
+void __kmp_env_dump() {
+
+  kmp_env_blk_t block;
+  kmp_str_buf_t buffer, env, notdefined;
+
+  __kmp_stg_init();
+  __kmp_str_buf_init(&buffer);
+  __kmp_str_buf_init(&env);
+  __kmp_str_buf_init(&notdefined);
+
+  __kmp_env_blk_init(&block, NULL);
+  __kmp_env_blk_sort(&block);
+
+  __kmp_str_buf_print(&notdefined, ": %s", KMP_I18N_STR(NotDefined));
+
+  for (int i = 0; i < __kmp_stg_count; ++i) {
+    if (__kmp_stg_table[i].print == NULL)
+      continue;
+    __kmp_str_buf_clear(&env);
+    __kmp_stg_table[i].print(&env, __kmp_stg_table[i].name,
+                             __kmp_stg_table[i].data);
+    if (env.used < 4) // valid definition must have indents (3) and a new line
+      continue;
+    if (strstr(env.str, notdefined.str))
+      // normalize the string
+      __kmp_str_buf_print(&buffer, "%s=undefined\n", __kmp_stg_table[i].name);
+    else
+      __kmp_str_buf_cat(&buffer, env.str + 3, env.used - 3);
+  }
+
+  ompd_env_block = (char *)__kmp_allocate(buffer.used + 1);
+  KMP_MEMCPY(ompd_env_block, buffer.str, buffer.used + 1);
+  ompd_env_block_size = (ompd_size_t)KMP_STRLEN(ompd_env_block);
+
+  __kmp_env_blk_free(&block);
+  __kmp_str_buf_free(&buffer);
+  __kmp_str_buf_free(&env);
+  __kmp_str_buf_free(&notdefined);
+}
+#endif // OMPD_SUPPORT
 
 // end of file

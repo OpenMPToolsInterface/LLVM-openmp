@@ -27,6 +27,9 @@ uint64_t ompd_state=0;
 
 int ompd_rtl_version = 7;
 
+char *ompd_env_block = NULL;
+ompd_size_t ompd_env_block_size = 0;
+
 void ompd_init()
 {
     
