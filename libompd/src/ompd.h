@@ -577,6 +577,10 @@ ompd_rc_t
 ompd_get_icv_string_from_scope(void *handle, ompd_scope_t scope,
                                ompd_icv_id_t icv_id, const char **icv_string);
 
+ompd_rc_t
+ompd_get_tool_data(void *handle, ompd_scope_t scope,
+                   ompd_word_t *value, ompd_address_t *ptr);
+
 #ifdef __cplusplus
 }
 #endif

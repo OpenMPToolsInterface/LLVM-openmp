@@ -85,6 +85,7 @@ OMPD_ACCESS(ompt_team_info_t,     parallel_data) \
 \
 OMPD_ACCESS(ompt_thread_info_t,   state) \
 OMPD_ACCESS(ompt_thread_info_t,   wait_id) \
+OMPD_ACCESS(ompt_thread_info_t,   thread_data) \
 \
 OMPD_ACCESS(ompt_data_t,   value) \
 OMPD_ACCESS(ompt_data_t,   ptr) \

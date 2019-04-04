@@ -510,3 +510,145 @@ ompd_get_icv_string_from_scope(void *handle, ompd_scope_t scope,
                                const char **icv_string) {
   return ompd_rc_unsupported;
 }
+
+
+static ompd_rc_t 
+__ompd_get_tool_data(TValue& dataValue,
+                     ompd_word_t *value,
+                     ompd_address_t *ptr) {
+  ompd_rc_t ret = dataValue.getError();
+  if (ret != ompd_rc_ok)
+    return ret;
+  ret = dataValue
+            .access("value")
+            .castBase()
+            .getValue(*value);
+  if (ret != ompd_rc_ok)
+    return ret;
+  ptr->segment = OMPD_SEGMENT_UNSPECIFIED;
+  ret = dataValue
+            .access("ptr")
+            .castBase()
+            .getValue(ptr->address);
+  return ret;
+}
+
+ompd_rc_t ompd_get_task_data (ompd_task_handle_t *task_handle,
+                                  ompd_word_t *value,
+                                  ompd_address_t *ptr) {
+  ompd_address_space_context_t *context = task_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized!");
+  TValue dataValue;
+  if (task_handle->lwt.address) {
+    dataValue = TValue(context, task_handle->lwt)
+              .cast("ompt_lw_taskteam_t")   /*lwt*/
+              .access("ompt_task_info") // lwt->ompt_task_info
+              .cast("ompt_task_info_t")
+              .access("task_data") // lwt->ompd_task_info.task_data
+              .cast("ompt_data_t");
+  } else {
+    dataValue = TValue(context, task_handle->th)
+              .cast("kmp_taskdata_t")   /*td*/
+              .access("ompt_task_info") // td->ompt_task_info
+              .cast("ompt_task_info_t")
+              .access("task_data") // td->ompd_task_info.task_data
+              .cast("ompt_data_t");
+  }
+  return __ompd_get_tool_data(dataValue, value, ptr);
+} 
+
+
+ompd_rc_t ompd_get_parallel_data (ompd_parallel_handle_t *parallel_handle,
+                                  ompd_word_t *value,
+                                  ompd_address_t *ptr) {
+  ompd_address_space_context_t *context = parallel_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized!");
+
+  TValue dataValue;
+  if (parallel_handle->lwt.address) {
+    dataValue = TValue(context, parallel_handle->lwt)
+              .cast("ompt_lw_taskteam_t")   /*lwt*/
+              .access("ompt_team_info") // lwt->ompt_team_info
+              .cast("ompt_team_info_t")
+              .access("parallel_data") // lwt->ompt_team_info.parallel_data
+              .cast("ompt_data_t");
+  } else {
+    dataValue = TValue(context, parallel_handle->th)
+              .cast("kmp_base_team_t")   /*t*/
+              .access("ompt_team_info") // t->ompt_team_info
+              .cast("ompt_team_info_t")
+              .access("parallel_data") // t->ompt_team_info.parallel_data
+              .cast("ompt_data_t");
+  }
+  return __ompd_get_tool_data(dataValue, value, ptr);
+} 
+
+ompd_rc_t ompd_get_thread_data (ompd_thread_handle_t *thread_handle,
+                                  ompd_word_t *value,
+                                  ompd_address_t *ptr) {
+  ompd_address_space_context_t *context = thread_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized!");
+
+  TValue dataValue = TValue(context, thread_handle->th)
+              .cast("kmp_base_info_t")   /*th*/
+              .access("ompt_thread_info") // th->ompt_thread_info
+              .cast("ompt_thread_info_t")
+              .access("thread_data") // th->ompt_thread_info.thread_data
+              .cast("ompt_data_t");
+  return __ompd_get_tool_data(dataValue, value, ptr);
+} 
+
+
+
+ompd_rc_t ompd_get_tool_data (void *handle, ompd_scope_t scope,
+                                  ompd_word_t *value,
+                                  ompd_address_t *ptr) {
+  if (!handle) {
+    return ompd_rc_stale_handle;
+  }
+
+  ompd_device_t device_kind;
+
+  switch (scope) {
+    case ompd_scope_thread:
+      device_kind = ((ompd_thread_handle_t *)handle)->ah->kind;
+      break;
+    case ompd_scope_parallel:
+      device_kind = ((ompd_parallel_handle_t *)handle)->ah->kind;
+      break;
+    case ompd_scope_task:
+      device_kind = ((ompd_task_handle_t *)handle)->ah->kind;
+      break;
+    default:
+      return ompd_rc_bad_input;
+  }
+
+
+  if (device_kind == OMPD_DEVICE_KIND_HOST) {
+    switch (scope) {
+      case ompd_scope_thread:
+        return ompd_get_thread_data((ompd_thread_handle_t *)handle, value, ptr);
+      case ompd_scope_parallel:
+        return ompd_get_parallel_data((ompd_parallel_handle_t *)handle, value, ptr);
+      case ompd_scope_task:
+        return ompd_get_task_data((ompd_task_handle_t *)handle, value, ptr);
+      default:
+        return ompd_rc_unsupported;
+    }
+  } else if (device_kind == OMPD_DEVICE_KIND_CUDA) {
+    return ompd_rc_unsupported;
+  }
+  return ompd_rc_unsupported;
+}
+
+
+
