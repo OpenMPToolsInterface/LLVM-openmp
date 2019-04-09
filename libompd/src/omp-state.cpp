@@ -65,14 +65,10 @@ ompd_rc_t ompd_enumerate_states(
         current_state >= OMPD_LAST_OMP_STATE) {
       return ompd_rc_bad_input;
     }
-    if (current_state == omp_state_undefined) {
-      (*next_state) = omp_state_work_serial;
-      (*next_state_name) = get_ompd_state_name(omp_state_work_serial);
-      (*more_enums) = 1;
-      return ompd_rc_ok;
-    }
     const char *find_next_state_name;
-    *next_state = current_state + 1;
+    *next_state = (current_state == omp_state_undefined
+                  ? omp_state_work_serial
+                  : current_state + 1);
     while (!(find_next_state_name = get_ompd_state_name(*next_state))) {
       ++(*next_state);
     }
