@@ -14,6 +14,8 @@ extern int ompd_rtl_version;
 #ifdef  __cplusplus
 extern "C" {
 #endif
+extern char *ompd_env_block;
+extern ompd_size_t ompd_env_block_size;
 #if 0
 void __attribute__ ((noinline)) ompd_dll_locations_valid ( void );
 void __attribute__ ((noinline)) ompd_bp_parallel_begin ( void );

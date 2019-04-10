@@ -19,6 +19,9 @@ void __kmp_env_print();
 #if OMP_40_ENABLED
 void __kmp_env_print_2();
 #endif // OMP_40_ENABLED
+#if OMPD_SUPPORT
+void __kmp_env_dump();
+#endif
 
 int __kmp_initial_threads_capacity(int req_nproc);
 void __kmp_init_dflt_team_nth();
