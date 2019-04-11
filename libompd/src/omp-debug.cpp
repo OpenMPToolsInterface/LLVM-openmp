@@ -865,7 +865,7 @@ ompd_rc_t ompd_get_task_in_parallel(
 
   if (parallel_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
     ret = TValue(context, parallel_handle->th)
-              .cast("ompd_nvptx_paralel_info", 0,
+              .cast("ompd_nvptx_parallel_info_t", 0,
                     OMPD_SEGMENT_CUDA_PTX_GLOBAL)
               .access("parallel_tasks")
               .cast("omptarget_nvptx_TaskDescr", 1,

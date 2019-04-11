@@ -10,7 +10,7 @@
 #ifndef SRC_OMP_DEBUG_H_
 #define SRC_OMP_DEBUG_H_
 
-#define OMPD_DLL_VERSION 201811
+#define OMPD_VERSION 201811
 
 #ifdef __cplusplus
 
@@ -23,7 +23,7 @@ extern "C" {
 #define OMPD_IMPLEMENTS_OPENMP_SUBVERSION 0
 #define OMPD_TR_VERSION 6
 #define OMPD_TR_SUBVERSION 2
-#define OMPD_VERSION                                                           \
+#define OMPD_DLL_VERSION                                                       \
   (OMPD_IMPLEMENTS_OPENMP << 24) + (OMPD_IMPLEMENTS_OPENMP_SUBVERSION << 16) + \
       (OMPD_TR_VERSION << 8) + OMPD_TR_SUBVERSION
 
