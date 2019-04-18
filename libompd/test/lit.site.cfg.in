@@ -1,0 +1,10 @@
+config.test_c_compiler = "@TEST_C_COMPILER@"
+config.test_filecheck = "@FILECHECK_EXECUTABLE@"
+config.project_obj_root = "@CMAKE_CURRENT_BINARY_DIR@"
+config.project_src_root = "@CMAKE_CURRENT_SOURCE_DIR@"
+config.operating_system = "@CMAKE_SYSTEM_NAME@"
+config.ompt_plugin = "@OMPT_PLUGIN@"
+config.ompt_include_dir = "@LIBOMP_INCLUDE_DIR@"
+
+# Let the main config do the real work.
+lit_config.load_config(config, "@CMAKE_CURRENT_SOURCE_DIR@/lit.cfg")

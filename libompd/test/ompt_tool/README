@@ -1,0 +1,42 @@
+Contents of the three dirs:
+openmp_stack_walker -- the OpenMPStackwalker that rebuild stacks for OpenMP threads using OMPD. Also contains implementation of OMPD callbacks using Dyninst API.
+ompd_debugger -- code that test OpenMPStackwalker
+STAT(stat.tar) -- updated STAT code that uses OpenMPStackwalker to collect stack traces for MPI+OpenMP programs.
+
+For openmp_stack_walker and ompd_debugger, please read README in those dirs for details.
+
+For STAT:
+A list of changes made to STAT:
+  1) Changed config/x_ac_debuglibs.m4 so that the user could configure STAT with OpenMP stack walker.
+  2) Changed src/STAT_BackEnd.C to take advantage of OpenMP stackwalker in the code.
+  3) Added lai_config.sh that shows an example on how to configure STAT to support MPI+OpenMP debugging.
+
+How to congifure STAT for debugging MPI+OpenMP programs:
+You need to specify two additional options when executing ./configure
+  1) --with-ompd=$OMPD_INSTALL
+  2) --with-omp-stackwalker=$OMP_STACKWALKER_INSTALL
+For these two dependencies:
+  1) ompd: use OMPD/joachim/d9b90e557c on GitHub
+  2) omp-stackwalker: use code under dir openmp_stack_walker/
+is guaranteed to work.
+
+A list of known issues of STAT for MPI+OpenMP:
+  1) ./stat-cl works and outputs correct .dot files. However, ./stat-view doesn't work with lai_config.sh probably due to configuration reasons.
+
+
+Contact: Lai Wei (lai.wei@rice.edu)
+
+
+======================
+
+Update (test-tv-handle-interface):
+
+This project is now built with cmake:
+
+mkdir BUILD
+cd BUILD
+cmake .. -DCMAKE_INSTALL_PREFIX=<install-prefix> -DDYNINST_INSTALL_PREFIX=<dyninst-prefix> -DOMPD_INSTALL_PREFIX=<ompd-prefix>
+make 
+
+The dependency for ompd is now OMPD/master , also use the openmp-rt from
+stash!

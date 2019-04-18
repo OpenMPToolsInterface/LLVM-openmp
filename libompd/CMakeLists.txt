@@ -1,3 +1,7 @@
 if(LIBOMP_OMPD_SUPPORT)
-  add_subdirectory(src)
+    project (ompd)
+    set(OMPD_INCLUDE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/)
+    add_subdirectory(gdb-plugin)
+    add_subdirectory(test)
+    add_subdirectory(src)
 endif()
