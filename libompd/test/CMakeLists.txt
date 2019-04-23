@@ -2,7 +2,6 @@ if(LIBOMP_OMPD_SUPPORT)
     add_subdirectory(ompt_tool)
     add_subdirectory(openmp_examples)
 
-    
 find_package(LLVM REQUIRED CONFIG)
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include(AddLLVM)
@@ -29,13 +28,13 @@ endif()
 set(TEST_C_COMPILER CMAKE_C_COMPILER)
 set(PYTHON_PLUGIN ${ompd_BINARY_DIR}/gdb-plugin/python-module)
 
+set(TEST_C_COMPILER "clang" )
+configure_file(lit.site.cfg.in lit.site.cfg @ONLY)
+
 add_custom_target(check-ompd
       COMMAND ${LLVM_LIT_PATH} ${CMAKE_CURRENT_BINARY_DIR}
       COMMENT "Run tests"
       DEPENDS ompd_c_module
 )
-
-set(TEST_C_COMPILER "clang" )
-configure_file(lit.site.cfg.in lit.site.cfg @ONLY)
 
 endif()

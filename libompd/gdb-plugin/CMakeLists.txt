@@ -11,5 +11,5 @@ add_custom_target(
     ompd_c_module
     COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/setup.py build -b ${CMAKE_CURRENT_BINARY_DIR}/python-module
 )
-install(CODE "execute_process(COMMAND python setup.py install --user)")
+install(CODE "execute_process(COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/setup.py install --user)")
 list(APPEND PYTHONPATH "${CMAKE_CURRENT_BINARY_DIR}/python-module")
