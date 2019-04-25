@@ -27,6 +27,9 @@ uint64_t ompd_state=0;
 
 int ompd_rtl_version = 7;
 
+char *ompd_env_block = NULL;
+ompd_size_t ompd_env_block_size = 0;
+
 void ompd_init()
 {
     
@@ -66,8 +69,8 @@ void ompd_init()
   volatile static const char * ompd_my_dll_locations[2] = {"libompd.so",NULL};
 
 
-  const char *ompd_env_var = getenv("OMP_OMPD");
-  if (ompd_env_var && !strcmp(ompd_env_var, "on"))
+  const char *ompd_env_var = getenv("OMP_DEBUG");
+  if (ompd_env_var && !strcmp(ompd_env_var, "enabled"))
   {
     fprintf(stderr,
                 "OMP_OMPD active\n");

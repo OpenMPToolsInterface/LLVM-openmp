@@ -229,7 +229,8 @@ typedef ompd_rc_t (*ompd_callback_device_host_fn_t)(
  * The OMPD should not print directly.
  */
 typedef ompd_rc_t (*ompd_callback_print_string_fn_t)(
-    const char *str /* IN: message to print */
+    const char *str, /* IN: message to print */
+    int category
     );
 
 /**
@@ -246,7 +247,7 @@ typedef struct ompd_callbacks_t {
   ompd_callback_symbol_addr_fn_t symbol_addr_lookup;
   ompd_callback_memory_read_fn_t read_memory;
   ompd_callback_memory_write_fn_t write_memory;
-
+  ompd_callback_memory_read_fn_t read_string;
   ompd_callback_device_host_fn_t device_to_host;
   ompd_callback_device_host_fn_t host_to_device;
 
@@ -269,7 +270,7 @@ typedef struct ompd_callbacks_t {
 ompd_rc_t ompd_get_api_version(ompd_word_t *version);
 
 ompd_rc_t
-ompd_get_api_version_string(const char **string /* OUT: OMPD version string */
+ompd_get_version_string(const char **string /* OUT: OMPD version string */
                             );
 
 /**
@@ -303,9 +304,9 @@ ompd_rc_t ompd_device_initialize(
     ompd_address_space_handle_t **device_handle
     );
 
-ompd_rc_t ompd_release_address_space_handle(
+ompd_rc_t ompd_rel_address_space_handle(
     ompd_address_space_handle_t
-        *addr_handle /* IN: handle for the address space */
+        *handle /* IN: handle for the address space */
     );
 
 /* --- 4.4 Address Space Information ---------------------------------------- */
@@ -356,7 +357,7 @@ ompd_rc_t ompd_get_thread_handle(
     ompd_thread_handle_t **thread_handle /* OUT: OpenMP thread handle*/
     );
 
-ompd_rc_t ompd_release_thread_handle(ompd_thread_handle_t *thread_handle);
+ompd_rc_t ompd_rel_thread_handle(ompd_thread_handle_t *thread_handle);
 
 ompd_rc_t ompd_thread_handle_compare(ompd_thread_handle_t *thread_handle_1,
                                      ompd_thread_handle_t *thread_handle_2,
@@ -382,7 +383,7 @@ ompd_rc_t ompd_get_thread_id(
  * is stopped.
  */
 
-ompd_rc_t ompd_get_current_parallel_handle(
+ompd_rc_t ompd_get_curr_parallel_handle(
     ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
     ompd_parallel_handle_t **parallel_handle /* OUT: OpenMP parallel handle */
     );
@@ -417,7 +418,7 @@ ompd_rc_t ompd_get_task_parallel_handle(
         *enclosing_parallel_handle /* OUT: OpenMP parallel handle */
     );
 
-ompd_rc_t ompd_release_parallel_handle(ompd_parallel_handle_t *parallel_handle);
+ompd_rc_t ompd_rel_parallel_handle(ompd_parallel_handle_t *parallel_handle);
 
 ompd_rc_t
 ompd_parallel_handle_compare(ompd_parallel_handle_t *parallel_handle_1,
@@ -434,7 +435,7 @@ ompd_parallel_handle_compare(ompd_parallel_handle_t *parallel_handle_1,
  * for the innermost task region associated with an OpenMP thread. This call is
  * meaningful only if the thread whose handle is provided is stopped.
  */
-ompd_rc_t ompd_get_current_task_handle(
+ompd_rc_t ompd_get_curr_task_handle(
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
     ompd_task_handle_t **task_handle     /* OUT: OpenMP task handle */
     );
@@ -472,7 +473,7 @@ ompd_rc_t ompd_get_task_in_parallel(
     ompd_task_handle_t **task_handle         /* OUT: OpenMP task handle */
     );
 
-ompd_rc_t ompd_release_task_handle(ompd_task_handle_t *task_handle);
+ompd_rc_t ompd_rel_task_handle(ompd_task_handle_t *task_handle);
 
 ompd_rc_t ompd_task_handle_compare(ompd_task_handle_t *task_handle_1,
                                    ompd_task_handle_t *task_handle_2,
@@ -558,7 +559,7 @@ ompd_get_display_control_vars(ompd_address_space_handle_t *handle,   /* IN */
                               const char *const **control_var_values /* OUT */
                               );
 
-ompd_rc_t ompd_release_display_control_vars(
+ompd_rc_t ompd_rel_display_control_vars(
     const char *const **control_var_values /* IN */
     );
 

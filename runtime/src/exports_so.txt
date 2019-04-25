@@ -3,10 +3,9 @@
 #
 #//===----------------------------------------------------------------------===//
 #//
-#//                     The LLVM Compiler Infrastructure
-#//
-#// This file is dual licensed under the MIT and the University of Illinois Open
-#// Source Licenses. See LICENSE.txt for details.
+#// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+#// See https://llvm.org/LICENSE.txt for license information.
+#// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #//
 #//===----------------------------------------------------------------------===//
 #
@@ -21,6 +20,7 @@ VERSION {
         # "Normal" symbols.
         #
         omp_*;     # Standard OpenMP functions.
+        OMP_*;     # Standard OpenMP symbols.
 
         #
         # OMPT API
@@ -107,6 +107,8 @@ OMP_3.1 {
 } OMP_3.0;
 OMP_4.0 {
 } OMP_3.1;
+OMP_4.5 {
+} OMP_4.0;
 
 # sets up GCC GOMP_ version dependency chain
 GOMP_1.0 {

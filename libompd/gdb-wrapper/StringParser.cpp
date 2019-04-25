@@ -14,7 +14,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
-#include "ompd.h"
+#include "omp-tools.h"
 
 using namespace ompd_gdb;
 using namespace std;

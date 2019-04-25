@@ -1,4 +1,5 @@
 #include "kmp.h"
+#include "omp-tools.h"
 #include <stdint.h>
 
 #ifndef __OMPD_SPECIFIC_H__
@@ -7,12 +8,15 @@
 #ifdef OMPD_SUPPORT
 
 void ompd_init();
-extern volatile const char * * ompd_dll_locations;
+//extern volatile const char * * ompd_dll_locations;
 extern int ompd_rtl_version;
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
+extern char *ompd_env_block;
+extern ompd_size_t ompd_env_block_size;
+#if 0
 void __attribute__ ((noinline)) ompd_dll_locations_valid ( void );
 void __attribute__ ((noinline)) ompd_bp_parallel_begin ( void );
 void __attribute__ ((noinline)) ompd_bp_parallel_end ( void );
@@ -20,6 +24,7 @@ void __attribute__ ((noinline)) ompd_bp_task_begin ( void );
 void __attribute__ ((noinline)) ompd_bp_task_end ( void );
 void __attribute__ ((noinline)) ompd_bp_thread_begin ( void );
 void __attribute__ ((noinline)) ompd_bp_thread_end ( void );
+#endif
 #ifdef  __cplusplus
 } /* extern "C" */
 #endif
@@ -90,8 +95,8 @@ OMPD_ACCESS(ompt_thread_info_t,   thread_data) \
 OMPD_ACCESS(ompt_data_t,   value) \
 OMPD_ACCESS(ompt_data_t,   ptr) \
 \
-OMPD_ACCESS(omp_frame_t,         exit_frame) \
-OMPD_ACCESS(omp_frame_t,         enter_frame) \
+OMPD_ACCESS(ompt_frame_t,         exit_frame) \
+OMPD_ACCESS(ompt_frame_t,         enter_frame) \
 \
 OMPD_ACCESS(ompt_lw_taskteam_t,   parent) \
 OMPD_ACCESS(ompt_lw_taskteam_t,   ompt_team_info) \

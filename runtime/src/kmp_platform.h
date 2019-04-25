@@ -4,10 +4,9 @@
 
 //===----------------------------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.txt for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -17,11 +16,14 @@
 /* ---------------------- Operating system recognition ------------------- */
 
 #define KMP_OS_LINUX 0
+#define KMP_OS_DRAGONFLY 0
 #define KMP_OS_FREEBSD 0
 #define KMP_OS_NETBSD 0
+#define KMP_OS_OPENBSD 0
 #define KMP_OS_DARWIN 0
 #define KMP_OS_WINDOWS 0
 #define KMP_OS_CNK 0
+#define KMP_OS_HURD 0
 #define KMP_OS_UNIX 0 /* disjunction of KMP_OS_LINUX, KMP_OS_DARWIN etc. */
 
 #ifdef _WIN32
@@ -44,6 +46,11 @@
 #else
 #endif
 
+#if (defined __DragonFly__)
+#undef KMP_OS_DRAGONFLY
+#define KMP_OS_DRAGONFLY 1
+#endif
+
 #if (defined __FreeBSD__)
 #undef KMP_OS_FREEBSD
 #define KMP_OS_FREEBSD 1
@@ -54,18 +61,29 @@
 #define KMP_OS_NETBSD 1
 #endif
 
+#if (defined __OpenBSD__)
+#undef KMP_OS_OPENBSD
+#define KMP_OS_OPENBSD 1
+#endif
+
 #if (defined __bgq__)
 #undef KMP_OS_CNK
 #define KMP_OS_CNK 1
 #endif
 
+#if (defined __GNU__)
+#undef KMP_OS_HURD
+#define KMP_OS_HURD 1
+#endif
+
 #if (1 !=                                                                      \
-     KMP_OS_LINUX + KMP_OS_FREEBSD + KMP_OS_NETBSD + KMP_OS_DARWIN +           \
-         KMP_OS_WINDOWS)
+     KMP_OS_LINUX + KMP_OS_DRAGONFLY + KMP_OS_FREEBSD + KMP_OS_NETBSD +        \
+         KMP_OS_OPENBSD + KMP_OS_DARWIN + KMP_OS_WINDOWS + KMP_OS_HURD)
 #error Unknown OS
 #endif
 
-#if KMP_OS_LINUX || KMP_OS_FREEBSD || KMP_OS_NETBSD || KMP_OS_DARWIN
+#if KMP_OS_LINUX || KMP_OS_DRAGONFLY || KMP_OS_FREEBSD || KMP_OS_NETBSD ||     \
+        KMP_OS_OPENBSD || KMP_OS_DARWIN || KMP_OS_HURD
 #undef KMP_OS_UNIX
 #define KMP_OS_UNIX 1
 #endif
@@ -82,7 +100,7 @@
 #define KMP_ARCH_MIPS64 0
 
 #if KMP_OS_WINDOWS
-#if defined _M_AMD64
+#if defined(_M_AMD64) || defined(__x86_64)
 #undef KMP_ARCH_X86_64
 #define KMP_ARCH_X86_64 1
 #else

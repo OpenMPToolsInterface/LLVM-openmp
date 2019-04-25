@@ -15,7 +15,7 @@
  *   context.
  */
 
-#include "ompd.h"
+#include "omp-tools.h"
 //#include "ompd_test.h"
 #include "GdbProcess.h"
 #include "Callbacks.h"

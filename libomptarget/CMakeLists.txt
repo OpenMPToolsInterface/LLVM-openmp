@@ -1,9 +1,8 @@
 ##===----------------------------------------------------------------------===##
 # 
-#                     The LLVM Compiler Infrastructure
-#
-# This file is dual licensed under the MIT and the University of Illinois Open
-# Source Licenses. See LICENSE.txt for details.
+# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+# See https://llvm.org/LICENSE.txt for license information.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 # 
 ##===----------------------------------------------------------------------===##
 #
@@ -20,6 +19,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules ${CMAKE_MODULE_P
 
 if(OPENMP_STANDALONE_BUILD)
   # Build all libraries into a common place so that tests can find them.
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
@@ -39,10 +39,6 @@ set (LIBOMPTARGET_ALL_TARGETS "${LIBOMPTARGET_ALL_TARGETS} nvptx64-nvidia-cuda")
 # Once the plugins for the different targets are validated, they will be added to
 # the list of supported targets in the current system.
 set (LIBOMPTARGET_SYSTEM_TARGETS "")
-
-# Set base directories - required for lit to locate the tests.
-set(LIBOMPTARGET_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(LIBOMPTARGET_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 # If building this library in debug mode, we define a macro to enable
 # dumping progress messages at runtime.
@@ -70,6 +66,17 @@ get_target_property(LIBOMPTARGET_LIBRARY_DIR omptarget LIBRARY_OUTPUT_DIRECTORY)
 if(NOT LIBOMPTARGET_LIBRARY_DIR)
   set(LIBOMPTARGET_LIBRARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endif()
+
+# Definitions for testing, for reuse when testing libomptarget-nvptx.
+if(OPENMP_STANDALONE_BUILD)
+  set(LIBOMPTARGET_OPENMP_HEADER_FOLDER "${CMAKE_CURRENT_BINARY_DIR}/../runtime/src" CACHE STRING
+    "Path to folder containing omp.h")
+  set(LIBOMPTARGET_OPENMP_HOST_RTL_FOLDER "${CMAKE_CURRENT_BINARY_DIR}/../runtime/src" CACHE STRING
+    "Path to folder containing libomp.so")
+else()
+  set(LIBOMPTARGET_OPENMP_HEADER_FOLDER "${CMAKE_CURRENT_BINARY_DIR}/../runtime/src")
+endif()
+
 
 # Build offloading plugins and device RTLs if they are available.
 add_subdirectory(plugins)

@@ -46,11 +46,11 @@ ompd_rc_t
 ompd_process_initialize(ompd_address_space_context_t
                             *context, /* IN: debugger handle for the target */
                         ompd_address_space_handle_t *
-                            *addrhandle /* OUT: ompd handle for the target */
+                            *handle /* OUT: ompd handle for the target */
                         ) {
   if (!context)
     return ompd_rc_bad_input;
-  if (!addrhandle)
+  if (!handle)
     return ompd_rc_bad_input;
 
   int rtl_version;
@@ -63,25 +63,25 @@ ompd_process_initialize(ompd_address_space_context_t
             .getValue(ompd_state);
   if (ret != ompd_rc_ok)
     return ret;
-  ret = callbacks->memory_alloc(sizeof(ompd_address_space_handle_t),
-                                 (void **)(addrhandle));
+  ret = callbacks->alloc_memory(sizeof(ompd_address_space_handle_t),
+                                 (void **)(handle));
   if (ret != ompd_rc_ok)
     return ret;
-  if (!addrhandle)
+  if (!handle)
     return ompd_rc_error;
-  (*addrhandle)->context = context;
-  (*addrhandle)->kind = OMPD_DEVICE_KIND_HOST;
+  (*handle)->context = context;
+  (*handle)->kind = OMPD_DEVICE_KIND_HOST;
 
   return ompd_rc_ok;
 }
 
 ompd_rc_t
 ompd_get_omp_version(ompd_address_space_handle_t
-                            *addr_handle, /* IN: handle for the address space */
+                            *address_space, /* IN: handle for the address space */
                      ompd_word_t *version) {
-  if (!addr_handle)
+  if (!address_space)
     return ompd_rc_stale_handle;
-  ompd_address_space_context_t *context = addr_handle->context;
+  ompd_address_space_context_t *context = address_space->context;
   ompd_rc_t ret;
 
   if (!context)
@@ -97,23 +97,23 @@ ompd_get_omp_version(ompd_address_space_handle_t
 
 ompd_rc_t ompd_get_omp_version_string(
     ompd_address_space_handle_t
-        *addr_handle, /* IN: handle for the address space */
+        *address_space, /* IN: handle for the address space */
     const char **string) {
-  if (!addr_handle)
+  if (!address_space)
     return ompd_rc_bad_input;
   static const char *omp_version = "";
   *string = omp_version;
   return ompd_rc_ok;
 }
 
-ompd_rc_t ompd_release_address_space_handle(
+ompd_rc_t ompd_rel_address_space_handle(
     ompd_address_space_handle_t
         *addr_handle /* IN: handle for the address space */
     ) {
   if (!addr_handle)
     return ompd_rc_bad_input;
 
-  ompd_rc_t ret = callbacks->memory_free((void *)(addr_handle));
+  ompd_rc_t ret = callbacks->free_memory((void *)(addr_handle));
 //  delete addr_handle;
   return ret;
 }
@@ -121,7 +121,7 @@ ompd_rc_t ompd_release_address_space_handle(
 ompd_rc_t ompd_device_initialize(
     ompd_address_space_handle_t *process_handle,
     ompd_address_space_context_t *device_context,
-    int kind,
+    ompd_device_t kind,
     ompd_size_t sizeof_id,
     void *id,
     ompd_address_space_handle_t **device_handle
@@ -153,7 +153,7 @@ ompd_rc_t ompd_device_initialize(
       continue;
 
     if (cuda_ctx == *((uint64_t *)id)) {
-      ret = callbacks->memory_alloc(sizeof(ompd_address_space_handle_t),
+      ret = callbacks->alloc_memory(sizeof(ompd_address_space_handle_t),
                                      (void **)(device_handle));
       if (ret != ompd_rc_ok)
         return ret;
@@ -175,7 +175,7 @@ ompd_rc_t ompd_device_initialize(
 
 ompd_rc_t ompd_get_thread_in_parallel(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    int nth_handle, /* OUT: number of handles in the array */
+    int thread_num, /* OUT: number of handles in the array */
     ompd_thread_handle_t **thread_handle /* OUT: handle */
     ) {
   if (!parallel_handle)
@@ -204,7 +204,7 @@ ompd_rc_t ompd_get_thread_in_parallel(
                         .access("parallel_tasks")
                         .cast("omptarget_nvptx_TaskDescr", 1,
                               OMPD_SEGMENT_CUDA_PTX_GLOBAL)
-                        .getArrayElement(nth_handle);
+                        .getArrayElement(thread_num);
 
     ret = TaskDescr.access("ompd_thread_info")
                    .cast("ompd_nvptx_thread_info_t", 0,
@@ -237,7 +237,7 @@ ompd_rc_t ompd_get_thread_in_parallel(
               .cast("kmp_base_team_t", 0)
               .access("t_threads") /*t.t_threads*/
               .cast("kmp_info_t", 2)
-              .getArrayElement(nth_handle) /*t.t_threads[nth_handle]*/
+              .getArrayElement(thread_num) /*t.t_threads[nth_handle]*/
               .access("th")                /*t.t_threads[i]->th*/
               .getAddress(&taddr);
   }
@@ -245,7 +245,7 @@ ompd_rc_t ompd_get_thread_in_parallel(
   if (ret != ompd_rc_ok)
     return ret;
 
-  ret = callbacks->memory_alloc(sizeof(ompd_thread_handle_t),
+  ret = callbacks->alloc_memory(sizeof(ompd_thread_handle_t),
                                  (void **)(thread_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -256,12 +256,12 @@ ompd_rc_t ompd_get_thread_in_parallel(
   return ret;
 }
 
-ompd_rc_t ompd_release_thread_handle(
+ompd_rc_t ompd_rel_thread_handle(
     ompd_thread_handle_t *thread_handle /* IN: OpenMP parallel handle */
     ) {
   if (!thread_handle)
     return ompd_rc_stale_handle;
-  ompd_rc_t ret = callbacks->memory_free((void *)(thread_handle));
+  ompd_rc_t ret = callbacks->free_memory((void *)(thread_handle));
   if (ret != ompd_rc_ok)
     return ret;
   return ompd_rc_ok;
@@ -301,7 +301,7 @@ ompd_rc_t ompd_thread_handle_compare(ompd_thread_handle_t *thread_handle_1,
 
 /* parallel_handle is of type (kmp_base_team_t)*/
 
-ompd_rc_t ompd_get_current_parallel_handle(
+ompd_rc_t ompd_get_curr_parallel_handle(
     ompd_thread_handle_t *thread_handle,     /* IN: OpenMP thread handle*/
     ompd_parallel_handle_t **parallel_handle /* OUT: OpenMP parallel handle */
     ) {
@@ -366,7 +366,7 @@ ompd_rc_t ompd_get_current_parallel_handle(
     if (ret != ompd_rc_ok)
       return ret;
 
-    ret = callbacks->memory_alloc(sizeof(ompd_parallel_handle_t),
+    ret = callbacks->alloc_memory(sizeof(ompd_parallel_handle_t),
                                  (void **)(parallel_handle));
     if (ret != ompd_rc_ok)
       return ret;
@@ -395,7 +395,7 @@ ompd_rc_t ompd_get_current_parallel_handle(
     if (ret != ompd_rc_ok)
       return ret;
 
-    ret = callbacks->memory_alloc(sizeof(ompd_parallel_handle_t),
+    ret = callbacks->alloc_memory(sizeof(ompd_parallel_handle_t),
                                    (void **)(parallel_handle));
     if (ret != ompd_rc_ok)
       return ret;
@@ -531,7 +531,7 @@ ompd_rc_t ompd_get_enclosing_parallel_handle(
     }
   }
 
-  ret = callbacks->memory_alloc(sizeof(ompd_parallel_handle_t),
+  ret = callbacks->alloc_memory(sizeof(ompd_parallel_handle_t),
                                  (void **)(enclosing_parallel_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -546,7 +546,7 @@ ompd_rc_t ompd_get_enclosing_parallel_handle(
 ompd_rc_t ompd_get_task_parallel_handle(
     ompd_task_handle_t *task_handle, /* IN: OpenMP task handle */
     ompd_parallel_handle_t *
-        *enclosing_parallel_handle /* OUT: OpenMP parallel handle */
+        *task_parallel_handle /* OUT: OpenMP parallel handle */
     ) {
   if (!task_handle)
     return ompd_rc_stale_handle;
@@ -617,24 +617,24 @@ ompd_rc_t ompd_get_task_parallel_handle(
   if (ret != ompd_rc_ok)
     return ret;
 
-  ret = callbacks->memory_alloc(sizeof(ompd_parallel_handle_t),
-                                 (void **)(enclosing_parallel_handle));
+  ret = callbacks->alloc_memory(sizeof(ompd_parallel_handle_t),
+                                 (void **)(task_parallel_handle));
   if (ret != ompd_rc_ok)
     return ret;
 
-  (*enclosing_parallel_handle)->ah = task_handle->ah;
-  (*enclosing_parallel_handle)->lwt = task_handle->lwt;
-  (*enclosing_parallel_handle)->th = taddr;
-  (*enclosing_parallel_handle)->cuda_kernel_info = task_handle->cuda_kernel_info;
+  (*task_parallel_handle)->ah = task_handle->ah;
+  (*task_parallel_handle)->lwt = task_handle->lwt;
+  (*task_parallel_handle)->th = taddr;
+  (*task_parallel_handle)->cuda_kernel_info = task_handle->cuda_kernel_info;
   return ompd_rc_ok;
 }
 
-ompd_rc_t ompd_release_parallel_handle(
+ompd_rc_t ompd_rel_parallel_handle(
     ompd_parallel_handle_t *parallel_handle /* IN: OpenMP parallel handle */
     ) {
   if (!parallel_handle)
     return ompd_rc_stale_handle;
-  ompd_rc_t ret = callbacks->memory_free((void *)(parallel_handle));
+  ompd_rc_t ret = callbacks->free_memory((void *)(parallel_handle));
   if (ret != ompd_rc_ok)
     return ret;
   return ompd_rc_ok;
@@ -666,7 +666,7 @@ ompd_parallel_handle_compare(ompd_parallel_handle_t *parallel_handle_1,
 
 /* task_handle is of type (kmp_taskdata_t) */
 
-ompd_rc_t ompd_get_current_task_handle(
+ompd_rc_t ompd_get_curr_task_handle(
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
     ompd_task_handle_t **task_handle     /* OUT: OpenMP task handle */
     ) {
@@ -710,7 +710,7 @@ ompd_rc_t ompd_get_current_task_handle(
   if (ret != ompd_rc_ok)
     return ret;
 
-  ret = callbacks->memory_alloc(sizeof(ompd_task_handle_t),
+  ret = callbacks->alloc_memory(sizeof(ompd_task_handle_t),
                                  (void **)(task_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -776,7 +776,7 @@ ompd_rc_t ompd_get_generating_task_handle(
       return ret;
   }
 
-  ret = callbacks->memory_alloc(sizeof(ompd_task_handle_t),
+  ret = callbacks->alloc_memory(sizeof(ompd_task_handle_t),
                                  (void **)(parent_task_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -832,7 +832,7 @@ ompd_rc_t ompd_get_scheduling_task_handle(
 
   if (ret != ompd_rc_ok)
     return ret;
-  ret = callbacks->memory_alloc(sizeof(ompd_task_handle_t),
+  ret = callbacks->alloc_memory(sizeof(ompd_task_handle_t),
                                  (void **)(parent_task_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -846,7 +846,7 @@ ompd_rc_t ompd_get_scheduling_task_handle(
 
 ompd_rc_t ompd_get_task_in_parallel(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
-    int nth_handle,                  /* OUT: number of the task handle */
+    int thread_num,                  /* OUT: number of the task handle */
     ompd_task_handle_t **task_handle /* OUT: OpenMP task handle */
     ) {
   int i;
@@ -870,7 +870,7 @@ ompd_rc_t ompd_get_task_in_parallel(
               .access("parallel_tasks")
               .cast("omptarget_nvptx_TaskDescr", 1,
                     OMPD_SEGMENT_CUDA_PTX_GLOBAL)
-              .getArrayElement(nth_handle)
+              .getArrayElement(thread_num)
               .getAddress(&taddr);
   } else {
     ret = TValue(context, parallel_handle->th) /* t */
@@ -878,13 +878,13 @@ ompd_rc_t ompd_get_task_in_parallel(
               .access("t_implicit_task_taskdata") /*t.t_implicit_task_taskdata*/
               .cast("kmp_taskdata_t", 1)
               .getArrayElement(
-                  nth_handle) /*t.t_implicit_task_taskdata[nth_handle]*/
+                  thread_num) /*t.t_implicit_task_taskdata[nth_handle]*/
               .getAddress(&taddr);
   }
 
   if (ret != ompd_rc_ok)
     return ret;
-  ret = callbacks->memory_alloc(sizeof(ompd_task_handle_t),
+  ret = callbacks->alloc_memory(sizeof(ompd_task_handle_t),
                                  (void **)(task_handle));
   if (ret != ompd_rc_ok)
     return ret;
@@ -896,12 +896,12 @@ ompd_rc_t ompd_get_task_in_parallel(
   return ret;
 }
 
-ompd_rc_t ompd_release_task_handle(
+ompd_rc_t ompd_rel_task_handle(
     ompd_task_handle_t *task_handle /* IN: OpenMP task handle */
     ) {
   if (!task_handle)
     return ompd_rc_stale_handle;
-  ompd_rc_t ret = callbacks->memory_free((void *)(task_handle));
+  ompd_rc_t ret = callbacks->free_memory((void *)(task_handle));
   if (ret != ompd_rc_ok)
     return ret;
   return ompd_rc_ok;
@@ -930,13 +930,13 @@ ompd_rc_t ompd_task_handle_compare(ompd_task_handle_t *task_handle_1,
 
 ompd_rc_t
 ompd_get_thread_handle(ompd_address_space_handle_t
-                           *addr_handle, /* IN: handle for the address space */
+                           *handle, /* IN: handle for the address space */
                        ompd_thread_id_t kind,
                        ompd_size_t sizeof_thread_id, const void *thread_id,
                        ompd_thread_handle_t **thread_handle) {
-  if (!addr_handle)
+  if (!handle)
     return ompd_rc_stale_handle;
-  ompd_address_space_context_t *context = addr_handle->context;
+  ompd_address_space_context_t *context = handle->context;
   ompd_rc_t ret;
 
   if (!context)
@@ -1011,13 +1011,13 @@ ompd_get_thread_handle(ompd_address_space_handle_t
     }
 
     // allocate both the thread handle and the cuda kernel info in one go
-    ret = callbacks->memory_alloc(sizeof(ompd_thread_handle_t) +
+    ret = callbacks->alloc_memory(sizeof(ompd_thread_handle_t) +
                                   sizeof(ompd_cuda_thread_kernel_info_t),
                                   (void **)(thread_handle));
     if (ret != ompd_rc_ok)
       return ret;
 
-    (*thread_handle)->ah = addr_handle;
+    (*thread_handle)->ah = handle;
     (*thread_handle)->th = taddr;
     (*thread_handle)->cuda_kernel_info =
         (ompd_cuda_thread_kernel_info_t*)((*thread_handle) + 1);
@@ -1047,11 +1047,11 @@ ompd_get_thread_handle(ompd_address_space_handle_t
     ret = th.getAddress(&taddr);
     if (ret != ompd_rc_ok)
       return ret;
-    ret = callbacks->memory_alloc(sizeof(ompd_thread_handle_t),
+    ret = callbacks->alloc_memory(sizeof(ompd_thread_handle_t),
                                    (void **)(thread_handle));
     if (ret != ompd_rc_ok)
       return ret;
-    (*thread_handle)->ah = addr_handle;
+    (*thread_handle)->ah = handle;
     (*thread_handle)->th = taddr;
     (*thread_handle)->cuda_kernel_info = NULL;
 
@@ -1215,8 +1215,8 @@ ompd_rc_t ompd_get_state(
 
 ompd_rc_t ompd_get_task_frame(
     ompd_task_handle_t *task_handle, /* IN: OpenMP task handle*/
-    ompd_address_t *sp_exit,         /* OUT: next frame is user code */
-    ompd_address_t *sp_reentry       /* OUT: previous frame is user code */
+    ompd_frame_info_t *exit_frame,
+    ompd_frame_info_t *enter_frame
     ) {
   if (!task_handle)
     return ompd_rc_stale_handle;
@@ -1230,33 +1230,37 @@ ompd_rc_t ompd_get_task_frame(
 
   assert(callbacks && "Callback table not initialized!");
 
-  TValue taskInfo;
-  if (task_handle->lwt.address != 0)
-    taskInfo =
-        TValue(context, task_handle->lwt).cast("ompt_lw_taskteam_t", 0); /*lwt*/
-  else
-    taskInfo = TValue(context, task_handle->th).cast("kmp_taskdata_t", 0); /*t*/
-  TValue frame = taskInfo
-                     .access("ompt_task_info") // td->ompt_task_info
-                     .cast("ompt_task_info_t")
-                     .access("frame") // td->ompd_task_info.frame
-                     .cast("omp_frame_t", 0);
-  sp_reentry->segment = OMPD_SEGMENT_UNSPECIFIED;
-  ompd_rc_t ret =
-      frame
-          .access("enter_frame") // td->ompt_task_info.frame.enter_frame
-          .castBase()
-          .getValue(sp_reentry->address);
+  ompd_rc_t ret;
 
-  if (ret != ompd_rc_ok)
-    return ret;
-
-  sp_exit->segment = OMPD_SEGMENT_UNSPECIFIED;
-  ret = frame
-            .access("exit_frame") // td->ompt_task_info.frame.exit_frame
+  if (task_handle->ah->kind == OMPD_DEVICE_KIND_CUDA) {
+    return ompd_rc_unsupported;
+  } else {
+    TValue taskInfo;
+    if (task_handle->lwt.address != 0)
+      taskInfo =
+          TValue(context, task_handle->lwt).cast("ompt_lw_taskteam_t", 0); /*lwt*/
+    else
+      taskInfo = TValue(context, task_handle->th).cast("kmp_taskdata_t", 0); /*t*/
+    TValue frame = taskInfo
+                       .access("ompt_task_info") // td->ompt_task_info
+                       .cast("ompt_task_info_t")
+                       .access("frame") // td->ompd_task_info.frame
+                       .cast("ompt_frame_t", 0);
+    enter_frame->frame_address.segment = OMPD_SEGMENT_UNSPECIFIED;
+    ret = frame
+            .access("enter_frame") // td->ompt_task_info.frame.enter_frame
             .castBase()
-            .getValue(sp_exit->address);
-
+            .getValue(enter_frame->frame_address.address);
+  
+    if (ret != ompd_rc_ok)
+      return ret;
+  
+    exit_frame->frame_address.segment = OMPD_SEGMENT_UNSPECIFIED;
+    ret = frame
+              .access("exit_frame") // td->ompt_task_info.frame.exit_frame
+              .castBase()
+              .getValue(exit_frame->frame_address.address);
+  }
   return ret;
 }
 
@@ -1343,7 +1347,7 @@ ompd_rc_t ompd_get_api_version(ompd_word_t *version) {
 }
 
 ompd_rc_t
-ompd_get_api_version_string(const char **string /* OUT: OMPD version string */
+ompd_get_version_string(const char **string /* OUT: OMPD version string */
                             ) {
   static const char version_string[] =
       "LLVM OpenMP " STR(OMPD_IMPLEMENTS_OPENMP) "." STR(
@@ -1355,16 +1359,78 @@ ompd_get_api_version_string(const char **string /* OUT: OMPD version string */
 
 /* --- 4.8 Display Control Variables ---------------------------------------- */
 
-ompd_rc_t
-ompd_get_display_control_vars(ompd_address_space_handle_t *handle,
-                              const char *const **control_var_values) {
-  static const char *const control_vars[] = {NULL};
-  *control_var_values = control_vars;
+ompd_rc_t ompd_get_display_control_vars(ompd_address_space_handle_t *handle,
+                                        const char *const **control_vars) {
+  if (!handle)
+    return ompd_rc_stale_handle;
+  if (!control_vars)
+    return ompd_rc_bad_input;
+
+  ompd_address_space_context_t *context = handle->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  // runtime keeps a full dump of OMP/KMP definitions in this format
+  // <var1 name>=<var1 value>\n<var2 name>=<var2 value>\n...
+  ompd_address_t block_addr = {ompd_segment_none, 0};
+  OMPD_GET_VALUE(context, NULL, "ompd_env_block", type_sizes.sizeof_pointer,
+                 &block_addr.address);
+
+  // query size of the block
+  ompd_size_t block_size;
+  OMPD_GET_VALUE(context, NULL, "ompd_env_block_size", sizeof(ompd_size_t),
+                 &block_size);
+
+  // copy raw data from the address space
+  char *block;
+  OMPD_CALLBACK(alloc_memory, block_size, (void **)&block);
+  OMPD_CALLBACK(read_memory, context, NULL, &block_addr, block_size, block);
+
+  // count number of items, replace new line to zero.
+  int block_items = 1; // also count the last "NULL" item
+  for (ompd_size_t i = 0; i < block_size; i++) {
+    if (block[i] == '\n') {
+      block_items++;
+      block[i] = '\0';
+    }
+  }
+
+  // create vector of char*
+  const char **ctl_vars;
+  OMPD_CALLBACK(alloc_memory, block_items * sizeof(char *),
+                (void **)(&ctl_vars));
+  char *pos = block;
+  ctl_vars[0] = block;
+
+  // ctl_vars[0] points to the entire block, ctl_vars[1]... points to the
+  // smaller subsets of the block, and ctl_vars[block_items-2] points to the
+  // last string in the block.
+  for (int i = 1; i < block_items - 1; i++) {
+    while (*pos++ != '\0')
+      ;
+    if (pos > block + block_size)
+      return ompd_rc_error;
+    ctl_vars[i] = pos;
+  }
+  // last item must be NULL
+  ctl_vars[block_items - 1] = NULL;
+
+  *control_vars = ctl_vars;
+
   return ompd_rc_ok;
 }
 
-ompd_rc_t
-ompd_release_display_control_vars(const char *const **control_var_values) {
+ompd_rc_t ompd_rel_display_control_vars(const char *const **control_vars) {
+  if (!control_vars)
+    return ompd_rc_bad_input;
+
+  char **ctl_vars = const_cast<char **>(*control_vars);
+
+  // remove the raw block first
+  OMPD_CALLBACK(free_memory, (void *)ctl_vars[0]);
+  // remove the vector
+  OMPD_CALLBACK(free_memory, (void *)ctl_vars);
+
   return ompd_rc_ok;
 }
 
@@ -1375,12 +1441,12 @@ ompd_rc_t initTypeSizes(ompd_address_space_context_t *context) {
   static ompd_rc_t ret;
   if (inited)
     return ret;
-  ret = callbacks->sizeof_types(context, &type_sizes);
+  ret = callbacks->sizeof_type(context, &type_sizes);
   if (ret != ompd_rc_ok)
     return ret;
   if (!(type_sizes.sizeof_pointer > 0))
     return ompd_rc_error;
-  ret = callbacks->sizeof_types(context, &TValue::type_sizes);
+  ret = callbacks->sizeof_type(context, &TValue::type_sizes);
   if (ret != ompd_rc_ok)
     return ret;
   inited = 1;

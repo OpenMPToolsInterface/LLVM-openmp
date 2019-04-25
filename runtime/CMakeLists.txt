@@ -1,10 +1,9 @@
 #
 #//===----------------------------------------------------------------------===//
 #//
-#//                     The LLVM Compiler Infrastructure
-#//
-#// This file is dual licensed under the MIT and the University of Illinois Open
-#// Source Licenses. See LICENSE.txt for details.
+#// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+#// See https://llvm.org/LICENSE.txt for license information.
+#// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #//
 #//===----------------------------------------------------------------------===//
 #
@@ -302,7 +301,7 @@ endif()
 # OMPT-support defaults to ON for OpenMP 5.0+ and if the requirements in
 # cmake/config-ix.cmake are fulfilled.
 set(OMPT_DEFAULT FALSE)
-if ((${LIBOMP_OMP_VERSION} GREATER 49) AND (LIBOMP_HAVE_OMPT_SUPPORT))
+if ((${LIBOMP_OMP_VERSION} GREATER 49) AND (LIBOMP_HAVE_OMPT_SUPPORT) AND (NOT WIN32))
   set(OMPT_DEFAULT TRUE)
 endif()
 set(LIBOMP_OMPT_SUPPORT ${OMPT_DEFAULT} CACHE BOOL

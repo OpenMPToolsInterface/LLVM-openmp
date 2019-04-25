@@ -1,9 +1,8 @@
 //===-------- omptarget.h - Target independent OpenMP target RTL -- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.txt for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -48,7 +47,7 @@ enum tgt_map_type {
   OMP_TGT_MAPTYPE_LITERAL         = 0x100,
   // mapping is implicit
   OMP_TGT_MAPTYPE_IMPLICIT        = 0x200,
-  // member of struct, member given by 16 MSBs - 1
+  // member of struct, member given by [16 MSBs] - 1
   OMP_TGT_MAPTYPE_MEMBER_OF       = 0xffff000000000000
 };
 

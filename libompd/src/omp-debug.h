@@ -10,11 +10,11 @@
 #ifndef SRC_OMP_DEBUG_H_
 #define SRC_OMP_DEBUG_H_
 
+#define OMPD_DLL_VERSION 201811
+
 #ifdef __cplusplus
 
 #include <cstdlib>
-
-#define OMPD_DLL_VERSION 201811;
 
 extern "C" {
 #endif
@@ -30,20 +30,37 @@ extern "C" {
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-#include "ompd.h"
 #include "ompd-types.h"
-
-/******************************************************************************
- * General helper functions
-   */
-  ompd_rc_t initTypeSizes(ompd_address_space_context_t *context);
+#include "omp-tools.h"
 
 #ifdef __cplusplus
-  }
+}
+#endif
+/******************************************************************************
+ * General helper functions
+ ******************************************************************************/
+  ompd_rc_t initTypeSizes(ompd_address_space_context_t *context);
+
 
 
 static const ompd_callbacks_t *callbacks = nullptr;
 
+// Invoke callback function and return if it fails
+#define OMPD_CALLBACK(fn, ...)                                                 \
+  do {                                                                         \
+    ompd_rc_t _rc = callbacks->fn(__VA_ARGS__);                                \
+    if (_rc != ompd_rc_ok)                                                     \
+      return _rc;                                                              \
+  } while (0)
+
+// Read the memory contents located at the given symbol
+#define OMPD_GET_VALUE(context, th_context, name, size, buf)                   \
+  do {                                                                         \
+    ompd_address_t _addr;                                                      \
+    OMPD_CALLBACK(symbol_addr_lookup, context, th_context, name, &_addr,       \
+                  NULL);                                                       \
+    OMPD_CALLBACK(read_memory, context, th_context, &_addr, size, buf);        \
+  } while (0)
 
 // Information shared by all threads in a kernel
 // Used to map thread handles to native cuda thread ids
@@ -56,22 +73,22 @@ typedef struct _ompd_cuda_thread_kernel_info_s {
   ompd_dim3_t blockDim;
 } ompd_cuda_thread_kernel_info_t;
 
-typedef struct _ompd_address_space_context_s ompd_address_space_context_t;
+typedef struct _ompd_aspace_cont ompd_address_space_context_t;
 
-typedef struct _ompd_address_space_handle_s {
+typedef struct _ompd_aspace_handle {
   ompd_address_space_context_t *context;
   ompd_device_t kind;
   uint64_t id;
 } ompd_address_space_handle_t;
 
-typedef struct _ompd_thread_handle_s {
+typedef struct _ompd_thread_handle {
   ompd_address_space_handle_t *ah;
   ompd_thread_context_t *thread_context;
   ompd_address_t th; /* target handle */
   ompd_cuda_thread_kernel_info_t *cuda_kernel_info; /* only valid for cuda */
 } ompd_thread_handle_t;
 
-typedef struct _ompd_parallel_handle_s {
+typedef struct _ompd_parallel_handle {
   ompd_address_space_handle_t *ah;
   ompd_address_t th;  /* target handle */
   ompd_address_t lwt; /* lwt handle */
@@ -81,7 +98,7 @@ typedef struct _ompd_parallel_handle_s {
                                                      */
 } ompd_parallel_handle_t;
 
-typedef struct _ompd_task_handle_s {
+typedef struct _ompd_task_handle {
   ompd_address_space_handle_t *ah;
   ompd_address_t th;  /* target handle */
   ompd_address_t lwt; /* lwt handle */
@@ -89,7 +106,7 @@ typedef struct _ompd_task_handle_s {
                                                        used to retrieve this
                                                        parallel region handle
                                                      */
-  _ompd_task_handle_s(){
+  _ompd_task_handle(){
     ah=NULL;
     th.segment=OMPD_SEGMENT_UNSPECIFIED; 
     lwt.segment=OMPD_SEGMENT_UNSPECIFIED; 
@@ -99,9 +116,6 @@ typedef struct _ompd_task_handle_s {
   }
 } ompd_task_handle_t;
 
-#endif
-
-// TODO (mr) this is ugly, but better then a global symbol (?)
 void __ompd_init_icvs(const ompd_callbacks_t *table);
 void __ompd_init_states(const ompd_callbacks_t *table);
 
