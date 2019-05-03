@@ -168,13 +168,14 @@ class ompd_taskframes(gdb.Command):
 			frame = frame.older()
 		global addr_space
 		curr_thread_handle = curr_thread().thread_handle
-		curr_task_handle = ompdModule.call_ompd_get_current_task_handle(curr_thread_handle)
+		curr_task_handle = ompdModule.call_ompd_get_curr_task_handle(curr_thread_handle)
 		if(not curr_task_handle):
 			return None
 		
 		try:
 			while(1):
-				frames = ompdModule.call_ompd_get_task_frame(curr_task_handle)
+				frames_with_flags = ompdModule.call_ompd_get_task_frame(curr_task_handle)
+				frames = (frames_with_flags[0], frames_with_flags[3])
 				if(not isinstance(frames,tuple)):
 					break
 				(ompd_enter_frame, ompd_exit_frame) = frames

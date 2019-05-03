@@ -100,7 +100,7 @@ class ompd_task(object):
 		return ompdModule.call_ompd_get_task_function(self.task_handle)
 	
 	def get_task_frame(self):
-		"""Returns enter and exit frame address for current task handle."""
+		"""Returns enter frame address and flag, exit frame address and flag for current task handle."""
 		if self.task_frames is None:
 			ret_value = ompdModule.call_ompd_get_task_frame(self.task_handle)
 			if isinstance(ret_value, tuple):
@@ -130,7 +130,7 @@ class ompd_thread(object):
 		"""Obtains the parallel handle for the parallel region associated with
 		the given thread handle."""
 		if not self.parallel_handle:
-			self.parallel_handle = ompdModule.call_ompd_get_current_parallel_handle(self.thread_handle)
+			self.parallel_handle = ompdModule.call_ompd_get_curr_parallel_handle(self.thread_handle)
 		return self.parallel_handle
 	
 	def get_current_parallel(self):
@@ -144,7 +144,7 @@ class ompd_thread(object):
 		"""Obtains the task handle for the current task region of the
 		given thread."""
 		if not self.task_handle:
-			self.task_handle = ompdModule.call_ompd_get_current_task_handle(self.thread_handle)
+			self.task_handle = ompdModule.call_ompd_get_curr_task_handle(self.thread_handle)
 		return self.task_handle
 
 	def get_thread_id(self):

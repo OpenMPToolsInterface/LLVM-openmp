@@ -1,5 +1,4 @@
 if(LIBOMP_OMPD_SUPPORT)
-    add_subdirectory(ompt_tool)
     add_subdirectory(openmp_examples)
 
 find_package(LLVM REQUIRED CONFIG)

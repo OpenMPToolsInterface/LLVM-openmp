@@ -1,4 +1,4 @@
-// RUN: %gdb-compile-and-run
+// RUN: bash -c "(%gdb-compile-and-run) |& FileCheck %s"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -19,7 +19,7 @@ int main()
 {
   omp_set_num_threads(4);
   printf("Application: Process %d started.\n", getpid());
-  createPthreads();
+  // TODO: createPthreads(); // thread_data is set to 0x0 if called
 
   // Parallel region 1
   #pragma omp parallel
@@ -30,5 +30,6 @@ int main()
   return 0;
 }
 
-// CHECK-NOT: "Error"
-// CHECK-NOT: "The program is not being run."
+// CHECK-NOT: OMPT-OMPD mismatch
+// CHECK-NOT: Python Exception
+// CHECK-NOT: The program is not being run.

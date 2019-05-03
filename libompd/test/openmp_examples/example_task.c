@@ -1,4 +1,4 @@
-// RUN: %gdb-compile-and-run
+// RUN: bash -c "(%gdb-compile-and-run) |& FileCheck %s"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -41,5 +41,6 @@ int main()
   return 0;
 }
 
-// CHECK-NOT: "Error"
-// CHECK-NOT: "The program is not being run."
+// CHECK-NOT: OMPT-OMPD mismatch
+// CHECK-NOT: Python Exception
+// CHECK-NOT: The program is not being run.

@@ -84,49 +84,49 @@ class ompd_address_space(object):
 			ompt_state = str(thread_data['ompt_state'])
 			ompd_state = str(self.states[curr_thread.get_state()[0]])
 			if ompt_state != ompd_state:
-				print('Error: ompt_state (%s) does not match OMPD state (%s)!' % (ompt_state, ompd_state))
+				print('OMPT-OMPD mismatch: ompt_state (%s) does not match OMPD state (%s)!' % (ompt_state, ompd_state))
 		
 		# compare wait_id values
 		if 'ompt_wait_id' in field_names:
 			ompt_wait_id = thread_data['ompt_wait_id']
 			ompd_wait_id = curr_thread.get_state()[1]
 			if ompt_wait_id != ompd_wait_id:
-				print('Error: ompt_wait_id (%d) does not match OMPD wait id (%d)!' % (ompt_wait_id, ompd_wait_id))
+				print('OMPT-OMPD mismatch: ompt_wait_id (%d) does not match OMPD wait id (%d)!' % (ompt_wait_id, ompd_wait_id))
 		
 		# compare thread id
 		if 'omp_thread_num' in field_names and 'ompd-thread-num-var' in self.icv_map:
 			ompt_thread_num = thread_data['omp_thread_num']
 			icv_value = ompdModule.call_ompd_get_icv_from_scope(curr_thread.thread_handle, self.icv_map['ompd-thread-num-var'][1], self.icv_map['ompd-thread-num-var'][0])
 			if ompt_thread_num != icv_value:
-				print('Error: omp_thread_num (%d) does not match OMPD thread num according to ICVs (%d)!' % (ompt_thread_num, icv_value))
+				print('OMPT-OMPD mismatch: omp_thread_num (%d) does not match OMPD thread num according to ICVs (%d)!' % (ompt_thread_num, icv_value))
 		
 		# compare thread data
 		if 'ompt_thread_data' in field_names:
 			ompt_thread_data = thread_data['ompt_thread_data'].dereference()['value']
 			ompd_value = ompdModule.call_ompd_get_tool_data(3, curr_thread.thread_handle)[0]
 			if ompt_thread_data != ompd_value:
-				print('Error: value of ompt_thread_data (%d) does not match that of OMPD data union (%d)!' % (ompt_thread_data, ompd_value))
+				print('OMPT-OMPD mismatch: value of ompt_thread_data (%d) does not match that of OMPD data union (%d)!' % (ompt_thread_data, ompd_value))
 		
 		# compare number of threads
 		if 'omp_num_threads' in field_names and 'ompd-team-size-var' in self.icv_map:
 			ompt_num_threads = thread_data['omp_num_threads']
 			icv_value = ompdModule.call_ompd_get_icv_from_scope(curr_thread.get_current_parallel_handle(), self.icv_map['ompd-team-size-var'][1], self.icv_map['ompd-team-size-var'][0])
 			if ompt_num_threads != icv_value:
-				print('Error: omp_num_threads (%d) does not match OMPD num threads according to ICVs (%d)!' % (ompt_num_threads, icv_value))
+				print('OMPT-OMPD mismatch: omp_num_threads (%d) does not match OMPD num threads according to ICVs (%d)!' % (ompt_num_threads, icv_value))
 		
 		# compare omp level
 		if 'omp_level' in field_names and 'levels-var' in self.icv_map:
 			ompt_levels = thread_data['omp_level']
 			icv_value = ompdModule.call_ompd_get_icv_from_scope(curr_thread.get_current_parallel_handle(), self.icv_map['levels-var'][1], self.icv_map['levels-var'][0])
 			if ompt_levels != icv_value:
-				print('Error: omp_level (%d) does not match OMPD levels according to ICVs (%d)!' % (ompt_levels, icv_value))
+				print('OMPT-OMPD mismatch: omp_level (%d) does not match OMPD levels according to ICVs (%d)!' % (ompt_levels, icv_value))
 		
 		# compare active level
 		if 'omp_active_level' in field_names and 'active-levels-var' in self.icv_map:
 			ompt_active_levels = thread_data['omp_active_level']
 			icv_value = ompdModule.call_ompd_get_icv_from_scope(curr_thread.get_current_parallel_handle(), self.icv_map['active-levels-var'][1], self.icv_map['active-levels-var'][0])
 			if ompt_active_levels != icv_value:
-				print('Error: active levels (%d) do not match active levels according to ICVs (%d)!' % (ompt_active_levels, icv_value))
+				print('OMPT-OMPD mismatch: active levels (%d) do not match active levels according to ICVs (%d)!' % (ompt_active_levels, icv_value))
 		
 		# compare parallel data
 		if 'ompt_parallel_data' in field_names:
@@ -134,14 +134,14 @@ class ompd_address_space(object):
 			current_parallel_handle = curr_thread.get_current_parallel_handle()
 			ompd_value = ompdModule.call_ompd_get_tool_data(4, current_parallel_handle)[0]
 			if ompt_parallel_data != ompd_value:
-				print('Error: value of ompt_parallel_data (%d) does not match that of OMPD data union (%d)!' % (ompt_parallel_data, ompd_value))
+				print('OMPT-OMPD mismatch: value of ompt_parallel_data (%d) does not match that of OMPD data union (%d)!' % (ompt_parallel_data, ompd_value))
 		
 		# compare max threads; NOTE: not in ICV map
 		if 'omp_max_threads' in field_names and 'nthreads-var' in self.icv_map:
 			ompt_max_threads = thread_data['omp_max_threads']
 			icv_value = ompdModule.call_ompd_get_icv_from_scope(curr_thread.get_current_task_handle(), self.icv_map['nthreads-var'][1], self.icv_map['nthreads-var'][0])
 			if ompt_max_threads != icv_value:
-				print('Error: omp_max_threads (%d) does not match OMPD thread limit according to ICVs (%d)!' % (ompt_max_threads, icv_value))
+				print('OMPT-OMPD mismatch: omp_max_threads (%d) does not match OMPD thread limit according to ICVs (%d)!' % (ompt_max_threads, icv_value))
 		
 		# compare omp_parallel
 		# NOTE: omp_parallel = true if active-levels-var > 0
@@ -149,7 +149,7 @@ class ompd_address_space(object):
 			ompt_parallel = thread_data['omp_parallel']
 			icv_value = ompdModule.call_ompd_get_icv_from_scope(curr_thread.get_current_parallel_handle(), self.icv_map['active-levels-var'][1], self.icv_map['active-levels-var'][0])
 			if ompt_parallel == 1 and icv_value <= 0 or ompt_parallel == 0 and icv_value > 0:
-				print('Error: ompt_parallel (%d) does not match OMPD parallel according to ICVs (%d)!' % (ompt_parallel, icv_value))
+				print('OMPT-OMPD mismatch: ompt_parallel (%d) does not match OMPD parallel according to ICVs (%d)!' % (ompt_parallel, icv_value))
 		
 		# compare omp_final
 		if 'omp_final' in field_names and 'ompd-final-var' in self.icv_map:
@@ -157,35 +157,35 @@ class ompd_address_space(object):
 			current_task_handle = curr_thread.get_current_task_handle()
 			icv_value = ompdModule.call_ompd_get_icv_from_scope(current_task_handle, self.icv_map['ompd-final-var'][1], self.icv_map['ompd-final-var'][0])
 			if icv_value != ompt_final:
-				print('Error: omp_final (%d) does not match OMPD final according to ICVs (%d)!' % (ompt_final, icv_value))
+				print('OMPT-OMPD mismatch: omp_final (%d) does not match OMPD final according to ICVs (%d)!' % (ompt_final, icv_value))
 		
 		# compare omp_dynamic; TODO: test; not in ICV map
 		if 'omp_dynamic' in field_names and 'dyn-var' in self.icv_map:
 			ompt_dynamic = thread_data['omp_dynamic']
 			icv_value = ompdModule.call_ompd_get_icv_from_scope(curr_thread.get_current_task_handle(), self.icv_map['dyn-var'][1], self.icv_map['dyn-var'][0])
 			if icv_value != ompt_dynamic:
-				print('Error: omp_dynamic (%d) does not match OMPD dynamic according to ICVs (%d)!' % (ompt_dynamic, icv_value))
+				print('OMPT-OMPD mismatch: omp_dynamic (%d) does not match OMPD dynamic according to ICVs (%d)!' % (ompt_dynamic, icv_value))
 		
 		# compare omp_nested; TODO: test; not in ICV map
 		if 'omp_nested' in field_names and 'nest-var' in self.icv_map:
 			ompt_nested = thread_data['omp_nested']
 			icv_value = ompdModule.call_ompd_get_icv_from_scope(self.addr_space, self.icv_map['nest-var'][1], self.icv_map['nest-var'][0])
 			if ompt_nested != icv_value:
-				print('Error: omp_nested (%d) does not match OMPD nested according to ICVs (%d)!' % (ompt_nested, icv_value))
+				print('OMPT-OMPD mismatch: omp_nested (%d) does not match OMPD nested according to ICVs (%d)!' % (ompt_nested, icv_value))
 		
 		# compare omp_max_active_levels
 		if 'omp_max_active_levels' in field_names and 'max-active-levels-var' in self.icv_map:
 			ompt_max_active_levels = thread_data['omp_max_active_levels']
 			icv_value = ompdModule.call_ompd_get_icv_from_scope(curr_thread.get_current_task_handle(), self.icv_map['max-active-levels-var'][1], self.icv_map['max-active-levels-var'][0])
 			if ompt_max_active_levels != icv_value:
-				print('Error: omp_max_active_levels (%d) does not match OMPD max active levels (%d)!' % (ompt_max_active_levels, icv_value))
+				print('OMPT-OMPD mismatch: omp_max_active_levels (%d) does not match OMPD max active levels (%d)!' % (ompt_max_active_levels, icv_value))
 		
 		# compare omp_kind; TODO: test; not in ICV map
 		if 'omp_kind' in field_names and 'run-sched-var' in self.icv_map:
 			ompt_sched_kind = thread_data['omp_kind']
 			icv_value = ompdModule.call_ompd_get_icv_string_from_scope(curr_thread.get_current_task_handle(), self.icv_map['run-sched-var'][1], self.icv_map['run-sched-var'][0])
 			if ompt_sched_kind not in icv_value:
-				print('Error: omp_kind kind (%s) does not match OMPD schedule kind according to ICVs (%s)!' % (str(ompd_kint_sched_kind), str(icv_value)))
+				print('OMPT-OMPD mismatch: omp_kind kind (%s) does not match OMPD schedule kind according to ICVs (%s)!' % (str(ompd_kint_sched_kind), str(icv_value)))
 		
 		# compare omp_modifier; TODO: test; not in ICV map
 		if 'omp_modifier' in field_names and 'run-sched-var' in self.icv_map:
@@ -193,23 +193,24 @@ class ompd_address_space(object):
 			#ompt_sched_mod = thread_data['omp_modifier']
 			#ompd_sched = ompdModule.call_ompd_get_icv_from_scope(curr_thread.get_current_task_handle(), self.icv_map['run-sched-var'][1], self.icv_map['run-sched-var'][0])
 			#if ompt_sched_mod != ompd_sched[1]:
-			#	print('Error: omp_kind modifier does not match OMPD schedule modifier according to ICVs!')
+			#	print('OMPT-OMPD mismatch: omp_kind modifier does not match OMPD schedule modifier according to ICVs!')
 			
 		# compare omp_proc_bind
 		if 'omp_proc_bind' in field_names and 'bind-var' in self.icv_map:
 			ompt_proc_bind = thread_data['omp_proc_bind']
 			icv_value = ompdModule.call_ompd_get_icv_from_scope(curr_thread.get_current_task_handle(), self.icv_map['bind-var'][1], self.icv_map['bind-var'][0])
 			if icv_value != ompt_proc_bind:
-				print('Error: omp_proc_bind (%d) does not match OMPD proc bind according to ICVs (%d)!' % (ompt_proc_bind, icv_value))
+				print('OMPT-OMPD mismatch: omp_proc_bind (%d) does not match OMPD proc bind according to ICVs (%d)!' % (ompt_proc_bind, icv_value))
 		
 		# compare enter and exit frames
 		if 'ompt_frame_list' in field_names:
 			ompt_task_frame_dict = thread_data['ompt_frame_list'].dereference()
 			ompt_task_frames = (long(ompt_task_frame_dict['enter_frame']), long(ompt_task_frame_dict['exit_frame']))
 			current_task = curr_thread.get_current_task()
-			ompd_task_frames = current_task.get_task_frame()
+			ompd_task_result = current_task.get_task_frame()
+			ompd_task_frames = (ompd_task_result[0], ompd_task_result[2])
 			if ompt_task_frames != ompd_task_frames:
-				print('Error: ompt_task_frames (%s) do not match OMPD task frames (%s)!' % (ompt_task_frames, ompd_task_frames))
+				print('OMPT-OMPD mismatch: ompt_task_frames (%s) do not match OMPD task frames (%s)!' % (ompt_task_frames, ompd_task_frames))
 		
 		# compare task data
 		if 'ompt_task_data' in field_names:
@@ -217,8 +218,8 @@ class ompd_address_space(object):
 			current_task_handle = curr_thread.get_current_task_handle()
 			ompd_value = ompdModule.call_ompd_get_tool_data(6, current_task_handle)[0]
 			if ompt_task_data != ompd_value:
-				print('Error: value of ompt_task_data (%d) does not match that of OMPD data union (%d)!' % (ompt_task_data, ompd_value))
-
+				print('OMPT-OMPD mismatch: value of ompt_task_data (%d) does not match that of OMPD data union (%d)!' % (ompt_task_data, ompd_value))
+	
 	def save_thread_object(self, thread_num, thread_id, addr_space):
 		"""Saves thread object for thread_num inside threads dictionary.
 		"""
