@@ -114,8 +114,7 @@ class FrameFilter():
 		if curr_thread_num in self.addr_space.threads:
 			curr_thread_obj = self.addr_space.threads[curr_thread_num]
 			self.curr_task = curr_thread_obj.get_current_task()
-			frames_with_flags = self.curr_task.get_task_frame()
-			self.frames = (frames_with_flags[0], frames_with_flags[3])
+			self.frames = self.curr_task.get_task_frame()
 		else:
 			is_no_omp_thread = True
 			print('Thread %d is no OpenMP thread, printing all frames:' % curr_thread_num)
@@ -158,8 +157,7 @@ class FrameFilter():
 					break
 				
 				self.curr_task = self.curr_task.get_scheduling_task()
-				frames_with_flags = self.curr_task.get_task_frame()
-				self.frames = (frames_with_flags[0], frames_with_flags[3])
+				self.frames = self.curr_task.get_task_frame()
 			if stop_iter:
 				break
 		
@@ -183,8 +181,7 @@ class FrameFilter():
 				
 				# get task that generated last task of worker thread
 				self.curr_task = self.curr_task.get_task_parallel().get_task_in_parallel(0).get_generating_task()
-				frames_with_flags = self.curr_task.get_task_frame()
-				self.frames = (frames_with_flags[0], frames_with_flags[3])
+				self.frames = self.curr_task.get_task_frame()
 				(enter_frame, exit_frame) = self.frames
 				if exit_frame == 0:
 					print('outermost generating task was reached')
@@ -204,8 +201,7 @@ class FrameFilter():
 				while(not stop_iter):
 					if self.curr_task.task_handle is None:
 						break
-					frames_with_flags = self.curr_task.get_task_frame()
-					self.frames = (frames_with_flags[0], frames_with_flags[3])
+					self.frames = self.curr_task.get_task_frame()
 					
 					while frame:
 						if self.curr_task.task_handle is None:
@@ -235,8 +231,7 @@ class FrameFilter():
 								stop_iter = True
 								break
 							self.curr_task = self.curr_task.get_generating_task()
-							frames_with_flags = self.curr_task.get_task_frame()
-							self.frames = (frames_with_flags[0], frames_with_flags[3])
+							self.frames = self.curr_task.get_task_frame()
 							
 						frame = frame.older()
 					break

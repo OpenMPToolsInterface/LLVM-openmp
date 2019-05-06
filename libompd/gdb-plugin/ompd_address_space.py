@@ -207,8 +207,7 @@ class ompd_address_space(object):
 			ompt_task_frame_dict = thread_data['ompt_frame_list'].dereference()
 			ompt_task_frames = (long(ompt_task_frame_dict['enter_frame']), long(ompt_task_frame_dict['exit_frame']))
 			current_task = curr_thread.get_current_task()
-			ompd_task_result = current_task.get_task_frame()
-			ompd_task_frames = (ompd_task_result[0], ompd_task_result[2])
+			ompd_task_frames = current_task.get_task_frame()
 			if ompt_task_frames != ompd_task_frames:
 				print('OMPT-OMPD mismatch: ompt_task_frames (%s) do not match OMPD task frames (%s)!' % (ompt_task_frames, ompd_task_frames))
 		

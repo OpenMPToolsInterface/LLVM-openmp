@@ -58,6 +58,7 @@ class ompd_task(object):
 		self.generating_task = False
 		self.scheduling_task = False
 		self.task_frames = None
+		self.task_frame_flags = None
 	
 	def get_task_parallel_handle(self):
 		"""Obtains a task parallel handle for the parallel region enclosing
@@ -99,12 +100,23 @@ class ompd_task(object):
 		"""Returns long with address of function entry point."""
 		return ompdModule.call_ompd_get_task_function(self.task_handle)
 	
-	def get_task_frame(self):
+	def get_task_frame_with_flags(self):
 		"""Returns enter frame address and flag, exit frame address and flag for current task handle."""
+		if self.task_frames is None or self.task_frame_flags is None:
+			ret_value = ompdModule.call_ompd_get_task_frame(self.task_handle)
+			if isinstance(ret_value, tuple):
+				self.task_frames = (ret_value[0], ret_value[2])
+				self.task_frame_flags = (ret_value[1], ret_value[3])
+			else:
+				return ret_value
+		return (self.task_frames[0], self.task_frame_flags[0], self.task_frames[1], self.task_frame_flags[1])
+	
+	def get_task_frame(self):
+		"""Returns enter and exit frame address for current task handle."""
 		if self.task_frames is None:
 			ret_value = ompdModule.call_ompd_get_task_frame(self.task_handle)
 			if isinstance(ret_value, tuple):
-				self.task_frames = ret_value
+				self.task_frames = (ret_value[0], ret_value[2])
 			else:
 				return ret_value
 		return self.task_frames
