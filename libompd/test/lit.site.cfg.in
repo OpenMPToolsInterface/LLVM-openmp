@@ -5,6 +5,7 @@ config.project_src_root = "@CMAKE_CURRENT_SOURCE_DIR@"
 config.operating_system = "@CMAKE_SYSTEM_NAME@"
 config.ompt_plugin = "@OMPT_PLUGIN@"
 config.ompt_include_dir = "@LIBOMP_INCLUDE_DIR@"
+config.ompd_module = "@CMAKE_CURRENT_BINARY_DIR@/../python-module/lib.linux-x86_64-2.7"
 
 # Let the main config do the real work.
 lit_config.load_config(config, "@CMAKE_CURRENT_SOURCE_DIR@/lit.cfg")

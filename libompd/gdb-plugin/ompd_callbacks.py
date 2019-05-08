@@ -56,6 +56,7 @@ def _read(*args):
 
 
 """ Get thread-specific context.
+Return -1 if no match is found.
 """
 def _thread_context(*args):
 	# args is a tuple consisting of thread_id and the thread kind
@@ -72,14 +73,12 @@ def _thread_context(*args):
 		if pthread:
 			m = re.search(r'(0x[a-fA-F0-9]+)', line)
 		elif lwp:
-			# TODO: iterate over line and search for matching id
 			m = re.search(r'\([^)]*?(\d+)[^)]*?\)', line)
 		if m == None:
 			continue
 		pid = int(m.group(1),0)
 		if pid == thread_id:
 			return int(line[2:6],0)
-	gdb.execute('printf "Error when calling ompd_callbacks.py:_thread_context: Couldn\'t find a match for ID %i!\n"' % thread_id)
 	return -1
 
 """ Test info threads / list threads / how to split output to get thread id 

@@ -28,7 +28,7 @@ class ompd_address_space(object):
 		self.scope_map = {1:'global', 2:'address_space', 3:'thread', 4:'parallel', 5:'implicit_task', 6:'task'}
 		gdb.events.stop.connect(self.handle_stop_event)
 		self.new_thread_breakpoint = gdb.Breakpoint("ompd_bp_thread_begin", internal=True)
-		self.ompd_tool_test_bp = gdb.Breakpoint("ompd_tool_test", internal=True)
+		self.ompd_tool_test_bp = gdb.Breakpoint("ompd_tool_break", internal=True)
 	
 	def handle_stop_event(self, event):
 		"""Sets a breakpoint at different events, e.g. when a new OpenMP 
@@ -67,13 +67,19 @@ class ompd_address_space(object):
 		# make sure all threads and states are set
 		self.list_threads(False)
 		
-		gdb.execute('finish')
+		thread_id = gdb.selected_thread().ptid[1]
+		curr_thread = self.get_curr_thread()
+		
+		# check if current thread is LWP thread; return if "ompd_rc_unavailable"
+		thread_handle = ompdModule.get_thread_handle(thread_id, self.addr_space)
+		if thread_handle == -1:
+			print("Skipping OMPT-OMPD checks for non-LWP thread.")
+			return
+		
 		print('Comparing OMPT data to OMPD data...')
 		field_names = [i.name for i in gdb.parse_and_eval('thread_data').type.fields()]
 		thread_data = gdb.parse_and_eval('thread_data')
 		
-		thread_num = int(gdb.selected_thread().num)
-		curr_thread = self.get_curr_thread()
 		if self.icv_map is None:
 			self.get_icv_map()
 		
@@ -189,11 +195,10 @@ class ompd_address_space(object):
 		
 		# compare omp_modifier; TODO: test; not in ICV map
 		if 'omp_modifier' in field_names and 'run-sched-var' in self.icv_map:
-			pass
-			#ompt_sched_mod = thread_data['omp_modifier']
-			#ompd_sched = ompdModule.call_ompd_get_icv_from_scope(curr_thread.get_current_task_handle(), self.icv_map['run-sched-var'][1], self.icv_map['run-sched-var'][0])
-			#if ompt_sched_mod != ompd_sched[1]:
-			#	print('OMPT-OMPD mismatch: omp_kind modifier does not match OMPD schedule modifier according to ICVs!')
+			ompt_sched_mod = thread_data['omp_modifier']
+			ompd_sched = ompdModule.call_ompd_get_icv_from_scope(curr_thread.get_current_task_handle(), self.icv_map['run-sched-var'][1], self.icv_map['run-sched-var'][0])
+			if ompt_sched_mod != ompd_sched[1]:
+				print('OMPT-OMPD mismatch: omp_kind modifier does not match OMPD schedule modifier according to ICVs!')
 			
 		# compare omp_proc_bind
 		if 'omp_proc_bind' in field_names and 'bind-var' in self.icv_map:

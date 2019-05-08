@@ -20,8 +20,7 @@ PyObject* pModule;
 
 ompd_rc_t _print(const char* str, int category);
 
-// NOTE: start: implement functions to check arguments for correctness when compiling 
-// for merging with latest OMPD version
+// NOTE: implement functions to check parameters of OMPD API functions for correctness
 OMPD_WEAK_ATTR ompd_rc_t ompd_get_api_version(ompd_word_t * addr) {
 	static ompd_rc_t (*my_get_api_version)(ompd_word_t *) = NULL;
 	if(!my_get_api_version){
@@ -301,7 +300,6 @@ OMPD_WEAK_ATTR ompd_rc_t ompd_rel_task_handle(ompd_task_handle_t* taskHandle) {
 	}
 	return my_release_task_handle(taskHandle);
 }
-// end: dlsym functions to check OMPD function arguments for correctness with new OMPD version
 
 
 /**
@@ -326,13 +324,10 @@ static PyObject* ompd_open(PyObject* self, PyObject* args)
 		_print(dlerr, 0);
 		return Py_BuildValue("i", -2);
 	}
-	//ompd_rc_t (*my_get_api_version)(ompd_word_t *)  = dlsym(ompd_library, "ompd_get_api_version");
 	if (dlerror()) {
 		return Py_BuildValue("i", -3);
 	}
 	ompd_word_t version;
-	//ompd_rc_t rc = my_get_api_version(&version);
-        // NOTE: call dlsym function for OMPD API call to check args for correctness
 	ompd_rc_t rc = ompd_get_api_version(&version);
 	if (rc != ompd_rc_ok)
 		return Py_BuildValue("i", -10-rc);
@@ -377,7 +372,7 @@ void _printf(
 static void call_ompd_rel_thread_handle_temp(PyObject* capsule)
 {
 	ompd_thread_handle_t* threadHandle = (ompd_thread_handle_t*)(PyCapsule_GetPointer(capsule, "ThreadHandle"));
-	// NOTE: call dlsym function
+	
 	ompd_rc_t retVal = ompd_rel_thread_handle(threadHandle);
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_rel_thread_handle! Error code: %d", retVal);
@@ -391,7 +386,7 @@ static void (*my_thread_capsule_destructor)(PyObject*) = destroyThreadCapsule;
 
 static void call_ompd_rel_parallel_handle_temp(PyObject* capsule) {
 	ompd_parallel_handle_t* parallelHandle = (ompd_parallel_handle_t*)(PyCapsule_GetPointer(capsule, "ParallelHandle"));
-	// NOTE: call dlsym function
+	
 	ompd_rc_t retVal = ompd_rel_parallel_handle(parallelHandle);
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_rel_parallel_handle! Error code: %d", retVal);
@@ -405,7 +400,7 @@ static void (*my_parallel_capsule_destructor)(PyObject*) = destroyParallelCapsul
 
 static void call_ompd_rel_task_handle_temp(PyObject* capsule) {
 	ompd_task_handle_t* taskHandle = (ompd_task_handle_t*)(PyCapsule_GetPointer(capsule, "TaskHandle"));
-	// NOTE: call dlsym
+	
 	ompd_rc_t retVal = ompd_rel_task_handle(taskHandle);
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_rel_task_handle!\n");
@@ -425,7 +420,6 @@ static PyObject* call_ompd_rel_thread_handle(PyObject* self, PyObject* args)
 	PyObject* threadHandlePy = PyTuple_GetItem(args, 0);
 	ompd_thread_handle_t* threadHandle = (ompd_thread_handle_t*)(PyCapsule_GetPointer(threadHandlePy, "ThreadHandle"));
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_rel_thread_handle(threadHandle);
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_rel_thread_handle! Error code: %d", retVal);
@@ -641,12 +635,17 @@ ompd_rc_t _thread_context(
 		PyTuple_SetItem(pArgs, 1, Py_BuildValue("l", tid));
 		PyObject* res = PyObject_CallObject(pFunc, pArgs);
 		int resAsInt = (int) PyInt_AsLong(res);
+		if(resAsInt == -1) {
+			// NOTE: could not find match for thread_id
+			return ompd_rc_unavailable;
+		}
 		(*thread_context) = get_thread_context(resAsInt);
 		Py_XDECREF(pArgs);
 		Py_XDECREF(res);
 		Py_XDECREF(pFunc);
-		if(*thread_context == NULL)
+		if(*thread_context == NULL) {
 			return ompd_rc_bad_input;
+		}
 		return ompd_rc_ok;
 	}
 	Py_XDECREF(pFunc);
@@ -696,7 +695,6 @@ static PyObject* get_thread_handle(PyObject* self, PyObject* args)
 {
 	PyObject* threadIdTup = PyTuple_GetItem(args, 0);
 	uint64_t threadId = (uint64_t) PyLong_AsLong(threadIdTup);
-	
 	// NOTE: compiler does not know what thread handle looks like, so no memory 
 	// is allocated automatically in the debugger's memory space
 	char dummyBuffer[40];
@@ -706,15 +704,11 @@ static PyObject* get_thread_handle(PyObject* self, PyObject* args)
 	ompd_address_space_handle_t* addrSpace = (ompd_address_space_handle_t*) PyCapsule_GetPointer(addrSpaceTup, "AddressSpace");
 
 	ompd_size_t sizeof_tid = (ompd_size_t) sizeof(uint64_t);
-	
-	// NOTE: call dlsym function; hard-coded 1 for LWPTID usage (OMPD_THREAD_ID_LWP)
 	ompd_rc_t retVal = ompd_get_thread_handle(addrSpace, 1, sizeof_tid, &threadId, &threadHandle);
-	//ompd_rc_t (*my_get_thread_handle)(ompd_address_space_handle_t*, ompd_thread_id_t, ompd_size_t, const void*, ompd_thread_handle_t**) = dlsym(ompd_library, "ompd_get_thread_handle");
-	//ompd_rc_t retVal = my_get_thread_handle(addrSpace, 1, sizeof_tid, &threadId, &threadHandle);
 	
 	free(dummyBuffer);
 	if(retVal == ompd_rc_unavailable) {
-		return Py_None;
+		return Py_BuildValue("i", -1);
 	} else if(retVal != ompd_rc_ok) {
 		_printf("An error occured when calling ompd_get_thread_handle! Error code: %d", retVal);
 		return Py_BuildValue("i", retVal);
@@ -732,10 +726,7 @@ static PyObject* call_ompd_get_thread_in_parallel(PyObject* self, PyObject* args
 	ompd_parallel_handle_t* parallelHandle = (ompd_parallel_handle_t*)(PyCapsule_GetPointer(parallelHandlePy, "ParallelHandle"));
 	ompd_thread_handle_t* threadHandle;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_thread_in_parallel(parallelHandle, threadNum, &threadHandle);
-	//ompd_rc_t (*my_get_thread_in_parallel)(ompd_parallel_handle_t*, int, ompd_thread_handle_t**) = dlsym(ompd_library, "ompd_get_thread_in_parallel");
-	//ompd_rc_t retVal = my_get_thread_in_parallel(parallelHandle, threadNum, &threadHandle);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_get_thread_in_parallel! Error code: %d", retVal);
@@ -753,10 +744,7 @@ static PyObject* call_ompd_get_curr_parallel_handle(PyObject* self, PyObject* ar
 	ompd_thread_handle_t* threadHandle = (ompd_thread_handle_t*)(PyCapsule_GetPointer(threadHandlePy, "ThreadHandle"));
 	ompd_parallel_handle_t* parallelHandle;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_curr_parallel_handle(threadHandle, &parallelHandle);
-	//ompd_rc_t (*my_get_current_parallel_handle)(ompd_thread_handle_t*, ompd_parallel_handle_t**) = dlsym(ompd_library, "ompd_get_curr_parallel_handle");
-	//ompd_rc_t retVal = my_get_current_parallel_handle(threadHandle, &parallelHandle);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_get_curr_parallel_handle! Error code: %d", retVal);
@@ -773,10 +761,7 @@ static PyObject* call_ompd_get_enclosing_parallel_handle(PyObject* self, PyObjec
 	ompd_parallel_handle_t* parallelHandle = (ompd_parallel_handle_t*)(PyCapsule_GetPointer(parallelHandlePy, "ParallelHandle"));
 	ompd_parallel_handle_t* enclosingParallelHandle;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_enclosing_parallel_handle(parallelHandle, &enclosingParallelHandle);
-	//ompd_rc_t (*my_get_enclosing_parallel_handle)(ompd_parallel_handle_t*, ompd_parallel_handle_t**) = dlsym(ompd_library, "ompd_get_enclosing_parallel_handle");
-	//ompd_rc_t retVal = my_get_enclosing_parallel_handle(parallelHandle, &enclosingParallelHandle);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_get_enclosing_parallel_handle! Error code: %d", retVal);
@@ -793,10 +778,7 @@ static PyObject* call_ompd_get_task_parallel_handle(PyObject* self, PyObject* ar
 	ompd_task_handle_t* taskHandle = PyCapsule_GetPointer(taskHandlePy, "TaskHandle");
 	ompd_parallel_handle_t* taskParallelHandle;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_task_parallel_handle(taskHandle, &taskParallelHandle);
-	//ompd_rc_t (*my_get_task_parallel_handle)(ompd_task_handle_t*, ompd_parallel_handle_t**) = dlsym(ompd_library, "ompd_get_task_parallel_handle");
-	//ompd_rc_t retVal = my_get_task_parallel_handle(taskHandle, &taskParallelHandle);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_get_task_parallel_handle! Error code: %d");
@@ -812,7 +794,6 @@ static PyObject* call_ompd_rel_parallel_handle(PyObject* self, PyObject* args) {
 	PyObject* parallelHandlePy = PyTuple_GetItem(args, 0);
 	ompd_parallel_handle_t* parallelHandle = (ompd_parallel_handle_t*)(PyCapsule_GetPointer(parallelHandlePy, "ParallelHandle"));
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_rel_parallel_handle(parallelHandle);
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_rel_parallel_handle! Error code: %d", retVal);
@@ -828,10 +809,7 @@ static PyObject* call_ompd_get_curr_task_handle(PyObject* self, PyObject* args) 
 	ompd_thread_handle_t* threadHandle = (ompd_thread_handle_t*)(PyCapsule_GetPointer(threadHandlePy, "ThreadHandle"));
 	ompd_task_handle_t* taskHandle;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_curr_task_handle(threadHandle, &taskHandle);
-	//ompd_rc_t (*my_get_current_task_handle)(ompd_thread_handle_t*, ompd_task_handle_t**) = dlsym(ompd_library, "ompd_get_curr_task_handle");
-	//ompd_rc_t retVal = my_get_current_task_handle(threadHandle, &taskHandle);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_get_curr_task_handle! Error code: %d", retVal);
@@ -848,10 +826,7 @@ static PyObject* call_ompd_get_generating_task_handle(PyObject* self, PyObject* 
 	ompd_task_handle_t* taskHandle = (ompd_task_handle_t*)(PyCapsule_GetPointer(taskHandlePy, "TaskHandle"));
 	ompd_task_handle_t* generatingTaskHandle;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_generating_task_handle(taskHandle, &generatingTaskHandle);
-	//ompd_rc_t (*my_get_generating_task_handle)(ompd_task_handle_t*, ompd_task_handle_t**) = dlsym(ompd_library, "ompd_get_generating_task_handle");
-	//ompd_rc_t retVal = my_get_generating_task_handle(taskHandle, &generatingTaskHandle);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_get_generating_task_handle! Error code: %d", retVal);
@@ -868,10 +843,7 @@ static PyObject* call_ompd_get_scheduling_task_handle(PyObject* self, PyObject* 
 	ompd_task_handle_t* taskHandle = (ompd_task_handle_t*)(PyCapsule_GetPointer(taskHandlePy, "TaskHandle"));
 	ompd_task_handle_t* schedulingTaskHandle;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_scheduling_task_handle(taskHandle, &schedulingTaskHandle);
-	//ompd_rc_t (*my_get_scheduling_task_handle)(ompd_task_handle_t*, ompd_task_handle_t**) = dlsym(ompd_library, "ompd_get_scheduling_task_handle");
-	//ompd_rc_t retVal = my_get_scheduling_task_handle(taskHandle, &schedulingTaskHandle);
 	
 	if(retVal == ompd_rc_unavailable) {
 		return Py_None;
@@ -891,10 +863,7 @@ static PyObject* call_ompd_get_task_in_parallel(PyObject* self, PyObject* args) 
 	ompd_parallel_handle_t* parallelHandle = (ompd_parallel_handle_t*)(PyCapsule_GetPointer(parallelHandlePy, "ParallelHandle"));
 	ompd_task_handle_t* taskHandle;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_task_in_parallel(parallelHandle, threadNum, &taskHandle);
-	//ompd_rc_t (*my_get_task_in_parallel)(ompd_parallel_handle_t*, int, ompd_task_handle_t**) = dlsym(ompd_library, "ompd_get_task_in_parallel");
-	//ompd_rc_t retVal = my_get_task_in_parallel(parallelHandle, threadNum, &taskHandle);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_get_task_in_parallel! Error code: %d", retVal);
@@ -910,7 +879,6 @@ static PyObject* call_ompd_rel_task_handle(PyObject* self, PyObject* args) {
 	PyObject* taskHandlePy = PyTuple_GetItem(args, 0);
 	ompd_task_handle_t* taskHandle = (ompd_task_handle_t*)(PyCapsule_GetPointer(taskHandlePy, "TaskHandle"));
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_rel_task_handle(taskHandle);
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_rel_task_handle! Error code: %d", retVal);
@@ -927,10 +895,7 @@ static PyObject* call_ompd_get_task_frame(PyObject* self, PyObject* args) {
 	ompd_frame_info_t exitFrameInfo;
 	ompd_frame_info_t enterFrameInfo;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_task_frame(taskHandle, &exitFrameInfo, &enterFrameInfo);
-	//ompd_rc_t (*my_get_task_frame)(ompd_task_handle_t*, ompd_address_t*, ompd_address_t*) = dlsym(ompd_library, "ompd_get_task_frame");
-	//ompd_rc_t retVal = my_get_task_frame(taskHandle, &exitFrame, &enterFrame);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_get_task_frame! Error code: %d", retVal);
@@ -976,10 +941,7 @@ static PyObject* call_ompd_get_icv_from_scope(PyObject* self, PyObject* args) {
 	ompd_icv_id_t icvId = (ompd_icv_id_t) PyLong_AsLong(icvIdPy);
 	ompd_word_t icvValue;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_icv_from_scope(addrSpaceHandle, scope, icvId, &icvValue);
-	//ompd_rc_t (*my_get_icv_from_scope)(void*, ompd_scope_t, ompd_icv_id_t, ompd_word_t*) = dlsym(ompd_library, "ompd_get_icv_from_scope");
-	//ompd_rc_t retVal = my_get_icv_from_scope(addrSpaceHandle, scope, icvId, &icvValue);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_get_icv_from_scope: Error code: %d", retVal);
@@ -1002,10 +964,7 @@ static PyObject* call_ompd_enumerate_icvs(PyObject* self, PyObject* args) {
 	int more;
 	ompd_icv_id_t nextId;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_enumerate_icvs(addrSpaceHandle, current, &nextId, &nextIcv, &nextScope, &more);
-	//ompd_rc_t (*my_enumerate_icvs)(ompd_address_space_handle_t*, ompd_icv_id_t, ompd_icv_id_t*, const char**, ompd_scope_t*, int*) = dlsym(ompd_library, "ompd_enumerate_icvs");
-	//ompd_rc_t retVal = my_enumerate_icvs(addrSpaceHandle, current, &nextId, &nextIcv, &nextScope, &more);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_enumerate_icvs! Error code: %d", retVal);
@@ -1031,10 +990,7 @@ static PyObject* call_ompd_enumerate_states(PyObject* self, PyObject* args) {
 	const char* nextStateName;
 	ompd_word_t moreEnums;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_enumerate_states(addrSpaceHandle, currentState, &nextState, &nextStateName, &moreEnums);
-	//ompd_rc_t (*my_enumerate_states)(ompd_address_space_handle_t*, ompd_word_t, ompd_word_t*, const char**, ompd_word_t*) = dlsym(ompd_library, "ompd_enumerate_states");
-	//ompd_rc_t retVal = my_enumerate_states(addrSpaceHandle, currentState, &nextState, &nextStateName, &moreEnums);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_enumerate_states! Error code: %d", retVal);
@@ -1056,10 +1012,7 @@ static PyObject* call_ompd_get_state(PyObject* self, PyObject* args) {
 	ompd_word_t state;
 	ompd_wait_id_t waitId;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_state(threadHandle, &state, &waitId);
-	//ompd_rc_t (*my_get_state)(ompd_thread_handle_t*, ompd_word_t*, ompd_wait_id_t*) = dlsym(ompd_library, "ompd_get_state");
-	//ompd_rc_t retVal = my_get_state(threadHandle, &state, &waitId);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_get_state! Error code: %d", retVal);
@@ -1080,10 +1033,7 @@ static PyObject* call_ompd_get_task_function(PyObject* self, PyObject* args) {
 	ompd_task_handle_t* taskHandle = (ompd_task_handle_t*) PyCapsule_GetPointer(taskHandlePy, "TaskHandle");	
 	ompd_address_t entryPoint;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_task_function(taskHandle, &entryPoint);
-	//ompd_rc_t (*my_get_task_function)(ompd_task_handle_t*, ompd_address_t*) = dlsym(ompd_library, "ompd_get_task_function");
-	//ompd_rc_t retVal = my_get_task_function(taskHandle, &entryPoint);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_get_task_function! Error code: %d", retVal);
@@ -1113,16 +1063,11 @@ static PyObject* call_ompd_get_thread_id(PyObject* self, PyObject* args) {
 	ompd_size_t sizeOfId = (ompd_size_t) sizeof(pthread_t);
 	
 	uint64_t thread;
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_thread_id(threadHandle, kind, sizeOfId, &thread);
-	//ompd_rc_t (*my_get_thread_id)(ompd_thread_handle_t*, ompd_thread_id_t, ompd_size_t, void*) = dlsym(ompd_library, "ompd_get_thread_id");
-	//ompd_rc_t retVal = my_get_thread_id(threadHandle, kind, sizeOfId, &thread);
 	
 	if(retVal != ompd_rc_ok) {
 		kind = 1; // OMPD_THREAD_ID_LWP
-		// NOTE: call dlsym function
 		retVal = ompd_get_thread_id(threadHandle, kind, sizeOfId, &thread);
-		//retVal = my_get_thread_id(threadHandle, kind, sizeOfId, &thread);
 		if(retVal != ompd_rc_ok) {
 			_printf("An error occurred when calling ompd_get_thread_id! Error code: %d", retVal);
 			return Py_None;
@@ -1158,10 +1103,7 @@ static PyObject* call_ompd_get_tool_data(PyObject* self, PyObject* args) {
 	ompd_word_t value;
 	ompd_address_t ptr;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_tool_data(handle, scope, &value, &ptr);
-	//ompd_rc_t (*my_get_tool_data)(void*, ompd_scope_t, ompd_word_t*, ompd_address_t*) = dlsym(ompd_library, "ompd_get_tool_data");
-	//ompd_rc_t retVal = my_get_tool_data(handle, scope, &value, &ptr);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occured when calling ompd_get_tool_data! Error code: %d", retVal);
@@ -1204,10 +1146,7 @@ static PyObject* call_ompd_get_icv_string_from_scope(PyObject* self, PyObject* a
 	ompd_icv_id_t icvId = (ompd_icv_id_t) PyLong_AsLong(icvIdPy);
 	const char* icvString;
 	
-	// NOTE: call dlsym function
 	ompd_rc_t retVal = ompd_get_icv_string_from_scope(handle, scope, icvId, &icvString);
-	//ompd_rc_t (*my_get_icv_string_from_scope)(void*, ompd_scope_t, ompd_icv_id_t, const char**) = dlsym(ompd_library, "ompd_get_icv_string_from_scope");
-	//ompd_rc_t retVal = my_get_icv_string_from_scope(handle, scope, icvId, &icvString);
 	
 	if(retVal != ompd_rc_ok) {
 		_printf("An error occurred when calling ompd_get_icv_string_from_scope! Error code: %d", retVal);

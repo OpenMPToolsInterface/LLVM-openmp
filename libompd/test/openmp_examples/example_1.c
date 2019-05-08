@@ -12,14 +12,17 @@ void createPthreads()
   pthread_t threads[numThreads];
   int i;
   for(i=0; i < numThreads; ++i)
-    pthread_create(&threads[i], NULL, ompd_tool_test, NULL);
+    pthread_create(&threads[i], NULL, ompd_tool_break, NULL);
+  
+  for(i=0; i < numThreads; ++i)
+    pthread_join(threads[i], NULL);
 }
 
 int main()
 {
   omp_set_num_threads(4);
   printf("Application: Process %d started.\n", getpid());
-  // TODO: createPthreads(); // thread_data is set to 0x0 if called
+  createPthreads(); // thread_data is set to 0x0 if called
 
   // Parallel region 1
   #pragma omp parallel
