@@ -10,8 +10,8 @@ include_directories (${OMPD_INCLUDE_PATH})
 include_directories (${LIBOMP_INCLUDE_DIR})
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/python-module/timestamp
-    COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/setup.py config -I ${LIBOMP_INCLUDE_DIR} 
-    COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/setup.py build -b ${CMAKE_CURRENT_BINARY_DIR}/python-module
+#    COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/setup.py config -I ${LIBOMP_INCLUDE_DIR} 
+    COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/setup.py build_ext -b ${CMAKE_CURRENT_BINARY_DIR}/python-module -I ${LIBOMP_INCLUDE_DIR}
     COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/python-module/timestamp
     DEPENDS ompdModule.c
 )
