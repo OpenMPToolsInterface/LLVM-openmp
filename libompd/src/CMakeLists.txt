@@ -15,5 +15,5 @@ INSTALL( TARGETS ompd
         ARCHIVE DESTINATION lib/static 
         RUNTIME DESTINATION bin )
 
-INSTALL(FILES ompd.h DESTINATION include)
+#INSTALL(FILES ompd.h DESTINATION include)
 
