@@ -33,7 +33,8 @@ configure_file(lit.site.cfg.in lit.site.cfg @ONLY)
 add_custom_target(check-ompd
       COMMAND ${LLVM_LIT_PATH} ${CMAKE_CURRENT_BINARY_DIR}
       COMMENT "Run tests"
-      DEPENDS ompd_c_module
+#      DEPENDS ompd_c_module
+      DEPENDS ompd_gdb_plugin
 )
 
 endif()
