@@ -130,6 +130,10 @@ OMPD_SIZEOF(ompt_data_t) \
 OMPD_SIZEOF(ompt_id_t) \
 OMPD_SIZEOF(__kmp_avail_proc) \
 OMPD_SIZEOF(__kmp_max_nth) \
+OMPD_SIZEOF(__kmp_stksize) \
+OMPD_SIZEOF(__kmp_omp_cancellation) \
+OMPD_SIZEOF(__kmp_max_task_priority) \
+OMPD_SIZEOF(ompd_state) \
 OMPD_SIZEOF(__kmp_gtid) \
 OMPD_SIZEOF(__kmp_nth) \
 OMPD_SIZEOF(ompd_cuda_context_ptr_t) \
