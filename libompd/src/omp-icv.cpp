@@ -4,6 +4,11 @@
 #include "TargetValue.h"
 
 #define FOREACH_OMPD_ICV(macro)                                                \
+    macro (dyn_var, "dyn-var", ompd_scope_thread, 0)                           \
+    macro (stacksize_var, "stacksize-var", ompd_scope_address_space, 0)        \
+    macro (cancel_var, "cancel-var", ompd_scope_address_space, 0)              \
+    macro (max_task_priority_var, "max-task-priority-var", ompd_scope_address_space, 0)  \
+    macro (debug_var, "debug-var", ompd_scope_address_space, 0)                \
     macro (levels_var, "levels-var", ompd_scope_parallel, 1)                   \
     macro (active_levels_var, "active-levels-var", ompd_scope_parallel, 0)     \
     macro (thread_limit_var, "thread-limit-var", ompd_scope_address_space, 0)  \
@@ -126,6 +131,110 @@ ompd_rc_t ompd_enumerate_icvs(ompd_address_space_handle_t *handle,
   return ompd_rc_ok;
 }
 
+static ompd_rc_t ompd_get_dynamic(
+    ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle */
+    ompd_word_t *dyn_val                 /* OUT: Dynamic adjustment of threads */
+    ) {
+  if (!thread_handle)
+    return ompd_rc_stale_handle;
+  if (!thread_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = thread_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  assert(callbacks && "Callback table not initialized!");
+
+  int8_t dynamic;
+  ompd_rc_t ret =
+      TValue(context, thread_handle->th) /*__kmp_threads[t]->th*/
+          .cast("kmp_base_info_t")
+          .access("th_current_task") /*__kmp_threads[t]->th.th_current_task*/
+          .cast("kmp_taskdata_t", 1)
+          .access("td_icvs") /*__kmp_threads[t]->th.th_current_task->td_icvs*/
+          .cast("kmp_internal_control_t", 0)
+          .access("dynamic") /*__kmp_threads[t]->th.th_current_task->td_icvs.dynamic*/
+          .castBase()
+          .getValue(dynamic);
+  *dyn_val = dynamic;
+  return ret;
+}
+
+static ompd_rc_t ompd_get_stacksize(
+    ompd_address_space_handle_t *addr_handle, /* IN: handle for the address space */
+    ompd_word_t *stacksize_val                /* OUT: per thread stack size */
+    ) {
+  ompd_address_space_context_t *context = addr_handle->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+  ompd_rc_t ret;
+
+  assert(callbacks && "Callback table not initialized!");
+  size_t stacksize;
+  ret = TValue(context, "__kmp_stksize")
+            .castBase("__kmp_stksize")
+            .getValue(stacksize);
+  *stacksize_val = stacksize;
+  return ret;
+}
+
+static ompd_rc_t ompd_get_cancellation(
+    ompd_address_space_handle_t *addr_handle, /* IN: handle for the address space */
+    ompd_word_t *cancellation_val             /* OUT: cancellation value */
+    ) {
+  ompd_address_space_context_t *context = addr_handle->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+  ompd_rc_t ret;
+
+  assert(callbacks && "Callback table not initialized!");
+  int omp_cancellation;
+  ret = TValue(context, "__kmp_omp_cancellation")
+            .castBase("__kmp_omp_cancellation")
+            .getValue(omp_cancellation);
+  *cancellation_val = omp_cancellation;
+  return ret;
+}
+
+static ompd_rc_t ompd_get_max_task_priority(
+    ompd_address_space_handle_t *addr_handle, /* IN: handle for the address space */
+    ompd_word_t *max_task_priority_val        /* OUT: max task priority value */
+    ) {
+  ompd_address_space_context_t *context = addr_handle->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+  ompd_rc_t ret;
+
+  assert(callbacks && "Callback table not initialized!");
+  int max_task_priority;
+  ret = TValue(context, "__kmp_max_task_priority")
+            .castBase("__kmp_max_task_priority")
+            .getValue(max_task_priority);
+  *max_task_priority_val = max_task_priority;
+  return ret;
+}
+
+static ompd_rc_t ompd_get_debug(
+    ompd_address_space_handle_t *addr_handle, /* IN: handle for the address space */
+    ompd_word_t *debug_val                    /* OUT: debug value */
+    ) {
+  ompd_address_space_context_t *context = addr_handle->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+  ompd_rc_t ret;
+
+  assert(callbacks && "Callback table not initialized!");
+  uint64_t ompd_state_val;
+  ret = TValue(context, "ompd_state")
+            .castBase("ompd_state")
+            .getValue(ompd_state_val);
+  if (ompd_state_val > 0) {
+    *debug_val = 1;
+  } else {
+    *debug_val = 0;
+  }
+  return ret;
+}
 
 static ompd_rc_t ompd_get_level(
     ompd_parallel_handle_t *parallel_handle, /* IN: OpenMP parallel handle */
@@ -486,6 +595,16 @@ ompd_rc_t ompd_get_icv_from_scope(void *handle, ompd_scope_t scope,
 
   if (device_kind == OMPD_DEVICE_KIND_HOST) {
     switch (icv_id) {
+      case ompd_icv_dyn_var:
+        return ompd_get_dynamic((ompd_thread_handle_t *)handle, icv_value);
+      case ompd_icv_stacksize_var:
+        return ompd_get_stacksize((ompd_address_space_handle_t *)handle, icv_value);
+      case ompd_icv_cancel_var:
+        return ompd_get_cancellation((ompd_address_space_handle_t *)handle, icv_value);
+      case ompd_icv_max_task_priority_var:
+        return ompd_get_max_task_priority((ompd_address_space_handle_t *)handle, icv_value);
+      case ompd_icv_debug_var:
+        return ompd_get_debug((ompd_address_space_handle_t *)handle, icv_value);
       case ompd_icv_levels_var:
         return ompd_get_level((ompd_parallel_handle_t *)handle, icv_value);
       case ompd_icv_active_levels_var:
