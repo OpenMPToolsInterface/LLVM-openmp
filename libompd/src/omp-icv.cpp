@@ -9,6 +9,7 @@
     macro (cancel_var, "cancel-var", ompd_scope_address_space, 0)              \
     macro (max_task_priority_var, "max-task-priority-var", ompd_scope_address_space, 0)  \
     macro (debug_var, "debug-var", ompd_scope_address_space, 0)                \
+    macro (nthreads_var, "nthreads-var", ompd_scope_thread, 0)                 \
     macro (levels_var, "levels-var", ompd_scope_parallel, 1)                   \
     macro (active_levels_var, "active-levels-var", ompd_scope_parallel, 0)     \
     macro (thread_limit_var, "thread-limit-var", ompd_scope_address_space, 0)  \
@@ -234,6 +235,101 @@ static ompd_rc_t ompd_get_debug(
     *debug_val = 0;
   }
   return ret;
+}
+
+static ompd_rc_t ompd_get_nthreads(
+    ompd_thread_handle_t *thread_handle, /* IN: handle for the thread */
+    ompd_word_t *nthreads_list_val       /* OUT: string list of comma separated nthreads values */
+    ) {
+  if (!thread_handle)
+    return ompd_rc_stale_handle;
+  if (!thread_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = thread_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+  ompd_rc_t ret;
+
+  assert(callbacks && "Callback table not initialized!");
+
+  uint32_t used_val;
+  uint32_t current_nesting_level;
+  uint32_t nproc_val;
+
+  ret = TValue(context, "__kmp_nested_nth")
+           .cast("kmp_nested_nthreads_t")
+           .access("used")
+           .castBase(ompd_type_int)
+           .getValue(used_val);
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  TValue taskdata =
+      TValue(context, thread_handle->th) /*__kmp_threads[t]->th*/
+          .cast("kmp_base_info_t")
+          .access("th_current_task") /*__kmp_threads[t]->th.th_current_task*/
+          .cast("kmp_taskdata_t", 1);
+
+  ret = taskdata
+          .access("td_team") /*__kmp_threads[t]->th.th_current_task.td_team*/
+          .cast("kmp_team_p", 1)
+          .access("t") /*__kmp_threads[t]->th.th_current_task.td_team->t*/
+          .cast("kmp_base_team_t", 0) /*t*/
+          .access("t_level")          /*t.t_level*/
+          .castBase(ompd_type_int)
+          .getValue(current_nesting_level);
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  ret = taskdata
+          .cast("kmp_taskdata_t", 1)
+          .access("td_icvs") /*__kmp_threads[t]->th.th_current_task->td_icvs*/
+          .cast("kmp_internal_control_t", 0)
+          .access("nproc") /*__kmp_threads[t]->th.th_current_task->td_icvs.nproc*/
+          .castBase(ompd_type_int)
+          .getValue(nproc_val);
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  size_t buffer_size = 16 * (used_val == 0? 1: used_val) + 1;
+  char *nthreads_list_str;
+  ret = callbacks->alloc_memory(buffer_size, (void **)&nthreads_list_str);
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  /* The nthreads-var list would be:
+  [__kmp_threads[t]->th.th_current_task->td_icvs.nproc,
+   __kmp_nested_nth.nth[current_nesting_level + 1],
+   __kmp_nested_nth.nth[current_nesting_level + 2],
+    …,
+   __kmp_nested_nth.nth[used - 1]]*/
+
+  sprintf(nthreads_list_str, "%d", nproc_val);
+  char temp_value[16];
+  uint32_t nth_value;
+  uint32_t nesting_level;
+
+  nesting_level = (current_nesting_level == 0)? 1: current_nesting_level;
+
+  for (; nesting_level < used_val; nesting_level++) {
+
+    ret = TValue(context, "__kmp_nested_nth")
+             .cast("kmp_nested_nthreads_t")
+             .access("nth")
+             .cast("int", 1)
+             .getArrayElement(nesting_level)
+             .castBase(ompd_type_int)
+             .getValue(nth_value);
+
+    if (ret != ompd_rc_ok)
+      return ret;
+
+    sprintf(temp_value, ",%d", nth_value);
+    strcat (nthreads_list_str, temp_value);
+  }
+
+  *nthreads_list_val = (ompd_word_t)nthreads_list_str;
+  return ompd_rc_ok;
 }
 
 static ompd_rc_t ompd_get_level(
@@ -605,6 +701,8 @@ ompd_rc_t ompd_get_icv_from_scope(void *handle, ompd_scope_t scope,
         return ompd_get_max_task_priority((ompd_address_space_handle_t *)handle, icv_value);
       case ompd_icv_debug_var:
         return ompd_get_debug((ompd_address_space_handle_t *)handle, icv_value);
+      case ompd_icv_nthreads_var:
+        return ompd_get_nthreads((ompd_thread_handle_t *)handle, icv_value);
       case ompd_icv_levels_var:
         return ompd_get_level((ompd_parallel_handle_t *)handle, icv_value);
       case ompd_icv_active_levels_var:
