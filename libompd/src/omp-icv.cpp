@@ -295,7 +295,8 @@ static ompd_rc_t ompd_get_nthreads_aux(
 
 static ompd_rc_t ompd_get_nthreads(
     ompd_thread_handle_t *thread_handle, /* IN: handle for the thread */
-    ompd_word_t *nthreads_var_val        /* OUT: string list of comma separated nthreads values */
+    ompd_word_t *nthreads_var_val        /* OUT: nthreads-var (of integer type)
+                                            value */
     ) {
   uint32_t used;
   uint32_t nproc;
@@ -364,9 +365,9 @@ static ompd_rc_t ompd_get_nthreads(
   char temp_value[16];
   uint32_t nth_value;
 
-  for (current_nesting_level++; /*the list element for this nesting
-                                 *level has already been accounted for
-                                  by nproc */
+  for (current_nesting_level++; /* the list element for this nesting
+                                 * level has already been accounted for
+                                   by nproc */
        current_nesting_level < used;
        current_nesting_level++) {
 
