@@ -237,9 +237,12 @@ static ompd_rc_t ompd_get_debug(
   return ret;
 }
 
-static ompd_rc_t ompd_get_nthreads(
-    ompd_thread_handle_t *thread_handle, /* IN: handle for the thread */
-    ompd_word_t *nthreads_list_val       /* OUT: string list of comma separated nthreads values */
+/* Helper routine for the ompd_get_nthreads routines */
+static ompd_rc_t ompd_get_nthreads_aux(
+    ompd_thread_handle_t *thread_handle,
+    uint32_t *used,
+    uint32_t *current_nesting_level,
+    uint32_t *nproc
     ) {
   if (!thread_handle)
     return ompd_rc_stale_handle;
@@ -252,15 +255,11 @@ static ompd_rc_t ompd_get_nthreads(
 
   assert(callbacks && "Callback table not initialized!");
 
-  uint32_t used_val;
-  uint32_t current_nesting_level;
-  uint32_t nproc_val;
-
   ret = TValue(context, "__kmp_nested_nth")
            .cast("kmp_nested_nthreads_t")
            .access("used")
            .castBase(ompd_type_int)
-           .getValue(used_val);
+           .getValue(*used);
   if (ret != ompd_rc_ok)
     return ret;
 
@@ -277,7 +276,7 @@ static ompd_rc_t ompd_get_nthreads(
           .cast("kmp_base_team_t", 0) /*t*/
           .access("t_level")          /*t.t_level*/
           .castBase(ompd_type_int)
-          .getValue(current_nesting_level);
+          .getValue(*current_nesting_level);
   if (ret != ompd_rc_ok)
     return ret;
 
@@ -287,11 +286,63 @@ static ompd_rc_t ompd_get_nthreads(
           .cast("kmp_internal_control_t", 0)
           .access("nproc") /*__kmp_threads[t]->th.th_current_task->td_icvs.nproc*/
           .castBase(ompd_type_int)
-          .getValue(nproc_val);
+          .getValue(*nproc);
   if (ret != ompd_rc_ok)
     return ret;
 
-  size_t buffer_size = 16 * (used_val == 0? 1: used_val) + 1;
+  return ompd_rc_ok;
+}
+
+static ompd_rc_t ompd_get_nthreads(
+    ompd_thread_handle_t *thread_handle, /* IN: handle for the thread */
+    ompd_word_t *nthreads_var_val        /* OUT: string list of comma separated nthreads values */
+    ) {
+  uint32_t used;
+  uint32_t nproc;
+  uint32_t current_nesting_level;
+
+  ompd_rc_t ret;
+  ret = ompd_get_nthreads_aux (thread_handle, &used,
+                               &current_nesting_level, &nproc);
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  /*__kmp_threads[t]->th.th_current_task->td_icvs.nproc*/
+  *nthreads_var_val = nproc;
+  /* If the nthreads-var is a list with more than one element, then the value of
+     this ICV cannot be represented by an integer type. In this case,
+     ompd_rc_incompatible is returned. The tool can check the return value and
+     can choose to invoke ompd_get_icv_string_from_scope() if needed. */
+  if (current_nesting_level < used - 1) {
+    return ompd_rc_incompatible;
+  }
+  return ompd_rc_ok;
+}
+
+static ompd_rc_t ompd_get_nthreads(
+    ompd_thread_handle_t *thread_handle, /* IN: handle for the thread */
+    const char **nthreads_list_string    /* OUT: string list of comma separated
+                                            nthreads values */
+    ) {
+  uint32_t used;
+  uint32_t nproc;
+  uint32_t current_nesting_level;
+
+  ompd_rc_t ret;
+  ret = ompd_get_nthreads_aux (thread_handle, &used,
+                               &current_nesting_level, &nproc);
+  if (ret != ompd_rc_ok)
+    return ret;
+
+  uint32_t num_list_elems;
+  if (used == 0 || current_nesting_level >= used) {
+    num_list_elems = 1;
+  } else {
+    num_list_elems = used - current_nesting_level;
+  }
+  size_t buffer_size =
+    16 /* digits per element including the comma separator */
+      * num_list_elems + 1; /* string terminator NULL */
   char *nthreads_list_str;
   ret = callbacks->alloc_memory(buffer_size, (void **)&nthreads_list_str);
   if (ret != ompd_rc_ok)
@@ -304,20 +355,26 @@ static ompd_rc_t ompd_get_nthreads(
     …,
    __kmp_nested_nth.nth[used - 1]]*/
 
-  sprintf(nthreads_list_str, "%d", nproc_val);
+  sprintf(nthreads_list_str, "%d", nproc);
+  *nthreads_list_string = nthreads_list_str;
+  if (num_list_elems == 1) {
+    return ompd_rc_ok;
+  }
+
   char temp_value[16];
   uint32_t nth_value;
-  uint32_t nesting_level;
 
-  nesting_level = (current_nesting_level == 0)? 1: current_nesting_level;
+  for (current_nesting_level++; /*the list element for this nesting
+                                 *level has already been accounted for
+                                  by nproc */
+       current_nesting_level < used;
+       current_nesting_level++) {
 
-  for (; nesting_level < used_val; nesting_level++) {
-
-    ret = TValue(context, "__kmp_nested_nth")
+    ret = TValue(thread_handle->ah->context, "__kmp_nested_nth")
              .cast("kmp_nested_nthreads_t")
              .access("nth")
              .cast("int", 1)
-             .getArrayElement(nesting_level)
+             .getArrayElement(current_nesting_level)
              .castBase(ompd_type_int)
              .getValue(nth_value);
 
@@ -328,7 +385,6 @@ static ompd_rc_t ompd_get_nthreads(
     strcat (nthreads_list_str, temp_value);
   }
 
-  *nthreads_list_val = (ompd_word_t)nthreads_list_str;
   return ompd_rc_ok;
 }
 
@@ -401,7 +457,6 @@ static ompd_rc_t ompd_get_active_level(
   *val = res;
   return ret;
 }
- 
 
 static ompd_rc_t
 ompd_get_num_procs(ompd_address_space_handle_t
@@ -743,6 +798,43 @@ ompd_rc_t
 ompd_get_icv_string_from_scope(void *handle, ompd_scope_t scope,
                                ompd_icv_id_t icv_id,
                                const char **icv_string) {
+  if (!handle) {
+    return ompd_rc_stale_handle;
+  }
+  if (icv_id >= ompd_icv_after_last_icv || icv_id == 0) {
+    return ompd_rc_bad_input;
+  }
+  if (scope != ompd_icv_scope_values[icv_id]) {
+    return ompd_rc_bad_input;
+  }
+
+  ompd_device_t device_kind;
+
+  switch (scope) {
+    case ompd_scope_thread:
+      device_kind = ((ompd_thread_handle_t *)handle)->ah->kind;
+      break;
+    case ompd_scope_parallel:
+      device_kind = ((ompd_parallel_handle_t *)handle)->ah->kind;
+      break;
+    case ompd_scope_address_space:
+      device_kind = ((ompd_address_space_handle_t *)handle)->kind;
+      break;
+    case ompd_scope_task:
+      device_kind = ((ompd_task_handle_t *)handle)->ah->kind;
+      break;
+    default:
+      return ompd_rc_bad_input;
+  }
+
+  if (device_kind == OMPD_DEVICE_KIND_HOST) {
+    switch (icv_id) {
+      case ompd_icv_nthreads_var:
+        return ompd_get_nthreads((ompd_thread_handle_t *)handle, icv_string);
+      default:
+        return ompd_rc_unsupported;
+    }
+  }
   return ompd_rc_unsupported;
 }
 
