@@ -809,6 +809,7 @@ extern kmp_nested_proc_bind_t __kmp_nested_proc_bind;
 extern int __kmp_display_affinity;
 extern char *__kmp_affinity_format;
 static const size_t KMP_AFFINITY_FORMAT_SIZE = 512;
+extern int __kmp_tool;
 #endif // OMP_50_ENABLED
 
 #if KMP_AFFINITY_SUPPORTED

@@ -4682,7 +4682,7 @@ static void __kmp_stg_print_omp_cancellation(kmp_str_buf_t *buffer,
 #endif
 
 #if OMP_50_ENABLED && OMPT_SUPPORT
-static int __kmp_tool = 1;
+int __kmp_tool = 1;
 
 static void __kmp_stg_parse_omp_tool(char const *name, char const *value,
                                      void *data) {
