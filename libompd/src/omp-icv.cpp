@@ -9,6 +9,8 @@
     macro (cancel_var, "cancel-var", ompd_scope_address_space, 0)              \
     macro (max_task_priority_var, "max-task-priority-var", ompd_scope_address_space, 0)  \
     macro (debug_var, "debug-var", ompd_scope_address_space, 0)                \
+    macro (display_affinity_var, "display-affinity-var", ompd_scope_address_space, 0)    \
+    macro (tool_var, "tool-var", ompd_scope_address_space, 0)                  \
     macro (levels_var, "levels-var", ompd_scope_parallel, 1)                   \
     macro (active_levels_var, "active-levels-var", ompd_scope_parallel, 0)     \
     macro (thread_limit_var, "thread-limit-var", ompd_scope_address_space, 0)  \
@@ -233,6 +235,38 @@ static ompd_rc_t ompd_get_debug(
   } else {
     *debug_val = 0;
   }
+  return ret;
+}
+
+static ompd_rc_t ompd_get_display_affinity(
+    ompd_address_space_handle_t *addr_handle, /* IN: handle for the address space */
+    ompd_word_t *display_affinity_val         /* OUT: display affinity value */
+    ) {
+  ompd_address_space_context_t *context = addr_handle->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+  ompd_rc_t ret;
+
+  assert(callbacks && "Callback table not initialized!");
+  ret = TValue(context, "__kmp_display_affinity")
+            .castBase("__kmp_display_affinity")
+            .getValue(*display_affinity_val);
+  return ret;
+}
+
+static ompd_rc_t ompd_get_tool(
+    ompd_address_space_handle_t *addr_handle, /* IN: handle for the address space */
+    ompd_word_t *tool_val                     /* OUT: tool value */
+    ) {
+  ompd_address_space_context_t *context = addr_handle->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+  ompd_rc_t ret;
+
+  assert(callbacks && "Callback table not initialized!");
+  ret = TValue(context, "__kmp_tool")
+            .castBase("__kmp_tool")
+            .getValue(*tool_val);
   return ret;
 }
 
@@ -605,6 +639,10 @@ ompd_rc_t ompd_get_icv_from_scope(void *handle, ompd_scope_t scope,
         return ompd_get_max_task_priority((ompd_address_space_handle_t *)handle, icv_value);
       case ompd_icv_debug_var:
         return ompd_get_debug((ompd_address_space_handle_t *)handle, icv_value);
+      case ompd_icv_display_affinity_var:
+        return ompd_get_display_affinity((ompd_address_space_handle_t *)handle, icv_value);
+      case ompd_icv_tool_var:
+        return ompd_get_tool((ompd_address_space_handle_t *)handle, icv_value);
       case ompd_icv_levels_var:
         return ompd_get_level((ompd_parallel_handle_t *)handle, icv_value);
       case ompd_icv_active_levels_var:
