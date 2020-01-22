@@ -247,7 +247,9 @@ static ompd_rc_t ompd_get_display_affinity(
     return ompd_rc_stale_handle;
   ompd_rc_t ret;
 
-  assert(callbacks && "Callback table not initialized!");
+  if (!callbacks) {
+    return ompd_rc_error;
+  }
   ret = TValue(context, "__kmp_display_affinity")
             .castBase("__kmp_display_affinity")
             .getValue(*display_affinity_val);
@@ -263,7 +265,9 @@ static ompd_rc_t ompd_get_tool(
     return ompd_rc_stale_handle;
   ompd_rc_t ret;
 
-  assert(callbacks && "Callback table not initialized!");
+  if (!callbacks) {
+    return ompd_rc_error;
+  }
   ret = TValue(context, "__kmp_tool")
             .castBase("__kmp_tool")
             .getValue(*tool_val);
