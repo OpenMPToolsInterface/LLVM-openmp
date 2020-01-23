@@ -136,6 +136,8 @@ OMPD_SIZEOF(__kmp_max_nth) \
 OMPD_SIZEOF(__kmp_stksize) \
 OMPD_SIZEOF(__kmp_omp_cancellation) \
 OMPD_SIZEOF(__kmp_max_task_priority) \
+OMPD_SIZEOF(__kmp_display_affinity) \
+OMPD_SIZEOF(__kmp_tool) \
 OMPD_SIZEOF(ompd_state) \
 OMPD_SIZEOF(kmp_nested_nthreads_t) \
 OMPD_SIZEOF(__kmp_nested_nth) \
