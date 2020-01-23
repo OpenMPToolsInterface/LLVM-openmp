@@ -251,11 +251,10 @@ static ompd_rc_t ompd_get_nthreads_aux(
   ompd_address_space_context_t *context = thread_handle->ah->context;
   if (!context)
     return ompd_rc_stale_handle;
-  ompd_rc_t ret;
+  if (!callbacks)
+    return ompd_rc_error;
 
-  assert(callbacks && "Callback table not initialized!");
-
-  ret = TValue(context, "__kmp_nested_nth")
+  ompd_rc_t ret = TValue(context, "__kmp_nested_nth")
            .cast("kmp_nested_nthreads_t")
            .access("used")
            .castBase(ompd_type_int)
@@ -502,7 +501,7 @@ ompd_get_thread_limit(ompd_address_space_handle_t
       TValue(context, "__kmp_max_nth").castBase("__kmp_max_nth").getValue(nth);
   *val = nth;
   return ret;
-} 
+}
 
 static ompd_rc_t ompd_get_thread_num(
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle*/
