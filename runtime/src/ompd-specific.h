@@ -80,6 +80,9 @@ OMPD_ACCESS(kmp_task_t,           routine) \
 \
 OMPD_ACCESS(kmp_team_p,           t) \
 \
+OMPD_ACCESS(kmp_nested_nthreads_t, used) \
+OMPD_ACCESS(kmp_nested_nthreads_t, nth) \
+\
 OMPD_ACCESS(ompt_task_info_t,     frame) \
 OMPD_ACCESS(ompt_task_info_t,     scheduling_parent) \
 OMPD_ACCESS(ompt_task_info_t,     task_data) \
@@ -136,6 +139,9 @@ OMPD_SIZEOF(__kmp_max_task_priority) \
 OMPD_SIZEOF(__kmp_display_affinity) \
 OMPD_SIZEOF(__kmp_tool) \
 OMPD_SIZEOF(ompd_state) \
+OMPD_SIZEOF(kmp_nested_nthreads_t) \
+OMPD_SIZEOF(__kmp_nested_nth) \
+OMPD_SIZEOF(int) \
 OMPD_SIZEOF(__kmp_gtid) \
 OMPD_SIZEOF(__kmp_nth) \
 OMPD_SIZEOF(ompd_cuda_context_ptr_t) \
