@@ -810,6 +810,9 @@ extern int __kmp_display_affinity;
 extern char *__kmp_affinity_format;
 static const size_t KMP_AFFINITY_FORMAT_SIZE = 512;
 extern int __kmp_tool;
+#if OMPT_SUPPORT
+extern char *__kmp_tool_libraries;
+#endif // OMPT_SUPPORT
 #endif // OMP_50_ENABLED
 
 #if KMP_AFFINITY_SUPPORTED

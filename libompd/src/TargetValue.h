@@ -151,6 +151,10 @@ public:
    * Get the raw memory copy of the target value
    */
   ompd_rc_t getRawValue(void *buf, int count);
+  /**
+   * Get a string copy from the target value
+   */
+  ompd_rc_t getString(const char **buf);
   //   ompd_rc_t getAddress(struct ompd_handle* th) const;
   /**
    * Get a new target value object for the dereferenced target value

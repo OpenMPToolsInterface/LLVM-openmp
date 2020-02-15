@@ -349,6 +349,60 @@ ompd_rc_t TValue::getRawValue(void *buf, int count) {
   return errorState.errorCode;
 }
 
+ompd_rc_t TValue::getString(const char **buf) {
+  if (gotError())
+    return getError();
+
+  TValue strValue = dereference();
+  if (strValue.gotError() && (strValue.getError() != ompd_rc_unsupported)) {
+    return strValue.getError();
+  }
+
+  ompd_rc_t ret;
+
+  if (strValue.gotError() && (strValue.getError() == ompd_rc_unsupported)) {
+    if (strValue.symbolAddr.address == 0) {
+      // Pass back an empty string if the pointer is NULL.
+      char *empty_string;
+      ret = callbacks->alloc_memory(1, (void **)&empty_string);
+      if (ret != ompd_rc_ok) {
+        return ret;
+      }
+      empty_string[0] = '\0';
+      *buf = empty_string;
+      return ompd_rc_ok;
+    }
+    else {
+      return strValue.getError();
+    }
+  }
+  // Determine the length of the string needed by reading in 1 character
+  // byte at a time.
+  char one_char;
+  ompd_size_t length = 0;
+
+  do{
+    TValue charValue = getArrayElement((int)length);
+    if (charValue.gotError()) {
+      return charValue.getError();
+    }
+    ret = charValue.castBase(ompd_type_char).getValue(one_char);
+    if (ret != ompd_rc_ok) {
+      return ret;
+    }
+    length++;
+  } while (one_char != '\0');
+
+  ret = callbacks->alloc_memory(length, (void **)buf);
+  if (ret != ompd_rc_ok) {
+    return ret;
+  }
+
+  ret = callbacks->read_string(context, tcontext,
+                               &strValue.symbolAddr, length, (void *)*buf);
+  return ret;
+}
+
 // ompd_rc_t TValue::getAddress(struct ompd_handle* handle) const
 // {
 //   handle->th = symbolAddr;
@@ -362,10 +416,10 @@ TBaseValue TValue::castBase(const char *varName) {
   return TBaseValue(*this, size);
 }
 
-TBaseValue TValue::castBase() const { 
+TBaseValue TValue::castBase() const {
 	if(pointerLevel>0)
-		return TBaseValue(*this, type_sizes.sizeof_pointer); 
-	return TBaseValue(*this, fieldSize); 
+		return TBaseValue(*this, type_sizes.sizeof_pointer);
+        return TBaseValue(*this, fieldSize);
 }
 
 TBaseValue TValue::castBase(ompd_target_prim_types_t baseType) const {
