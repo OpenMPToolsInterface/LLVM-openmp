@@ -350,56 +350,35 @@ ompd_rc_t TValue::getRawValue(void *buf, int count) {
 }
 
 ompd_rc_t TValue::getString(const char **buf) {
+  *buf = 0;
   if (gotError())
     return getError();
 
   TValue strValue = dereference();
-  if (strValue.gotError() && (strValue.getError() != ompd_rc_unsupported)) {
+  if (strValue.gotError()) {
     return strValue.getError();
   }
 
-  ompd_rc_t ret;
-
-  if (strValue.gotError() && (strValue.getError() == ompd_rc_unsupported)) {
-    if (strValue.symbolAddr.address == 0) {
-      // Pass back an empty string if the pointer is NULL.
-      char *empty_string;
-      ret = callbacks->alloc_memory(1, (void **)&empty_string);
-      if (ret != ompd_rc_ok) {
-        return ret;
-      }
-      empty_string[0] = '\0';
-      *buf = empty_string;
-      return ompd_rc_ok;
-    }
-    else {
-      return strValue.getError();
-    }
+  if (!callbacks) {
+    return ompd_rc_error;
   }
-  // Determine the length of the string needed by reading in 1 character
-  // byte at a time.
-  char one_char;
-  ompd_size_t length = 0;
-
-  do{
-    TValue charValue = getArrayElement((int)length);
-    if (charValue.gotError()) {
-      return charValue.getError();
-    }
-    ret = charValue.castBase(ompd_type_char).getValue(one_char);
-    if (ret != ompd_rc_ok) {
-      return ret;
-    }
-    length++;
-  } while (one_char != '\0');
-
-  ret = callbacks->alloc_memory(length, (void **)buf);
+  ompd_rc_t ret;
+#define BUF_LEN 512
+  char *string_buffer;
+  ret = callbacks->alloc_memory(BUF_LEN, (void **)&string_buffer);
   if (ret != ompd_rc_ok) {
     return ret;
   }
 
+  // TODO: if we have not read in the complete string, we need to realloc
+  // 'string_buffer' and attempt reading again repeatedly till the entire string
+  // is read in.
   ret = callbacks->read_string(context, tcontext,
-                               &strValue.symbolAddr, length, (void *)*buf);
+                               &strValue.symbolAddr, BUF_LEN, (void *)string_buffer);
+  if (ret != ompd_rc_ok) {
+    string_buffer[BUF_LEN - 1] = '\0';
+  }
+  *buf = string_buffer;
   return ret;
 }
 

@@ -152,7 +152,11 @@ public:
    */
   ompd_rc_t getRawValue(void *buf, int count);
   /**
-   * Get a string copy from the target value
+   * Fetch a string copy from the target. "this" represents the pointer
+   * that holds the value of a null terminated character string. "buf"
+   * points to the destination string to be allocated and copied to.
+   * Returns 'ompd_rc_error' to signify a truncated string or a target
+   * read error.
    */
   ompd_rc_t getString(const char **buf);
   //   ompd_rc_t getAddress(struct ompd_handle* th) const;

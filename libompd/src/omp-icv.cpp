@@ -137,6 +137,22 @@ ompd_rc_t ompd_enumerate_icvs(ompd_address_space_handle_t *handle,
   return ompd_rc_ok;
 }
 
+static ompd_rc_t create_empty_string(const char **empty_string_ptr) {
+  char *empty_str;
+  ompd_rc_t ret;
+
+  if (!callbacks) {
+    return ompd_rc_error;
+  }
+  ret = callbacks->alloc_memory(1, (void **)&empty_str);
+  if (ret != ompd_rc_ok) {
+    return ret;
+  }
+  empty_str[0] = '\0';
+  *empty_string_ptr = empty_str;
+  return ompd_rc_ok;
+}
+
 static ompd_rc_t ompd_get_dynamic(
     ompd_thread_handle_t *thread_handle, /* IN: OpenMP thread handle */
     ompd_word_t *dyn_val                 /* OUT: Dynamic adjustment of threads */
@@ -444,6 +460,9 @@ static ompd_rc_t ompd_get_tool_libraries(
   ret = TValue(context, "__kmp_tool_libraries")
             .cast("char", 1)
             .getString(tool_libraries_string);
+  if (ret == ompd_rc_unsupported) {
+    ret = create_empty_string(tool_libraries_string);
+  }
   return ret;
 }
 
