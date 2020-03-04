@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <cstring>
 
 const ompd_callbacks_t *TValue::callbacks = NULL;
 ompd_device_type_sizes_t TValue::type_sizes;
@@ -365,20 +366,27 @@ ompd_rc_t TValue::getString(const char **buf) {
   ompd_rc_t ret;
 #define BUF_LEN 512
   char *string_buffer;
-  ret = callbacks->alloc_memory(BUF_LEN, (void **)&string_buffer);
+
+  // Allocate an extra byte, but pass only BUF_LEN to the tool
+  // so that we can detect truncation later.
+  ret = callbacks->alloc_memory(BUF_LEN + 1, (void **)&string_buffer);
   if (ret != ompd_rc_ok) {
     return ret;
   }
+  string_buffer[BUF_LEN] = '\0';
 
   // TODO: if we have not read in the complete string, we need to realloc
   // 'string_buffer' and attempt reading again repeatedly till the entire string
   // is read in.
   ret = callbacks->read_string(context, tcontext,
                                &strValue.symbolAddr, BUF_LEN, (void *)string_buffer);
-  if (ret != ompd_rc_ok) {
-    string_buffer[BUF_LEN - 1] = '\0';
-  }
   *buf = string_buffer;
+  // Check for truncation. The standard specifies that if a null byte is not
+  // among the first 'nbytes' bytes, the string placed in the buffer is not
+  // null-terminated. 'nbytes' is BUF_LEN in this case.
+  if (ret == ompd_rc_ok && strlen(string_buffer) == BUF_LEN) {
+    return ompd_rc_error;
+  }
   return ret;
 }
 
