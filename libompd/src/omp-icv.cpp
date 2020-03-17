@@ -11,7 +11,10 @@
     macro (debug_var, "debug-var", ompd_scope_address_space, 0)                \
     macro (nthreads_var, "nthreads-var", ompd_scope_thread, 0)                 \
     macro (display_affinity_var, "display-affinity-var", ompd_scope_address_space, 0)    \
+    macro (affinity_format_var, "affinity-format-var", ompd_scope_address_space, 0)      \
+    macro (default_device_var, "default-device-var", ompd_scope_thread, 0)     \
     macro (tool_var, "tool-var", ompd_scope_address_space, 0)                  \
+    macro (tool_libraries_var, "tool-libraries-var", ompd_scope_address_space, 0)                  \
     macro (levels_var, "levels-var", ompd_scope_parallel, 1)                   \
     macro (active_levels_var, "active-levels-var", ompd_scope_parallel, 0)     \
     macro (thread_limit_var, "thread-limit-var", ompd_scope_address_space, 0)  \
@@ -131,6 +134,22 @@ ompd_rc_t ompd_enumerate_icvs(ompd_address_space_handle_t *handle,
     *more = 1;
   }
 
+  return ompd_rc_ok;
+}
+
+static ompd_rc_t create_empty_string(const char **empty_string_ptr) {
+  char *empty_str;
+  ompd_rc_t ret;
+
+  if (!callbacks) {
+    return ompd_rc_error;
+  }
+  ret = callbacks->alloc_memory(1, (void **)&empty_str);
+  if (ret != ompd_rc_ok) {
+    return ret;
+  }
+  empty_str[0] = '\0';
+  *empty_string_ptr = empty_str;
   return ompd_rc_ok;
 }
 
@@ -388,6 +407,8 @@ static ompd_rc_t ompd_get_nthreads(
   }
 
   return ompd_rc_ok;
+}
+
 static ompd_rc_t ompd_get_display_affinity(
     ompd_address_space_handle_t *addr_handle, /* IN: handle for the address space */
     ompd_word_t *display_affinity_val         /* OUT: display affinity value */
@@ -403,6 +424,73 @@ static ompd_rc_t ompd_get_display_affinity(
   ret = TValue(context, "__kmp_display_affinity")
             .castBase("__kmp_display_affinity")
             .getValue(*display_affinity_val);
+  return ret;
+}
+
+static ompd_rc_t ompd_get_affinity_format(
+    ompd_address_space_handle_t *addr_handle, /* IN: address space handle*/
+    const char **affinity_format_string       /* OUT: affinity format string */
+    ) {
+  ompd_address_space_context_t *context = addr_handle->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  if (!callbacks) {
+    return ompd_rc_error;
+  }
+  ompd_rc_t ret;
+  ret = TValue(context, "__kmp_affinity_format")
+            .cast("char", 1)
+            .getString(affinity_format_string);
+  return ret;
+}
+
+static ompd_rc_t ompd_get_tool_libraries(
+    ompd_address_space_handle_t *addr_handle, /* IN: address space handle*/
+    const char **tool_libraries_string        /* OUT: tool libraries string */
+    ) {
+  ompd_address_space_context_t *context = addr_handle->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+
+  if (!callbacks) {
+    return ompd_rc_error;
+  }
+  ompd_rc_t ret;
+  ret = TValue(context, "__kmp_tool_libraries")
+            .cast("char", 1)
+            .getString(tool_libraries_string);
+  if (ret == ompd_rc_unsupported) {
+    ret = create_empty_string(tool_libraries_string);
+  }
+  return ret;
+}
+
+static ompd_rc_t ompd_get_default_device(
+    ompd_thread_handle_t *thread_handle, /* IN: handle for the thread */
+    ompd_word_t *default_device_val      /* OUT: default device value */
+    ) {
+  if (!thread_handle)
+    return ompd_rc_stale_handle;
+  if (!thread_handle->ah)
+    return ompd_rc_stale_handle;
+  ompd_address_space_context_t *context = thread_handle->ah->context;
+  if (!context)
+    return ompd_rc_stale_handle;
+  if (!callbacks)
+    return ompd_rc_error;
+
+  ompd_rc_t ret =
+      TValue(context, thread_handle->th) /*__kmp_threads[t]->th*/
+          .cast("kmp_base_info_t")
+          .access("th_current_task") /*__kmp_threads[t]->th.th_current_task*/
+          .cast("kmp_taskdata_t", 1)
+          .access("td_icvs") /*__kmp_threads[t]->th.th_current_task->td_icvs*/
+          .cast("kmp_internal_control_t", 0)
+          /*__kmp_threads[t]->th.th_current_task->td_icvs.default_device*/
+          .access("default_device")
+          .castBase()
+          .getValue(*default_device_val);
   return ret;
 }
 
@@ -796,6 +884,12 @@ ompd_rc_t ompd_get_icv_from_scope(void *handle, ompd_scope_t scope,
         return ompd_get_nthreads((ompd_thread_handle_t *)handle, icv_value);
       case ompd_icv_display_affinity_var:
         return ompd_get_display_affinity((ompd_address_space_handle_t *)handle, icv_value);
+      case ompd_icv_affinity_format_var:
+        return ompd_rc_incompatible;
+      case ompd_icv_tool_libraries_var:
+        return ompd_rc_incompatible;
+      case ompd_icv_default_device_var:
+        return ompd_get_default_device((ompd_thread_handle_t *)handle, icv_value);
       case ompd_icv_tool_var:
         return ompd_get_tool((ompd_address_space_handle_t *)handle, icv_value);
       case ompd_icv_levels_var:
@@ -871,6 +965,12 @@ ompd_get_icv_string_from_scope(void *handle, ompd_scope_t scope,
     switch (icv_id) {
       case ompd_icv_nthreads_var:
         return ompd_get_nthreads((ompd_thread_handle_t *)handle, icv_string);
+      case ompd_icv_affinity_format_var:
+        return ompd_get_affinity_format((ompd_address_space_handle_t *)handle,
+             icv_string);
+      case ompd_icv_tool_libraries_var:
+        return ompd_get_tool_libraries((ompd_address_space_handle_t *)handle,
+             icv_string);
       default:
         return ompd_rc_unsupported;
     }

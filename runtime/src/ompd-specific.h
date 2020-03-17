@@ -69,6 +69,7 @@ OMPD_ACCESS(kmp_internal_control_t, nested) \
 OMPD_ACCESS(kmp_internal_control_t, nproc) \
 OMPD_ACCESS(kmp_internal_control_t, proc_bind) \
 OMPD_ACCESS(kmp_internal_control_t, sched) \
+OMPD_ACCESS(kmp_internal_control_t, default_device) \
 \
 OMPD_ACCESS(kmp_taskdata_t,       ompt_task_info) \
 OMPD_ACCESS(kmp_taskdata_t,       td_flags) \
@@ -137,11 +138,14 @@ OMPD_SIZEOF(__kmp_stksize) \
 OMPD_SIZEOF(__kmp_omp_cancellation) \
 OMPD_SIZEOF(__kmp_max_task_priority) \
 OMPD_SIZEOF(__kmp_display_affinity) \
+OMPD_SIZEOF(__kmp_affinity_format) \
+OMPD_SIZEOF(__kmp_tool_libraries) \
 OMPD_SIZEOF(__kmp_tool) \
 OMPD_SIZEOF(ompd_state) \
 OMPD_SIZEOF(kmp_nested_nthreads_t) \
 OMPD_SIZEOF(__kmp_nested_nth) \
 OMPD_SIZEOF(int) \
+OMPD_SIZEOF(char) \
 OMPD_SIZEOF(__kmp_gtid) \
 OMPD_SIZEOF(__kmp_nth) \
 OMPD_SIZEOF(ompd_cuda_context_ptr_t) \
